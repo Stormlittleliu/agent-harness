@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""LangChain-ReAct-Agent 统一测试入口。
+"""Agent Harness 统一测试入口。
 
 用法：
     python test_entry.py --list

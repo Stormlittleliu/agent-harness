@@ -8,7 +8,7 @@
 
 ## 0. 先定边界
 
-- **只讲一个项目**：LangChain-ReAct-Agent（扫地机器人客服）。
+- **只讲一个项目**：Agent Harness（扫地机器人客服场景验证）。
 - **主证据换成公开基准**：τ²-bench retail 抽样 + BFCL 抽样；自建 13 条 / 42 条降级为回归集和失败分析。
 - **RAG 是工具，不是标题**：项目主线是 Agent Harness（工具、状态、权限、评测），RAG 只作为 `knowledge_base_search` 工具。
 - **只记三个核心数字**：Agent 用例通过率、工具调用命中、一个公开基准指标。
