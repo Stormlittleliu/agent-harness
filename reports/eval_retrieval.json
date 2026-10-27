@@ -1,0 +1,1232 @@
+{
+  "summary": {
+    "total": 42,
+    "scored": 32,
+    "by_category": {
+      "normal": 22,
+      "edge": 5,
+      "conflict": 5,
+      "unanswerable": 10
+    },
+    "vector": {
+      "hit_at_k": 1.0,
+      "mrr": 1.0,
+      "hits": 32,
+      "count": 32
+    },
+    "hybrid": {
+      "hit_at_k": 1.0,
+      "mrr": 1.0,
+      "hits": 32,
+      "count": 32
+    }
+  },
+  "results": [
+    {
+      "id": "rag-001",
+      "category": "normal",
+      "question": "身高180cm、体重165斤，推荐什么尺码？",
+      "expected_sources": [
+        "尺码推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-002",
+      "category": "normal",
+      "question": "身高160cm、体重100斤，推荐什么尺码？",
+      "expected_sources": [
+        "尺码推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-003",
+      "category": "normal",
+      "question": "真丝连衣裙怎么洗？",
+      "expected_sources": [
+        "洗涤养护.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-004",
+      "category": "normal",
+      "question": "羊毛衫可以用洗衣机洗吗？",
+      "expected_sources": [
+        "洗涤养护.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-005",
+      "category": "normal",
+      "question": "羽绒服怎么洗？",
+      "expected_sources": [
+        "洗涤养护.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-006",
+      "category": "normal",
+      "question": "黄皮适合什么颜色？",
+      "expected_sources": [
+        "颜色推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-007",
+      "category": "normal",
+      "question": "正式面试穿什么颜色？",
+      "expected_sources": [
+        "颜色推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-008",
+      "category": "normal",
+      "question": "冬天想显瘦，穿什么颜色？",
+      "expected_sources": [
+        "颜色推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-009",
+      "category": "normal",
+      "question": "2026 春季新品有哪些？",
+      "expected_sources": [
+        "新品推荐.md"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "新品推荐.md",
+          "洗涤养护.txt",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "新品推荐.md",
+          "洗涤养护.txt",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-010",
+      "category": "normal",
+      "question": "速干运动短袖适合什么场景？",
+      "expected_sources": [
+        "新品推荐.md"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "尺码推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-011",
+      "category": "edge",
+      "question": "身高178cm、体重150斤，春天面试穿什么尺码和颜色？",
+      "expected_sources": [
+        "尺码推荐.txt",
+        "颜色推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-012",
+      "category": "edge",
+      "question": "冬季羊毛大衣怎么洗、怎么收纳？",
+      "expected_sources": [
+        "洗涤养护.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-013",
+      "category": "edge",
+      "question": "纯棉T恤和真丝裙子可以一起机洗吗？",
+      "expected_sources": [
+        "洗涤养护.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md",
+          "洗涤养护.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-014",
+      "category": "conflict",
+      "question": "身高178cm、体重72kg，买 2026 春季新品防风外套，推荐什么尺码？",
+      "expected_sources": [
+        "尺码推荐.txt",
+        "新品推荐.md"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "新品推荐.md",
+          "尺码推荐.txt",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "新品推荐.md",
+          "尺码推荐.txt",
+          "颜色推荐.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-015",
+      "category": "conflict",
+      "question": "尺码表写 175-182cm、145-165斤是 2XL，但新品推荐写 175-180cm、70-75kg 是 L，到底哪个对？",
+      "expected_sources": [
+        "尺码推荐.txt",
+        "新品推荐.md"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "rag-016",
+      "category": "unanswerable",
+      "question": "你们支持七天无理由退货吗？",
+      "expected_sources": [],
+      "should_refuse": true,
+      "vector": {
+        "sources": [
+          "新品推荐.md",
+          "尺码推荐.txt",
+          "洗涤养护.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      },
+      "hybrid": {
+        "sources": [
+          "新品推荐.md",
+          "尺码推荐.txt",
+          "洗涤养护.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      }
+    },
+    {
+      "id": "rag-017",
+      "category": "unanswerable",
+      "question": "发票怎么开？",
+      "expected_sources": [],
+      "should_refuse": true,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "洗涤养护.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "洗涤养护.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      }
+    },
+    {
+      "id": "rag-018",
+      "category": "unanswerable",
+      "question": "快递一般多久能到？",
+      "expected_sources": [],
+      "should_refuse": true,
+      "vector": {
+        "sources": [
+          "新品推荐.md",
+          "尺码推荐.txt",
+          "颜色推荐.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      },
+      "hybrid": {
+        "sources": [
+          "新品推荐.md",
+          "洗涤养护.txt",
+          "尺码推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      }
+    },
+    {
+      "id": "rag-019",
+      "category": "unanswerable",
+      "question": "会员积分怎么使用？",
+      "expected_sources": [],
+      "should_refuse": true,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md",
+          "洗涤养护.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md",
+          "洗涤养护.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      }
+    },
+    {
+      "id": "rag-020",
+      "category": "unanswerable",
+      "question": "你们的客服电话是多少？",
+      "expected_sources": [],
+      "should_refuse": true,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "洗涤养护.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      },
+      "hybrid": {
+        "sources": [
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "洗涤养护.txt",
+          "尺码推荐.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      }
+    },
+    {
+      "id": "hard-001",
+      "category": "normal",
+      "question": "我170出头，一百四十来斤，平时穿什么号？",
+      "expected_sources": [
+        "尺码推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "洗涤养护.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-002",
+      "category": "normal",
+      "question": "身高165厘米、体重120斤，推荐哪个尺码？",
+      "expected_sources": [
+        "尺码推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-003",
+      "category": "normal",
+      "question": "真丝衣服能用温水泡很久吗？",
+      "expected_sources": [
+        "洗涤养护.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-004",
+      "category": "normal",
+      "question": "羊绒大衣能自己水洗吗？",
+      "expected_sources": [
+        "洗涤养护.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-005",
+      "category": "normal",
+      "question": "皮肤偏黄，想买显白一点的上衣，推荐什么颜色？",
+      "expected_sources": [
+        "颜色推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-006",
+      "category": "normal",
+      "question": "参加婚礼穿什么颜色合适？",
+      "expected_sources": [
+        "颜色推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-007",
+      "category": "normal",
+      "question": "春天早晚温差大，新品里有什么外套推荐？",
+      "expected_sources": [
+        "新品推荐.md"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "新品推荐.md",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-008",
+      "category": "normal",
+      "question": "敏感肌适合哪套家居服？",
+      "expected_sources": [
+        "新品推荐.md"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "新品推荐.md",
+          "洗涤养护.txt",
+          "颜色推荐.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "洗涤养护.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-009",
+      "category": "normal",
+      "question": "羊毛衫洗完能挂起来晾吗？",
+      "expected_sources": [
+        "洗涤养护.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-010",
+      "category": "normal",
+      "question": "纯棉T恤第一次洗要注意什么？",
+      "expected_sources": [
+        "洗涤养护.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md",
+          "洗涤养护.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-011",
+      "category": "normal",
+      "question": "羽绒服洗完怎么恢复蓬松？",
+      "expected_sources": [
+        "洗涤养护.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "洗涤养护.txt",
+          "颜色推荐.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-012",
+      "category": "normal",
+      "question": "个子不高、偏瘦，穿浅色还是深色更显高？",
+      "expected_sources": [
+        "颜色推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "尺码推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-013",
+      "category": "conflict",
+      "question": "身高178cm、体重72kg，春季新品防风外套穿L还是XL？",
+      "expected_sources": [
+        "尺码推荐.txt",
+        "新品推荐.md"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-014",
+      "category": "conflict",
+      "question": "尺码表说175-182cm、145-165斤是2XL，新品却说175-180cm、70-75kg是L，哪个准？",
+      "expected_sources": [
+        "尺码推荐.txt",
+        "新品推荐.md"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-015",
+      "category": "conflict",
+      "question": "我身高176、体重73公斤，按尺码表和新品推荐分别是什么码？",
+      "expected_sources": [
+        "尺码推荐.txt",
+        "新品推荐.md"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-016",
+      "category": "unanswerable",
+      "question": "你们支持七天无理由退货吗？",
+      "expected_sources": [],
+      "should_refuse": true,
+      "vector": {
+        "sources": [
+          "新品推荐.md",
+          "尺码推荐.txt",
+          "洗涤养护.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      },
+      "hybrid": {
+        "sources": [
+          "新品推荐.md",
+          "尺码推荐.txt",
+          "洗涤养护.txt",
+          "颜色推荐.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      }
+    },
+    {
+      "id": "hard-017",
+      "category": "unanswerable",
+      "question": "怎么开发票？",
+      "expected_sources": [],
+      "should_refuse": true,
+      "vector": {
+        "sources": [
+          "颜色推荐.txt",
+          "洗涤养护.txt",
+          "新品推荐.md",
+          "洗涤养护.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      },
+      "hybrid": {
+        "sources": [
+          "颜色推荐.txt",
+          "洗涤养护.txt",
+          "新品推荐.md",
+          "洗涤养护.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      }
+    },
+    {
+      "id": "hard-018",
+      "category": "unanswerable",
+      "question": "发什么快递，几天能到？",
+      "expected_sources": [],
+      "should_refuse": true,
+      "vector": {
+        "sources": [
+          "新品推荐.md",
+          "尺码推荐.txt",
+          "颜色推荐.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      },
+      "hybrid": {
+        "sources": [
+          "尺码推荐.txt",
+          "洗涤养护.txt",
+          "新品推荐.md",
+          "洗涤养护.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      }
+    },
+    {
+      "id": "hard-019",
+      "category": "unanswerable",
+      "question": "会员积分能抵现吗？",
+      "expected_sources": [],
+      "should_refuse": true,
+      "vector": {
+        "sources": [
+          "新品推荐.md",
+          "洗涤养护.txt",
+          "尺码推荐.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      },
+      "hybrid": {
+        "sources": [
+          "洗涤养护.txt",
+          "新品推荐.md",
+          "洗涤养护.txt",
+          "尺码推荐.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      }
+    },
+    {
+      "id": "hard-020",
+      "category": "unanswerable",
+      "question": "蔡徐坤是谁？",
+      "expected_sources": [],
+      "should_refuse": true,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      },
+      "hybrid": {
+        "sources": [
+          "颜色推荐.txt",
+          "尺码推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt"
+        ],
+        "hit": null,
+        "mrr": null
+      }
+    },
+    {
+      "id": "hard-021",
+      "category": "edge",
+      "question": "身高180、体重160斤，黄皮，参加婚礼穿什么颜色和尺码？",
+      "expected_sources": [
+        "尺码推荐.txt",
+        "颜色推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "尺码推荐.txt",
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "尺码推荐.txt",
+          "颜色推荐.txt",
+          "新品推荐.md",
+          "颜色推荐.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    },
+    {
+      "id": "hard-022",
+      "category": "edge",
+      "question": "冬天穿羊毛大衣去面试，怎么洗、穿什么颜色？",
+      "expected_sources": [
+        "洗涤养护.txt",
+        "颜色推荐.txt"
+      ],
+      "should_refuse": false,
+      "vector": {
+        "sources": [
+          "颜色推荐.txt",
+          "颜色推荐.txt",
+          "洗涤养护.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      },
+      "hybrid": {
+        "sources": [
+          "颜色推荐.txt",
+          "洗涤养护.txt",
+          "颜色推荐.txt",
+          "洗涤养护.txt"
+        ],
+        "hit": true,
+        "mrr": 1.0
+      }
+    }
+  ]
+}

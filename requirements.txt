@@ -8,6 +8,8 @@ langchain-core==1.6.4
 langchain-community==0.4.2
 langchain-chroma==1.1.0
 langchain-text-splitters==1.1.2
+# EnsembleRetriever（混合检索加权融合）所在包
+langchain-classic==1.0.8
 
 # ===================== 向量数据库与数值计算 =====================
 chromadb==1.5.9
@@ -25,15 +27,20 @@ anyio==4.15.1
 pydantic==2.13.5
 python-dotenv==1.2.3
 pillow==11.3.0
+# PDF 解析（上传 pdf 文档）
 pypdf==5.1.0
+# Word 文档解析（上传 docx 文档）
+python-docx==1.2.0
+# YAML 配置（config/*.yml 加载）
+PyYAML==6.0.2
+# 中文分词（BM25 关键词检索；未安装时会自动降级为 bigram 分词）
+jieba==0.42.1
 tqdm==4.70.1
 
 # ===================== 可选扩展（按需安装） =====================
-# Word 文档解析（后续扩展 docx 上传入库）
-python-docx>=1.1.0
 # Excel 文档解析（后续扩展 xlsx 上传入库）
 openpyxl>=3.1.2
-# Markdown 文档解析（后续扩展 md 上传入库）
+# Markdown 语法解析（当前 md 走 RecursiveCharacterTextSplitter，暂未使用该库）
 markdown>=3.5.2
 # 结构化日志（调试与问题排查）
 loguru>=0.7.2

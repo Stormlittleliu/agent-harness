@@ -1,0 +1,34 @@
+# ===================== 向量库与切分配置 =====================
+# Chroma 集合名称（存储目录跟随项目 data/ 目录，见 config.py）
+collection_name: rag
+
+# 允许上传的文档类型（上传页与解析器都会校验）
+allow_file_types: [txt, pdf, docx, md]
+
+# 文本分割阈值：长度不超过该值时整段入库，不做切分
+max_split_char_number: 1000
+
+# 按文件类型差异化切片参数
+# 说明：
+#   1. separators 中的 "\n" 必须用双引号书写，YAML 双引号会把 \n 转义成真实换行符；
+#      写成单引号会变成字面量反斜杠 + n，导致切分逻辑静默失效。
+#   2. 未在表中出现的类型会回退使用 txt 的参数。
+chunking:
+  txt:
+    chunk_size: 1000
+    chunk_overlap: 100
+    separators: ["\n\n", "\n", ".", "!", "?", "。", "！", "？", " ", ""]
+  pdf:
+    # PDF 解析时已按页保留了空行，块略小一点，避免跨页内容混在同一个块里
+    chunk_size: 800
+    chunk_overlap: 80
+    separators: ["\n\n", "\n", ".", "!", "?", "。", "！", "？", " ", ""]
+  docx:
+    chunk_size: 1000
+    chunk_overlap: 100
+    separators: ["\n\n", "\n", ".", "!", "?", "。", "！", "？", " ", ""]
+  md:
+    # Markdown 优先按标题、列表切分，尽量让同一小节落在同一个块里
+    chunk_size: 800
+    chunk_overlap: 80
+    separators: ["\n\n", "\n## ", "\n# ", "\n- ", "\n", ".", "。", " ", ""]

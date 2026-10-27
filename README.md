@@ -17,6 +17,8 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+- 支持上传 `txt` / `pdf` / `docx` / `md`，业务参数见 `config/*.yml` / Supports `txt` / `pdf` / `docx` / `md`; settings live in `config/*.yml`
+- 两种对比模式：纯模型 vs RAG、纯向量 vs 混合检索 / Two comparison modes: plain LLM vs RAG, pure vector vs hybrid retrieval
 - 示例知识文本 / Sample texts: `scripts/assets/`
 - 运行时数据 / Runtime data: `data/`
 - 冒烟测试 / Smoke test: `python scripts/smoke_test.py`

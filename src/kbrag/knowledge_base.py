@@ -1,12 +1,16 @@
-"""知识库：md5 去重记录 + 文本切分 + 写入向量库。"""
+"""知识库：md5 去重记录 + 按文档类型切分 + 写入向量库。"""
 import hashlib
 import os
+import uuid
 from datetime import datetime
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from kbrag import config
 from kbrag.vector_store import VectorStoreService
+
+# text-embedding-v4 的批量上限是 10：一次 add_texts 的条数不能超过该值
+EMBEDDING_BATCH_SIZE = 10
 
 
 def _read_md5_records():
@@ -94,17 +98,30 @@ class KnowledgeBaseService(object):
         self.vector_service = VectorStoreService()
         self.chroma = self.vector_service.vector_store
 
-        self.splitter = RecursiveCharacterTextSplitter(  # 文本分割器的对象
-            chunk_size=config.chunk_size,  # 分割后的文本段最大长度
-            chunk_overlap=config.chunk_overlap,  # 连续文本段之间的字符重叠数量
-            separators=config.separators,  # 自然段落划分的符号
-            length_function=len,  # 使用python自带的len函数做长度统计的依赖
-        )
+        # 按文件类型缓存的切片器：不同类型使用 config/chroma.yml 中各自的参数
+        self._splitters: dict[str, RecursiveCharacterTextSplitter] = {}
 
-    def upload_by_str(self, data: str, filename):
+    def _get_splitter(self, file_type: str) -> RecursiveCharacterTextSplitter:
+        """按文件类型返回切片器；同一类型只创建一次（惰性缓存）。"""
+        if file_type not in config.chunking:
+            # 未在 YAML 中配置的类型回退到 txt 的切片参数
+            file_type = "txt"
+
+        if file_type not in self._splitters:
+            chunk_conf = config.chunking[file_type]
+            self._splitters[file_type] = RecursiveCharacterTextSplitter(
+                chunk_size=chunk_conf["chunk_size"],  # 分割后的文本段最大长度
+                chunk_overlap=chunk_conf["chunk_overlap"],  # 连续文本段之间的字符重叠数量
+                separators=chunk_conf["separators"],  # 自然段落划分的符号
+                length_function=len,  # 使用python自带的len函数做长度统计的依赖
+            )
+        return self._splitters[file_type]
+
+    def upload_by_str(self, data: str, filename, file_type: str = None):
         """将传入的字符串，进行向量化，存入向量数据库中
 
         同一文件名内容未变化时跳过；内容变化时用新分块替换旧分块。
+        file_type 缺省时从文件名后缀推断，不同文件类型使用不同的切片参数。
         """
         if not data or not data.strip():
             return "[Error] 内容为空，未写入知识库"
@@ -113,17 +130,25 @@ class KnowledgeBaseService(object):
         filename = os.path.basename(str(filename).replace("\\", "/"))
         filename = filename.replace("\t", "_").replace("\r", "_").replace("\n", "_") or "unknown"
 
+        # 文件类型：优先使用调用方传入的值，否则从文件名后缀推断
+        if not file_type:
+            file_type = os.path.splitext(filename)[1].lower().lstrip(".")
+        if file_type not in config.chunking:
+            file_type = "txt"  # 未知类型按 txt 处理，保证旧调用方式不受影响
+
         # 先得到出传入的字符串的md5值
         md5_hex = get_string_md5(data)
         if check_md5(md5_hex, filename):
             return "[Repeat] 内容已存在知识库"
         if len(data) > config.max_split_char_number:
-            knowledge_chunks: list[str] = self.splitter.split_text(data)  # 类型统一，均用列表套字符串
+            # 按文件类型选择切片器（txt/pdf/docx/md 的参数可以不同）
+            knowledge_chunks: list[str] = self._get_splitter(file_type).split_text(data)  # 类型统一，均用列表套字符串
         else:
             knowledge_chunks = [data]
 
         metadata = {
             "source": filename,
+            "file_type": file_type,
             # 2026-3-8 15:43:30
             "create_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "operator": "客户",
@@ -132,16 +157,35 @@ class KnowledgeBaseService(object):
         # 同一来源更新内容时，先取出旧分块 id，新内容写入成功后再删除，避免更新失败丢数据
         old_ids = self.chroma.get(where={"source": filename}).get("ids", [])
 
-        self.chroma.add_texts(  # 内容加载到向量库中
-            # iterable-> list \tuple
-            knowledge_chunks,
-            # 注意:langchain-chroma 的参数名是 metadatas(复数);
-            # 写成 metadata= 在旧版是笔误、在新版(1.x)会被静默忽略导致元数据不入库
-            metadatas=[dict(metadata) for _ in knowledge_chunks],
-        )
+        # 为每个分块生成独立 id：
+        # 1. 写入时显式传 ids，Chroma 主键由我们控制；
+        # 2. chunk_id 同时写进元数据，供混合检索按 id 融合去重（EnsembleRetriever 的 id_key）
+        chunk_ids = [uuid.uuid4().hex for _ in knowledge_chunks]
+        metadatas = [{**metadata, "chunk_id": chunk_id} for chunk_id in chunk_ids]
+
+        # 分批写入：text-embedding-v4 单次批量上限为 10；
+        # 任一批失败时回滚本文件已写入的新分块，旧分块与 md5 记录保持不变，下次可安全重试。
+        written_ids = []
+        try:
+            for start in range(0, len(knowledge_chunks), EMBEDDING_BATCH_SIZE):
+                end = start + EMBEDDING_BATCH_SIZE
+                batch_ids = chunk_ids[start:end]
+                self.chroma.add_texts(  # 内容加载到向量库中
+                    # iterable-> list \tuple
+                    knowledge_chunks[start:end],
+                    # 注意:langchain-chroma 的参数名是 metadatas(复数);
+                    # 写成 metadata= 在旧版是笔误、在新版(1.x)会被静默忽略导致元数据不入库
+                    metadatas=metadatas[start:end],
+                    ids=batch_ids,
+                )
+                written_ids.extend(batch_ids)
+        except Exception:
+            if written_ids:
+                self.chroma.delete(ids=written_ids)
+            raise
+
         if old_ids:
             self.chroma.delete(ids=old_ids)
-
         save_md5(md5_hex, filename)
         if old_ids:
             return "[Success] 内容已更新，旧数据已替换"
@@ -161,6 +205,8 @@ class KnowledgeBaseService(object):
             chunks.append({
                 "id": chunk_id,
                 "source": metadata.get("source") or "(未知来源)",
+                # 旧数据没有 file_type 字段，返回空串由页面显示为“未知”
+                "file_type": metadata.get("file_type") or "",
                 "create_time": metadata.get("create_time") or "",
                 "operator": metadata.get("operator") or "",
                 "content": content,

@@ -10,13 +10,11 @@ from langchain_core.runnables import (
 from kbrag.history import get_history
 from kbrag.prompts import CHAT_SYSTEM_TEMPLATE, HISTORY_SYSTEM_TEMPLATE, format_docs
 from kbrag.providers import get_chat_model
-from kbrag.vector_store import VectorStoreService
+from kbrag.retrievers import get_retriever
 
 
 class RagService(object):
     def __init__(self):
-        self.vector_service = VectorStoreService()
-
         self.prompt_template = ChatPromptTemplate.from_messages(
             [
                 ("system", CHAT_SYSTEM_TEMPLATE),
@@ -33,7 +31,8 @@ class RagService(object):
     def __get_chain(self):
         """获取最终的执行链"""
 
-        retriever = self.vector_service.get_retriever()
+        # 默认检索模式来自 config/rag.yml（vector / hybrid）
+        retriever = get_retriever()
 
         def format_for_retriever(value: dict) -> str:
             return value["input"]

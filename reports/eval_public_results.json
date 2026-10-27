@@ -1,0 +1,841 @@
+{
+  "retrieval_summary": {
+    "MultiHop-RAG": {
+      "scored": 9,
+      "hit_at_4": 1.0,
+      "mrr": 0.8889,
+      "by_category": {
+        "multihop_comparison_query": 3,
+        "multihop_inference_query": 3,
+        "multihop_temporal_query": 3,
+        "multihop_null_query": 3
+      }
+    },
+    "RGB": {
+      "scored": 16,
+      "hit_at_4": 1.0,
+      "mrr": 0.8802,
+      "by_category": {
+        "rgb_normal": 8,
+        "rgb_rejection": 4,
+        "rgb_integration": 4,
+        "rgb_counterfactual": 4
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "rgb-zh-normal-001",
+      "benchmark": "RGB",
+      "category": "rgb_normal",
+      "question": "印控克什米尔地区寺庙踩踏事故死亡人数",
+      "answer": "12人",
+      "expected_points": [
+        "12人"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-normal-001#2",
+        "rgb-zh-normal-001#0",
+        "rgb-zh-normal-001#1",
+        "rgb-zh-normal-001#3"
+      ],
+      "retrieved_context": "海外网1月1日电 据印度新德里电视台报道，位于印控查谟和克什米尔地区的瓦希诺德维寺发生踩踏事件，目前已造成12人死亡、14人受伤。 当地时间1月1日，大批印度民众聚集在瓦希诺德维寺庆贺新年，期间发生踩踏事故。警方证实，12人在踩踏事故中丧生，14人受伤，救援行动立即展开，所有伤者已被送往医院，部分伤者情况严重。 当地官员透露，事件发生在寺庙外，当时有大量民众涌入寺庙，有的人甚至未经许可就进入寺庙，紧接着踩踏事件就发生了。\n\n当时，大批民众聚集在寺庙门口，大门打开后人群立刻涌入，一名女子直接摔倒在地，随后其他人也跟着摔倒。 而在今年年初，位于印控查谟和克什米尔地区的瓦希诺德维寺也发生一起踩踏事件，造成至少12人死亡、14人受伤。当天，大批印度民众聚集在此庆贺新年，不少人未经许可涌入寺庙，导致踩踏事件发生，事后印度总理莫迪也在第一时间就此事发声。\n\nNov 10, 2022 ... ... 年，孟买埃尔芬斯通车站一座狭窄的步行桥发生踩踏事故，造成23人死亡；今年1月，印控克什米尔地区一座印度教寺庙发生踩踏事故，造成12人死亡。\n\n印度踩踏事件频发 自今年以来，印度已经发生过多起类似的踩踏事故，不少人更是因此失去生命。三个多月前，印度南部一场国际板球比赛的售票现场发生踩踏事件，造成至少20人受伤，现场一度引发骚乱，最终警方只能动用警棍驱赶人群，印媒称，当时的购票现场可以用“噩梦”来形容。 （大批民众涌入寺庙） 就在这场踩踏事件发生的一个多月前，印度拉贾斯坦邦一座寺庙的入口处发生踩踏事故，造成3人死亡，2人受伤。",
+      "expected_sources": [
+        "rgb-zh-normal-001#0",
+        "rgb-zh-normal-001#1",
+        "rgb-zh-normal-001#2"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-normal-002",
+      "benchmark": "RGB",
+      "category": "rgb_normal",
+      "question": "RCEP具体包括哪些国家",
+      "answer": "RCEP具体包括东盟十国（文莱、柬埔寨、印度尼西亚、老挝、马来西亚、缅甸、菲律宾、新加坡、泰国、越南）以及中国、日本、韩国、澳大利亚、新西兰，共15个国家。印度曾被邀请参加（“10+6”），但于2019年宣布暂不加入，因此当前RCEP成员国为15个。",
+      "expected_points": [
+        "东盟 或 中国 或 日本 或 韩国 或 澳大利亚 或 新西兰"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-normal-002#0",
+        "rgb-zh-normal-002#2",
+        "rgb-zh-normal-002#4",
+        "rgb-zh-normal-002#1"
+      ],
+      "retrieved_context": "RCEP(Regional Comprehensive Economic Partnership)，即区域全面经济伙伴关系协定 RCEP是Regional Comprehensive Economic Partnership的缩写，即区域全面经济伙伴关系协定，RCEP由东盟十国发起，邀请中国、日本、韩国、澳大利亚、新西兰、印度共同参加(“10+6”)，通过削减关税及非关税壁垒，建立16国统一市场的自由贸易协定。 RCEP是东盟国家近年来首次提出，并以东盟为主导的区域经济一体化合作，是成员国间相互开放市场、实施区域经济一体化的组织形式。RCEP主要成员国计划包括与东盟已经签署自由贸易协定的国家，即中国、日本、韩国、澳大利亚、新西兰、印度。\n\nRCEP最早由东盟十国发起，邀请中国、日本、韩国、澳大利亚、新西兰、印度共同参加（“10+6”），旨在通过削减关税及非关税壁垒，建立16国统一市场的自由贸易协定。这意味着，如果达成，RCEP将会形成人口约35亿、GDP总和约为23万亿美元、占世界贸易总量约30%的贸易集团。这在给所有参与国家带来实质性贸易量增加的同时，也将会给各国企业在地区与国际市场扩大投资和增加市场份额带来莫大实惠。\n\nRCEP协定由序言、20个章节（包括：初始条款和一般定义、货物贸易、原产地规则、海关程序和贸易便利化、卫生和植物卫生措施、标准、技术法规和合格评定程序、贸易救济、服务贸易、自然人临时流动、投资、知识产权、电子商务、竞争、中小企业、经济技术合作、政府采购、一般条款和例外、机构条款、争端解决、最终条款章节）、4个市场准入承诺表附件（包括：关税承诺表、服务具体承诺表、投资保留及不符措施承诺表、自然人临时流动具体承诺表）组成。 RCEP是目前全球体量最大的自贸区。2019年，RCEP的15个成员国总人口达22.\n\n2万亿美元，约占全球GDP的30%，占全球贸易总额的近28%（根据2019年数据），RCEP是朝着全球贸易和投资规则的理想框架迈出的重要一步。其次，RCEP是区域内经贸规则的“整合器”。RCEP整合了东盟与中国、日本、韩国、澳大利亚、新西兰多个“10+1”自贸协定以及中、日、韩、澳、新西兰5国之间已有的多对自贸伙伴关系，尤其是在中日和韩日间建立了新的自贸伙伴关系。",
+      "expected_sources": [
+        "rgb-zh-normal-002#0",
+        "rgb-zh-normal-002#1",
+        "rgb-zh-normal-002#2"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-normal-003",
+      "benchmark": "RGB",
+      "category": "rgb_normal",
+      "question": "第七届香港立法会议员宣誓仪式的时间",
+      "answer": "2022年1月3日上午11时",
+      "expected_points": [
+        "1月3日"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-normal-003#0",
+        "rgb-zh-normal-003#1",
+        "rgb-zh-normal-003#2",
+        "rgb-zh-normal-003#4"
+      ],
+      "retrieved_context": "时间：2021-12-29 14:58:03 来源：海外网 分享到微信朋友圈 据香港大公文汇全媒体报道，香港第七届立法会议员的宣誓仪式将在2022年1月3日上午11时在立法会会议厅举行，由行政长官林郑月娥监誓。 宣誓仪式前，候任议员将面向 香港立法会 据香港大公文汇全媒体报道，香港第七届立法会议员的宣誓仪式将在2022年1月3日上午11时在立法会会议厅举行，由行政长官林郑月娥监誓。 宣誓仪式前，候任议员将面向国旗及区旗肃立，同唱国歌，之后逐一宣誓。\n\n原标题：新一届香港立法会议员宣誓，细节之中见深意 来源：人民日报客户端 2022年1月3日上午，香港特区第七届立法会议员宣誓仪式举行。在高悬的国徽之下，全场齐声高唱国歌，从宣誓议员到监誓人，庄重而严谨。对比上一届立法会宣誓时的画面，思忖香港这几年来的风风雨雨，让了解和关心香港的人们无比感慨。 此次宣誓仪式有很多细节区别以往，而这些细节的安排很值得观察，也透露出深意。 这是香港立法会议员第一次在国徽下宣誓。\n\n2022年1月3日上午，香港特区第七届立法会议员宣誓仪式举行。在高悬的国徽之下，全场齐声高唱国歌，从宣誓议员到监誓人，庄重而严谨。对比上一届立法会宣誓时的画面，思忖香港这几年来的风风雨雨，让了解和关心香港的人们无比感慨。 此次宣誓仪式有很多细节区别以往，而这些细节的安排很值得观察，也透露出深意。 这是香港立法会议员第一次在国徽下宣誓。根据去年十月修订生效的《2021年国旗及国徽（修订）条例》，在立法会综合大楼会议厅正中间的墙上高悬中华人民共和国国徽。\n\n会议厅主席位上方，国徽高悬，两旁则立着国旗和区旗。按照香港特区2021年通过的《国旗及国徽（修订）条例》，立法会议员宣誓场地须悬挂国徽。本届香港特区立法会议员，将第一次在国徽下进行宣誓。 “这体现了‘一国两制’下香港特别行政区作为中华人民共和国一个地方行政区域的法律地位，是‘爱国者治港’原则在立法机关得以推进落实的写照。”香港中联办发言人说。 宣誓仪式开始前半个多小时，不少议员已陆续抵达会议厅，神情庄重。",
+      "expected_sources": [
+        "rgb-zh-normal-003#0",
+        "rgb-zh-normal-003#1",
+        "rgb-zh-normal-003#2"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-normal-004",
+      "benchmark": "RGB",
+      "category": "rgb_normal",
+      "question": "首趟RCEP班列的起点？",
+      "answer": "首趟RCEP班列的起点是南宁国际铁路港。",
+      "expected_points": [
+        "南宁"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-normal-004#0",
+        "rgb-zh-normal-004#2",
+        "rgb-zh-normal-004#1",
+        "rgb-zh-normal-004#3"
+      ],
+      "retrieved_context": "2022年1月1日零点刚过，随着汽笛声响，满载800多吨货物的X9101次集装箱班列从南宁国际铁路港开出，一路朝着终点站越南河内进发。 这是RCEP(区域全面经济伙伴关系协定)生效后，我国首趟开往RCEP成员国的国际货运班列。 我国首趟开往RCEP成员国的国际货运班列从南宁国际铁路港发出(央广网发 冯登海 摄) “南宁国际铁路港自2018年5月开通运营以来，累计到发货物1218万吨，每年到发货物量约270万吨。”广西宁铁国际物流有限公司总经理宋坚强介绍。\n\nSep 19, 2022 ... 我国首趟开往RCEP成员国的国际货运班列从南宁国际铁路港发出(央广网发冯登海 ... 平陆运河起点位于南宁横州市西津库区平塘江口(央广网发横州市融媒体 ...\n\n来自东盟等多个国家的货物通过海运入境，再经铁路港进入到云南、贵州、四川、重庆等地。 RCEP协定生效后，进出口货物的成本降低了，运输时间也缩短了。中国南宁―越南河内班列运行时间之前需要72小时，目前仅需约24小时，运行时长减少40多个小时，基本实现了次日可达。 东盟水果更是实现了从海运、陆运到空运的飞跃，加速度进入中国市场。 今年5月13日，广西对RCEP成员国水果进口航线正式通航，进一步扩大了南宁乃至广西在中国进口生鲜方面的影响力。\n\n同时有必要强化西部陆海新通道与中欧班列的协同合作。这些设想若能实现，将为日中韩三国企业带来重大商机。为重塑生产供应链，需要平衡好海上运输与中欧班列的应用。在构建这种东亚复合一贯制运输体制方面，日中韩、东盟的通力合作不可或缺。另外，中欧班列里海线路的升级和中吉乌铁路的建设也十分必要。同时，还需要跳出日中韩－东盟的框架，加强与中亚各国的合作。如果能够顺利完成上述课题，中欧班列将与欧洲航路并驾齐驱，成为补充完善欧洲航路的生产供应链，并进而成长为支撑亚欧大陆经济发展的价值链。",
+      "expected_sources": [
+        "rgb-zh-normal-004#0",
+        "rgb-zh-normal-004#1",
+        "rgb-zh-normal-004#2"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-normal-005",
+      "benchmark": "RGB",
+      "category": "rgb_normal",
+      "question": "香港第七届立法会选举有多少个议席？",
+      "answer": "香港第七届立法会选举有90个议席。",
+      "expected_points": [
+        "90"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-normal-005#1",
+        "rgb-zh-normal-005#0",
+        "rgb-zh-normal-005#2",
+        "rgb-zh-normal-005#3"
+      ],
+      "retrieved_context": "香港特区第七届立法会选举投票于2021年12月19日顺利结束，这是完善香港特区选举制度后的首次立法会选举。153名候选人竞选90个议席，包括选举委员会选举的议员40人、功能团体选举的议员30人和分区直接选举的议员20人。\n\n立法会是香港的立法机构，亦是香港的一院制议会。第七届立法会（英语：Seventh Legislative Council）经2021年12月19日的选举产生，90名议员分别从地方选区普选20位、功能团体间选30位、选举委员会产生40名。任期原由2020年10月1日开始，但因全国人大常委会通过《全国人民代表大会常务委员会关于香港特别行政区第六届立法会继续履行职责的决定》，延长第六届立法会任期不少于一年。\n\n香港特区第七届立法会选举投票于12月19日23时左右结束。经过点票,香港选举事务处于20日公布第七届立法会分区直接选举界别、选举委员会界别和功能团体界别投票结果。 第七届立法会90个议席已全部顺利产生,其中包括选举委员会选举的议员40人、功能团体选举的议员30人和分区直接选举的议员20人。\n\n2%，也是自1991年香港立法局选举以来最低[1][2]。香港开埠以来，该届立法会首次由建制派及中间派全数包揽所有立法机关议席，亦是历届立法会派别席位比例最悬殊的一届，而民主派则在立法会绝迹。 2021年3月，第十三届全国人大第四次会议决定审议《全国人大关于完善香港选举制度的决定》以改革香港选举模式。",
+      "expected_sources": [
+        "rgb-zh-normal-005#0",
+        "rgb-zh-normal-005#1",
+        "rgb-zh-normal-005#2"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-normal-006",
+      "benchmark": "RGB",
+      "category": "rgb_normal",
+      "question": "2021年香港GDP增长了多少？",
+      "answer": "2021年香港本地生产总值同比上升6.4%。",
+      "expected_points": [
+        "6.4%"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-normal-006#1",
+        "rgb-zh-normal-006#0",
+        "rgb-zh-normal-006#2",
+        "rgb-zh-normal-006#4"
+      ],
+      "retrieved_context": "新华社香港1月28日电（记者 王茜）香港特区政府统计处28日发布统计数字显示，根据预先估计数字，香港2021年本地生产总值同比上升6.4%。特区政府认为，香港经济在2022年将会进一步增长，但增长步伐受各种不确定因素影响。 统计数据显示，按本地生产总值各个主要组成部分分析，2021年私人消费开支同比上升5.7%；政府消费开支同比上升4.6%；本地固定资本形成总额同比上升10.1%；货品出口总额及货品进口也分别同比上升19.0%及17.5%。 特区政府发言人表示，2021年本地生产总值显著增长6.4%，扭转过去两年的跌势，但仍比2018年的水平低约2%。\n\n企业投资也获得增加，这些都是拉动经济增长的重要因素。经济活动走向正轨，失业率也大幅下降到4.1%。 2020年下降6.1%，2021年又实现6.4%的增长，可以说是非常不容易，这也说明香港经济的韧性非常强，基础牢固。 不过，2021年内地各省市GDP增速很多都超过了8%，大幅超过香港。因此，香港2.37万亿的数据，下降到了全国第21名，被广西超越，广西为2.47万亿。 另外，从城市排名来看，香港仍然可以排到全国第六。位于上海、北京、深圳、广州、重庆之后。但只比苏州多了1000亿，很有可能在2022年被反超，滑落至第七。\n\nJan 28, 2022 ... 新华社香港1月28日电（记者王茜）香港特区政府统计处28日发布统计数字显示，根据预先估计数字，香港2021年本地生产总值同比上升6.4%。\n\n香港GDP曾经位列全国城市第一名，力压上海，如今跌落到第六名，到底是怎么了？ 作为“亚洲四小龙”之一，香港有过辉煌的发展时期，上世纪60年代到80年代，香港经济腾飞，GDP年均增长速度近9%。在那个年代，香港制造业发达，纺织品、钟表、玩具等商品出口全球，彼时的香港是名副其实的制造工厂。 到1988年，香港人均GDP就突破了1万美元，而内地直到2019年才达到1万美元，足足晚了31年。 然而，也就是在80年代，香港制造业开始大举向珠三角的深圳、东莞、佛山等地搬迁，在内地开设工厂。",
+      "expected_sources": [
+        "rgb-zh-normal-006#0",
+        "rgb-zh-normal-006#1",
+        "rgb-zh-normal-006#2"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-normal-007",
+      "benchmark": "RGB",
+      "category": "rgb_normal",
+      "question": "2021年北京大兴机场年旅客吞吐量",
+      "answer": "2021年北京大兴机场年旅客吞吐量突破2500万人次。",
+      "expected_points": [
+        "2500万人次"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-normal-007#0",
+        "rgb-zh-normal-007#1",
+        "rgb-zh-normal-007#2",
+        "rgb-zh-normal-007#3"
+      ],
+      "retrieved_context": "北京大兴国际机场2021年旅客吞吐量突破2500万人次 新华社北京1月1日电（记者 罗鑫）记者从北京大兴国际机场获悉，截至2021年12月31日，大兴机场年旅客吞吐量突破2500万人次，全年保障航班约21万架次，圆满完成全面转场、航班换季、疫情防控和复工复产等各项工作目标，生产运行平稳有序。 2021年，大兴机场单日最高航班量达907架次，单日最高旅客量突破14万人次，全年累计运营国内航线200条、联通全国157个航点。\n\n新华社北京1月1日电（记者罗鑫）记者从北京大兴国际机场获悉，截至2021年12月31日，大兴机场年旅客吞吐量突破2500万人次，全年保障航班约21万架次，圆满完成全面转场、航班换季、疫情防控和复工复产等各项工作目标，生产运行平稳有序。 2021年，大兴机场单日最高航班量达907架次，单日最高旅客量突破14万人次，全年累计运营国内航线200条、联通全国157个航点。\n\nJan 1, 2022 ... 记者从北京大兴国际机场获悉，截至2021年12月31日，大兴机场年旅客吞吐量突破2500万人次，全年保障航班约21万架次，圆满完成全面转场、航班换季、疫情 ...\n\n按照2025年大兴机场旅客吞吐量7200万人次、东航占40%的市场份额计算，届时东航在此承运旅客将超过2880万人次，这与东航在上海浦东机场的客运量相当，是东航未来发展最大的增量。2019年，东航将发力北京，在北京、上海两大核心枢纽运营形成“双龙出海”的空间格局。未来，东航将有超过2万名工作人员参与大兴机场的运营和保障工作，将其建设成为东航新的核心枢纽机场，助力北京成为全球最佳、最便捷的航空门户。",
+      "expected_sources": [
+        "rgb-zh-normal-007#0",
+        "rgb-zh-normal-007#1",
+        "rgb-zh-normal-007#2"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-normal-008",
+      "benchmark": "RGB",
+      "category": "rgb_normal",
+      "question": "2022年春节档首日票房冠军",
+      "answer": "2022年春节档首日票房冠军是《长津湖之水门桥》。  \n根据参考资料，2月1日（正月初一）当日，《长津湖之水门桥》以6.37亿元位居单日票房榜首；另有一处提到“《长津湖之水门桥》以8.31亿元(含预售)成绩领跑春节档”，但明确指出该数据为“含预售”，且时间点为2月1日21时33分。而国家电影局发布的官方数据中，2月1日当日票房为14.45亿元，其中《长津湖之水门桥》占6.37亿元，为单日票房第一名。因此，以官方发布的当日票房为准，首日票房冠军为《长津湖之水门桥》。",
+      "expected_points": [
+        "长津湖之水门桥"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-normal-008#1",
+        "rgb-zh-normal-008#0",
+        "rgb-zh-normal-008#2",
+        "rgb-zh-normal-008#4"
+      ],
+      "retrieved_context": "人民网北京2月2日电 (记者郭冠华) 2022年春节档第一天，中国电影迎来“开门红”。国家电影局发布数据显示，2月1日（正月初一）当日票房14.45亿元，人次2574.07万；其中国产影片票房14.44亿元，单日份额为99.99%。 单日票房前十名中，《长津湖之水门桥》以6.37亿元位居榜首；《四海》排名第二，斩获2.26亿元；《这个杀手不太冷静》以2.13亿元的票房成绩荣获第三名，《奇迹・笨小孩 》《熊出没・重返地球》《狙击手》《喜羊羊与灰太狼之筐出未来》《小虎墩大英雄》《独家头条》《牧蜂姑娘》紧随其后。\n\n2022年春节档以60.35亿票房收官，2月7日，灯塔研究院和灯塔专业版联合发布《2022春节档电影市场数据洞察报告》（以下简称灯塔报告）。 灯塔报告显示，2月1日大年初一，春节档首日揽下14.5亿票房，与2019年持平，后续走势也与疫情前一样平缓回落。 票房冠军《长津湖之水门桥》斩获25.\n\n据猫眼专业版统计，截至2月1日21时33分，春节档首日票房达到14.75亿元，位列中国影史单日票房第二。首日场次达到52.6万，刷新中国电影市场单日场次纪录。其中，《长津湖之水门桥》以8.31亿元(含预售)成绩领跑春节档，成为中国影史剧情题材电影首映日票房冠军。 2021年大年初一，在《唐人街探案3》超高热度，和《你好，李焕英》口碑逆袭的双重作用下，以16.92亿元刷新全球单一市场单日票房纪录。相比之下，2022年春节档虽略逊一筹，但也热度不凡。 “春节档的这些新片，题材、风格都不一样，很想多看几部。\n\n88亿元，但2022年一季度票房同比增速下滑，基数效应下，2023年一季度票房增速有望增长。 综合国泰君安香港、万联证券等研报观点，2023年春节档总票房（含服务费）预计在80亿元-90亿元区间。万联证券分析称，防疫政策优化+预售票价略微下降+观影热情高涨等多重利好驱动春节档表现，2023年春节档票房有望创造近几年新高。",
+      "expected_sources": [
+        "rgb-zh-normal-008#0",
+        "rgb-zh-normal-008#1",
+        "rgb-zh-normal-008#2"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-reject-001",
+      "benchmark": "RGB",
+      "category": "rgb_rejection",
+      "question": "印控克什米尔地区寺庙踩踏事故死亡人数",
+      "answer": "资料中没有相关信息。",
+      "expected_points": [
+        "资料中没有相关信息"
+      ],
+      "should_refuse": true,
+      "retrieved_sources": [
+        "rgb-zh-reject-001#2",
+        "rgb-zh-reject-001#0",
+        "rgb-zh-reject-001#4",
+        "rgb-zh-reject-001#3"
+      ],
+      "retrieved_context": "据印度媒体5月30日报道，印控克什米尔地区发生一起交通事故，一辆巴士在行驶过程中坠入深谷，已造成10人死亡。事故原因仍在调查中。\n\n印度踩踏事件频发 自今年以来，印度已经发生过多起类似的踩踏事故，不少人更是因此失去生命。三个多月前，印度南部一场国际板球比赛的售票现场发生踩踏事件，造成至少20人受伤，现场一度引发骚乱，最终警方只能动用警棍驱赶人群，印媒称，当时的购票现场可以用“噩梦”来形容。 （大批民众涌入寺庙） 就在这场踩踏事件发生的一个多月前，印度拉贾斯坦邦一座寺庙的入口处发生踩踏事故，造成3人死亡，2人受伤。\n\n用微信扫码二维码 分享至好友和朋友圈 眼看年尾将至，印度却传来一则坏消息，引起各路媒体的广泛关注。在举行一场大规模的政党集会时，现场突然发生踩踏事件，酿成多人死伤的惨剧，而这起事件也再次给各国敲响警钟。 （印度踩踏事故现场） 印度突发踩踏事件 据环球网报道，日前印度泰卢固之乡党主席奈杜在安得拉邦内洛尔举行集会，由于现场人数众多，从而引发了一场大规模的踩踏事件，截至目前，死亡人数已经升至8人，部分伤者也被送往当地医院接受治疗。\n\n进入现代社会最严重的踩踏事件发生在2015年9月24日的9·24麦加朝觐者踩踏事故，一共有超过2400人死亡，事件发生在麦加朝觐期间的米纳城，当时有超过200万朝圣者。 微信扫码关注公众号获取最新消息 原创文章，作者：好汉科普网，如若转载，请联系我们：thinkou@126.com 并注明出处：https://www.108hei.",
+      "expected_sources": [],
+      "hit": null,
+      "mrr": null
+    },
+    {
+      "id": "rgb-zh-reject-002",
+      "benchmark": "RGB",
+      "category": "rgb_rejection",
+      "question": "RCEP具体包括哪些国家",
+      "answer": "RCEP的15个成员国总人口达22亿，但参考资料中未明确列出具体包括哪些国家。",
+      "expected_points": [
+        "资料中没有相关信息"
+      ],
+      "should_refuse": true,
+      "retrieved_sources": [
+        "rgb-zh-reject-002#1",
+        "rgb-zh-reject-002#2",
+        "rgb-zh-reject-002#3",
+        "rgb-zh-reject-002#4"
+      ],
+      "retrieved_context": "RCEP协定由序言、20个章节（包括：初始条款和一般定义、货物贸易、原产地规则、海关程序和贸易便利化、卫生和植物卫生措施、标准、技术法规和合格评定程序、贸易救济、服务贸易、自然人临时流动、投资、知识产权、电子商务、竞争、中小企业、经济技术合作、政府采购、一般条款和例外、机构条款、争端解决、最终条款章节）、4个市场准入承诺表附件（包括：关税承诺表、服务具体承诺表、投资保留及不符措施承诺表、自然人临时流动具体承诺表）组成。 RCEP是目前全球体量最大的自贸区。2019年，RCEP的15个成员国总人口达22.\n\nRCEP通过采用区域累积的原产地规则，深化了域内产业链、价值链；利用新技术推动海关便利化，促进了新型跨境物流发展；同时，成员国同意采用负面清单以推进投资自由化，提升了投资政策透明度。以上措施都将促进区域内经贸规则的优化和整合。再者，RCEP实现了高质量与包容性的统一。除了涉及货物和服务贸易以及投资的具体规定外，RCEP协定还包括知识产权、电子商务、竞争、中小企业、经济和技术合作以及政府采购等章节。RCEP协定充分照顾成员国之间的差异及其不同的发展阶段，以确保共享成果。\n\nRCEP規定各成员將在十年內取消90%以上货物的關稅，其中主要产品在協議生效時关税税至零。[71] RCEP採用「原产地累积原则」，即单一产品可在RCEP成员间累积价值以满足最终出口产品增值40%的原产地标准，从而享受到优惠关税。[71] RCEP達成了貨貿便利化的許多規定，比如海关程序、检验检疫、技术标准等。同時也規範了非关税保護措施，比如实行关税自由化基于优惠的市场准入、特定货物的临时免税入境、取消农业出口补贴、及全面取消数量限制、进出口许可程序管理以及与进出口相关的费用和手续等方面。[71]\n\n2023年5月28日，斯里兰卡总统维克勒马辛哈宣布将申请加入RCEP。[135]",
+      "expected_sources": [],
+      "hit": null,
+      "mrr": null
+    },
+    {
+      "id": "rgb-zh-reject-003",
+      "benchmark": "RGB",
+      "category": "rgb_rejection",
+      "question": "第七届香港立法会议员宣誓仪式的时间",
+      "answer": "资料中没有相关信息",
+      "expected_points": [
+        "资料中没有相关信息"
+      ],
+      "should_refuse": true,
+      "retrieved_sources": [
+        "rgb-zh-reject-003#0",
+        "rgb-zh-reject-003#1",
+        "rgb-zh-reject-003#2",
+        "rgb-zh-reject-003#4"
+      ],
+      "retrieved_context": "会议厅主席位上方，国徽高悬，两旁则立着国旗和区旗。按照香港特区2021年通过的《国旗及国徽（修订）条例》，立法会议员宣誓场地须悬挂国徽。本届香港特区立法会议员，将第一次在国徽下进行宣誓。 “这体现了‘一国两制’下香港特别行政区作为中华人民共和国一个地方行政区域的法律地位，是‘爱国者治港’原则在立法机关得以推进落实的写照。”香港中联办发言人说。 宣誓仪式开始前半个多小时，不少议员已陆续抵达会议厅，神情庄重。\n\n会议厅主席位上方，国徽高悬，两旁则立着国旗和区旗。按照香港特区2021年通过的《国旗及国徽（修订）条例》，立法会议员宣誓场地须悬挂国徽。本届香港特区立法会议员，将第一次在国徽下进行宣誓。 “这体现了‘一国两制’下香港特别行政区作为中华人民共和国一个地方行政区域的法律地位，是‘爱国者治港’原则在立法机关得以推进落实的写照。”香港中联办发言人说。 宣誓仪式开始前半个多小时，不少议员已陆续抵达会议厅，神情庄重。\n\n在主席台两侧，还摆放着国旗和区旗。这进一步凸显了“一国两制”下香港特别行政区作为中华人民共和国一个地方行政区域的法律地位，是“爱国者治港”原则在立法机关得以推进落实的写照。在庄严国徽下宣誓，议员不仅要服务好香港的发展，更要对国家利益负责。 此次的监誓人由以往的立法会秘书长改为特区行政长官担任。立法会在香港政制架构中具重要地位，本应对香港社会发展起到促进作用。然而过去，部分反对派刻意歪曲基本法原意，妄图削弱行政长官和特区政府管治权威。\n\n良政善治 由治及兴 从香港国安法制定实施到完善香港选举制度，再到今天新一届爱国爱港立法会议员宣誓上任，香港良政善治再翻新页，香港社会由乱到治、由治及兴蹄疾步稳。 “立法会已进入新时代！”香港工联会立法会议员麦美娟表示期待宣誓已久，前几天还参加了立法会秘书处的宣誓彩排。她说，在新局面下担任议员，重担在肩，任重道远，议员应该对自身有更高要求。",
+      "expected_sources": [],
+      "hit": null,
+      "mrr": null
+    },
+    {
+      "id": "rgb-zh-reject-004",
+      "benchmark": "RGB",
+      "category": "rgb_rejection",
+      "question": "首趟RCEP班列的起点？",
+      "answer": "资料中没有相关信息",
+      "expected_points": [
+        "资料中没有相关信息"
+      ],
+      "should_refuse": true,
+      "retrieved_sources": [
+        "rgb-zh-reject-004#3",
+        "rgb-zh-reject-004#4",
+        "rgb-zh-reject-004#2",
+        "rgb-zh-reject-004#0"
+      ],
+      "retrieved_context": "当日，海口海关所属海口港海关顺利签发海南扬航实业有限公司首份RCEP原产地证书，这是海南省企业在RCEP协定下享惠出口的首单货物。山西签发首份RCEP原产地证书，太原海关所属运城海关为山西豪钢重工股份有限公司出口至澳大利亚的刮板、压板签发了RCEP原产地证书，货值13334.5美元。河南首份RCEP原产地证书在郑州海关所属金水海关报关大厅签发，产品为灰枣夹核桃，货值47万元人民币，目的国为日本。近一个月来，天津海关共签发RCEP原产地证书160余份，涉及货值约4300万元人民币。 职业教育、文化交流促进民心相通。\n\n当日，海口海关所属海口港海关顺利签发海南扬航实业有限公司首份RCEP原产地证书，这是海南省企业在RCEP协定下享惠出口的首单货物。山西签发首份RCEP原产地证书，太原海关所属运城海关为山西豪钢重工股份有限公司出口至澳大利亚的刮板、压板签发了RCEP原产地证书，货值13334.5美元。河南首份RCEP原产地证书在郑州海关所属金水海关报关大厅签发，产品为灰枣夹核桃，货值47万元人民币，目的国为日本。近一个月来，天津海关共签发RCEP原产地证书160余份，涉及货值约4300万元人民币。 职业教育、文化交流促进民心相通。\n\n韩国将于2月1日加入到生效实施中。剩余成员国也将在完成国内批准程序后陆续生效实施。 2.中欧班列长安号新年首列开启新路线。2022年元旦零时，中欧班列长安号跨境电商专列暨2022年首列迎新起航，搭载着装满电子配件、跨境商品的50个集装箱运往德国曼海姆。这是西安国际港务区继宽轨直达斯瓦夫库夫和经加里宁格勒到穆克兰线路之后，新开行的又一通往欧洲的路线。 3.中国与摩洛哥政府签署共建“一带一路”合作规划。\n\n同时有必要强化西部陆海新通道与中欧班列的协同合作。这些设想若能实现，将为日中韩三国企业带来重大商机。为重塑生产供应链，需要平衡好海上运输与中欧班列的应用。在构建这种东亚复合一贯制运输体制方面，日中韩、东盟的通力合作不可或缺。另外，中欧班列里海线路的升级和中吉乌铁路的建设也十分必要。同时，还需要跳出日中韩－东盟的框架，加强与中亚各国的合作。如果能够顺利完成上述课题，中欧班列将与欧洲航路并驾齐驱，成为补充完善欧洲航路的生产供应链，并进而成长为支撑亚欧大陆经济发展的价值链。",
+      "expected_sources": [],
+      "hit": null,
+      "mrr": null
+    },
+    {
+      "id": "rgb-zh-int-001",
+      "benchmark": "RGB",
+      "category": "rgb_integration",
+      "question": "第七届香港立法会议员宣誓仪式及首次会议的时间",
+      "answer": "第七届香港立法会议员宣誓仪式时间为2022年1月3日上午11时；  \n第七届立法会首次会议时间为2022年1月12日上午11时。",
+      "expected_points": [
+        "1月3日",
+        "1月12日"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-int-001#0",
+        "rgb-zh-int-001#9",
+        "rgb-zh-int-001#14",
+        "rgb-zh-int-001#4"
+      ],
+      "retrieved_context": "时间：2021-12-29 14:58:03 来源：海外网 分享到微信朋友圈 据香港大公文汇全媒体报道，香港第七届立法会议员的宣誓仪式将在2022年1月3日上午11时在立法会会议厅举行，由行政长官林郑月娥监誓。 宣誓仪式前，候任议员将面向 香港立法会 据香港大公文汇全媒体报道，香港第七届立法会议员的宣誓仪式将在2022年1月3日上午11时在立法会会议厅举行，由行政长官林郑月娥监誓。 宣誓仪式前，候任议员将面向国旗及区旗肃立，同唱国歌，之后逐一宣誓。\n\nJan 4, 2022 ... 1月3日上午，香港特区立法会综合大楼会议厅，香港特区第七届立法会90位新 ... 宣誓仪式开始前半个多小时，不少议员已陆续抵达会议厅，神情庄重。11时 ...\n\n【环球网报道 记者赵友平】据港府刚刚发布的新闻公报，港府今日(19日)刊宪，香港特区行政长官林郑月娥会同行政会议已根据《立法会条例》，指明2022年1月1日为香港特区第七届立法会的开始日期，立法会首次会议将于2022年1月12日上午11时召开。 新闻公报称，行政长官会同行政会议已根据《立法会条例》（条例）第4（3）条，指明2022年1月1日为香港特别行政区第七届立法会的开始日期。此外，行政长官已按照条例第9（2）条，指明2022年1月12日为2022年立法会会期的开始日期。同时，按照条例第10（1）条，行政长官也已指明2022年1月12日上午11时为第七届立法会的首次会议日期及时间。\n\n原标题：新一届香港立法会议员宣誓，细节之中见深意 来源：人民日报客户端 2022年1月3日上午，香港特区第七届立法会议员宣誓仪式举行。在高悬的国徽之下，全场齐声高唱国歌，从宣誓议员到监誓人，庄重而严谨。对比上一届立法会宣誓时的画面，思忖香港这几年来的风风雨雨，让了解和关心香港的人们无比感慨。 此次宣誓仪式有很多细节区别以往，而这些细节的安排很值得观察，也透露出深意。 这是香港立法会议员第一次在国徽下宣誓。",
+      "expected_sources": [
+        "rgb-zh-int-001#0",
+        "rgb-zh-int-001#1",
+        "rgb-zh-int-001#2",
+        "rgb-zh-int-001#3",
+        "rgb-zh-int-001#4",
+        "rgb-zh-int-001#5",
+        "rgb-zh-int-001#6",
+        "rgb-zh-int-001#7",
+        "rgb-zh-int-001#8",
+        "rgb-zh-int-001#9",
+        "rgb-zh-int-001#10",
+        "rgb-zh-int-001#11",
+        "rgb-zh-int-001#12",
+        "rgb-zh-int-001#13",
+        "rgb-zh-int-001#14",
+        "rgb-zh-int-001#15",
+        "rgb-zh-int-001#16",
+        "rgb-zh-int-001#17",
+        "rgb-zh-int-001#18"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-int-002",
+      "benchmark": "RGB",
+      "category": "rgb_integration",
+      "question": "2021年香港和澳门的GDP增长率",
+      "answer": "根据参考资料：\n\n- 2021年香港本地生产总值（GDP）同比上升**6.4%**。  \n- 2021年澳门经济实质增长**18%**。",
+      "expected_points": [
+        "6.4%",
+        "18%"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-int-002#2",
+        "rgb-zh-int-002#1",
+        "rgb-zh-int-002#5",
+        "rgb-zh-int-002#4"
+      ],
+      "retrieved_context": "用微信扫码二维码 分享至好友和朋友圈 作为“东方明珠”的香港，回归已经近25年，但经济发展似乎并不理想，陆续被内地省市超越。在2020年因为疫情影响，经济更是直接下滑了6.1%，比1998年亚洲金融危机和2009年次贷危机下滑的还要多。 不过，2021年获得了不错的恢复。香港统计处公布的数据显示，2021年香港完成名义GDP达到了28616.2亿港元，同比增长6.4%。按照人民币和港元的汇率来换算，那就是23740亿元人民币（3680亿美元左右）。 过去的一年，香港在努力实行经济复苏，出口额大幅增长19%，居民消费也逐渐复苏，获得了5.6%的提升。\n\n新华社香港1月28日电（记者 王茜）香港特区政府统计处28日发布统计数字显示，根据预先估计数字，香港2021年本地生产总值同比上升6.4%。特区政府认为，香港经济在2022年将会进一步增长，但增长步伐受各种不确定因素影响。 统计数据显示，按本地生产总值各个主要组成部分分析，2021年私人消费开支同比上升5.7%；政府消费开支同比上升4.6%；本地固定资本形成总额同比上升10.1%；货品出口总额及货品进口也分别同比上升19.0%及17.5%。 特区政府发言人表示，2021年本地生产总值显著增长6.4%，扭转过去两年的跌势，但仍比2018年的水平低约2%。\n\nApr 19, 2022 ... 澳门特区经济在2020年GDP下降了54%，之后在博彩业部分复苏的支持下，于2021年增长了18%。相比于2020年，2021年的消费者价格平均保持不变，反映出本地 ...\n\n图片来源：视觉中国 记者|戈振伟 尽管疫情仍然反复，但受益于整体需求回升，澳门2021年经济与2020年相比有所改善。 澳门特区政府统计暨普查局3月4日公布的数据显示，2021年，澳门本地生产总值（GDP）为2394亿元（澳门元，下同），人均生产总值为35.04万元，全年经济实质增长18%。内部需求按年上升3%。 据统计，2021年澳门居民的本地经济活动已经基本恢复，私人消费按年上升7%；政府最终消费支出按年上升0.1%，其中雇员报酬增加1.2%，购入货物及服务净值下跌1.1%；另一方面，私人建筑投资减少，固定资本形成总额按年微跌1.8%。",
+      "expected_sources": [
+        "rgb-zh-int-002#0",
+        "rgb-zh-int-002#1",
+        "rgb-zh-int-002#2",
+        "rgb-zh-int-002#3",
+        "rgb-zh-int-002#4",
+        "rgb-zh-int-002#5"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-int-003",
+      "benchmark": "RGB",
+      "category": "rgb_integration",
+      "question": "2022年和2023年春节档首日票房冠军",
+      "answer": "资料中只提到了2023年春节档首日票房冠军是《流浪地球2》，单日票房4.67亿元；未提及2022年春节档首日票房冠军相关信息。\n\n因此，关于2022年春节档首日票房冠军：资料中没有相关信息。  \n关于2023年春节档首日票房冠军：《流浪地球2》。",
+      "expected_points": [
+        "长津湖之水门桥",
+        "流浪地球2"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-int-003#24",
+        "rgb-zh-int-003#11",
+        "rgb-zh-int-003#12",
+        "rgb-zh-int-003#16"
+      ],
+      "retrieved_context": "Jan 24, 2023 ... 数据显示，2023年春节档新片上映首日(1月22日)票房达13.4亿元，放映总 ... 《流浪地球2》成为今年春节档新片上映首日票房冠军，单日票房4.67亿元。\n\n今年“春节档”有《流浪地球2》《满江红》《无名》《交换人生》《中国乒乓之绝地反击》《熊出没·伴我“熊芯”》和《深海》七部影片上映，题材覆盖喜剧、科幻、悬疑、体育、动画等，相比往年更加丰富多元，真正体现出一种“最强春节档”的实力。 票房佳 大年初一票房突破13亿元 数据显示，2023年春节档新片上映首日（1月22日）票房达13.4亿元，放映总场次44.8万，观影总人次2404万。其中，《流浪地球2》成为今年春节档新片上映首日票房冠军，单日票房4.67亿元。《满江红》紧随其后，单日票房3.\n\n今年“春节档”有《流浪地球2》《满江红》《无名》《交换人生》《中国乒乓之绝地反击》《熊出没·伴我“熊芯”》和《深海》七部影片上映，题材覆盖喜剧、科幻、悬疑、体育、动画等，相比往年更加丰富多元，真正体现出一种“最强春节档”的实力。 票房佳 大年初一票房突破13亿元 数据显示，2023年春节档新片上映首日(1月22日)票房达13.4亿元，放映总场次44.8万，观影总人次2404万。其中，《流浪地球2》成为今年春节档新片上映首日票房冠军，单日票房4.67亿元。《满江红》紧随其后，单日票房3.\n\n据悉，今年“春节档”有《流浪地球2》《满江红》《无名》《交换人生》《中国乒乓之绝地反击》《熊出没·伴我“熊芯”》和《深海》七部影片上映，覆盖喜剧、科幻、悬疑、体育、动画等多种类型，且有多位名导、流量明星加持，如张艺谋、王一博等。 数据显示，2023年春节档新片上映首日(1月22日)票房达13.4亿元，放映总场次44.8万，观影总人次2404万。其中，《流浪地球2》成为今年春节档新片上映首日票房冠军，单日票房4.67亿元。《满江红》紧随其后，单日票房3.98亿元，第三名为《无名》，单日票房1.38亿元。",
+      "expected_sources": [
+        "rgb-zh-int-003#0",
+        "rgb-zh-int-003#1",
+        "rgb-zh-int-003#2",
+        "rgb-zh-int-003#3",
+        "rgb-zh-int-003#4",
+        "rgb-zh-int-003#5",
+        "rgb-zh-int-003#6",
+        "rgb-zh-int-003#7",
+        "rgb-zh-int-003#8",
+        "rgb-zh-int-003#9",
+        "rgb-zh-int-003#10",
+        "rgb-zh-int-003#11",
+        "rgb-zh-int-003#12",
+        "rgb-zh-int-003#13",
+        "rgb-zh-int-003#14",
+        "rgb-zh-int-003#15",
+        "rgb-zh-int-003#16",
+        "rgb-zh-int-003#17",
+        "rgb-zh-int-003#18",
+        "rgb-zh-int-003#19",
+        "rgb-zh-int-003#20",
+        "rgb-zh-int-003#21",
+        "rgb-zh-int-003#22",
+        "rgb-zh-int-003#23",
+        "rgb-zh-int-003#24",
+        "rgb-zh-int-003#25"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-int-004",
+      "benchmark": "RGB",
+      "category": "rgb_integration",
+      "question": "2022春运的开始和结束时间是什么时候？",
+      "answer": "2022年春运从1月17日开始，2月25日结束。",
+      "expected_points": [
+        "1月17日",
+        "2月25日"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-int-004#1",
+        "rgb-zh-int-004#7",
+        "rgb-zh-int-004#2",
+        "rgb-zh-int-004#5"
+      ],
+      "retrieved_context": "Jan 6, 2022 ... 记者从2022年全国春运电视电话会议上获悉：今年春运将从1月17日开始， ... 根据属地疫情防控要求，调整寒假放假、开学时间，尽可能错开春运时段；二是 ...\n\nFeb 26, 2022 ... 2月25日，历时40天的2022年春运正式落下帷幕。交通运输部数据显示，2022年春运总体运行平稳有序，全国预计发送旅客10.5亿人次，比2021年同比 ...\n\nJan 2, 2022 ... 记者从中国国家铁路集团有限公司获悉，2022年铁路春运自1月17日开始，2月25 ... 客户端）售票服务时间由每日5:00至23:30调整为5:00至次日凌晨1:00（每 ...\n\n2月25日，历时40天的2022年春运正式落下帷幕。交通运输部数据显示，2022年春运总体运行平稳有序，全国预计发送旅客10.5亿人次，比2021年同比增长20.7%。 织牢疫情防控网络 为乘客带来安心旅途 数亿人次的人口流动，织牢疫情防控网络成为今年春运的重中之重。 在山西晋中太谷东站，每天深夜，负责疫情防控工作的客运值班员都要准点开始“清场”。近2000平方米的太谷东站候车室内，地板、座椅、扶手等每一个需要消毒的角落都必须认真进行消杀，全站消毒作业完毕时已是凌晨。",
+      "expected_sources": [
+        "rgb-zh-int-004#0",
+        "rgb-zh-int-004#1",
+        "rgb-zh-int-004#2",
+        "rgb-zh-int-004#3",
+        "rgb-zh-int-004#4",
+        "rgb-zh-int-004#5",
+        "rgb-zh-int-004#6",
+        "rgb-zh-int-004#7",
+        "rgb-zh-int-004#8"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-fact-001",
+      "benchmark": "RGB",
+      "category": "rgb_counterfactual",
+      "question": "香港第六届立法会选举有多少个议席？",
+      "answer": "香港第六届立法会共有70个议席。",
+      "expected_points": [
+        "70"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-fact-001#0",
+        "rgb-zh-fact-001#2",
+        "rgb-zh-fact-001#3",
+        "rgb-zh-fact-001#1"
+      ],
+      "retrieved_context": "第六届立法会共有170个议席，经2016年9月4日的选举产生。当中，地区直选和功能界别选举分别选出35位议员。根据《基本法》，立法会任期原 ...\n\n第六届立法会共有70个议席，经2016年9月4日的选举产生。当中，地区直选和功能界别选举分别选出35位议员。根据《基本法》，立法会任期原 ...\n\nSep 13, 2016 ... 香港回归后的第六届立法会选举已经结束。 ... 2016年9月5日，香港立法会选举结果揭晓，建制派在总共70个议席中获得41席，占59%，非建制派获得29席， ...\n\nSep 13, 2016 ... 香港回归后的第六届立法会选举已经结束。 ... 2016年9月5日，香港立法会选举结果揭晓，建制派在总共170个议席中获得41席，占59%，非建制派获得29席， ...",
+      "expected_sources": [
+        "rgb-zh-fact-001#2",
+        "rgb-zh-fact-001#3"
+      ],
+      "hit": true,
+      "mrr": 0.5
+    },
+    {
+      "id": "rgb-zh-fact-002",
+      "benchmark": "RGB",
+      "category": "rgb_counterfactual",
+      "question": "2018年中国城镇新增就业了多少人",
+      "answer": "2018年中国城镇新增就业1361万人。",
+      "expected_points": [
+        "1361万"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-fact-002#2",
+        "rgb-zh-fact-002#1",
+        "rgb-zh-fact-002#5",
+        "rgb-zh-fact-002#0"
+      ],
+      "retrieved_context": "Jan 21, 2019 ... 国家统计局局长宁吉喆21日介绍，2018年，我国城镇新增就业1361万人，比上年多增10万人，完成全年目标的123.7%，连续6年保持在1300万人以上。\n\nSep 24, 2019 ... 2018年，中国交出了令世人惊叹的就业成绩单：城镇新增就业人口161万人；每小时诞生约750户企业，创造超过1500个就业岗位。 今年，我国首次将就业优先 ...\n\n图表：人社部：2018年上半年全国城镇新增就业752万人. 2018-07-23 22:34 来源： 新华社. 字号：默认 大 超大 | 打印 |. 图表：人社部：2018年上半年全国城镇新增 ...\n\nJan 21, 2019 ... 国家统计局局长宁吉喆21日介绍，2018年，我国城镇新增就业161万人，比上年多增10万人，完成全年目标的123.7%，连续6年保持在1300万人以上。",
+      "expected_sources": [
+        "rgb-zh-fact-002#2",
+        "rgb-zh-fact-002#3"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "rgb-zh-fact-003",
+      "benchmark": "RGB",
+      "category": "rgb_counterfactual",
+      "question": "2019年军运会在哪中国哪个城市举办",
+      "answer": "2019年军运会在中国湖北省武汉举办。",
+      "expected_points": [
+        "武汉"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-fact-003#5",
+        "rgb-zh-fact-003#0",
+        "rgb-zh-fact-003#1",
+        "rgb-zh-fact-003#2"
+      ],
+      "retrieved_context": "Feb 14, 2020 ... 举世瞩目的第七届世界军人运动会，2019年10月18日至27日在长江之滨、 ... 回望历届军运会，走出军营办赛、集中修建军运村、在同一座城市举办所有比赛 ...\n\n这是中华人民共和国首次举办世界军人运动会，共计109个国家9308名军人报名参加，竞赛项目分27个大项、329个小项。 2019年世界军人运动会. 主办城市, 中国湖北省成都 ...\n\nOct 19, 2019 ... 这是中国首次承办国际军体综合性运动会，也是中国2019年承办的最重要的国际体育 ... 成都军运会也是军运会历史上第一次在一个城市举办所有比赛项目。\n\n这是中华人民共和国首次举办世界军人运动会，共计109个国家9308名军人报名参加，竞赛项目分27个大项、329个小项。 2019年世界军人运动会. 主办城市, 中国湖北省武汉 ...",
+      "expected_sources": [
+        "rgb-zh-fact-003#2",
+        "rgb-zh-fact-003#3"
+      ],
+      "hit": true,
+      "mrr": 0.25
+    },
+    {
+      "id": "rgb-zh-fact-004",
+      "benchmark": "RGB",
+      "category": "rgb_counterfactual",
+      "question": "2020赛季中超冠军是谁",
+      "answer": "2020赛季中超冠军是江苏苏宁。",
+      "expected_points": [
+        "江苏苏宁"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "rgb-zh-fact-004#2",
+        "rgb-zh-fact-004#0",
+        "rgb-zh-fact-004#1",
+        "rgb-zh-fact-004#3"
+      ],
+      "retrieved_context": "Dec 22, 2020 ... 11月12日，2020赛季中超联赛落下帷幕。 ... 恒大若能以今年双线失败的教训为警钟，做出相应调整，下赛季依然会是中超冠军最有力的争夺者。 2020年11 ...\n\nNov 16, 2020 ... 本赛季中超冠军广州恒大取得10胜8平2负战绩排名第二。天津泰达只有2胜5平13负，是实际战绩中最差的。 实际战绩与最终排名变化较大的有深圳佳兆业， ...\n\nNov 16, 2020 ... 本赛季中超冠军江苏苏宁取得10胜8平2负战绩排名第二。天津泰达只有2胜5平13负，是实际战绩中最差的。 实际战绩与最终排名变化较大的有深圳佳兆业， ...\n\nJan 5, 2022 ... 于是在2016年之后，泰山回归了理性，有数据显示，2016赛季到2020赛季，中超转会净投入排行榜上，山东仅仅以2423万欧元位居第10，前两名的俱乐部都超过了 ...",
+      "expected_sources": [
+        "rgb-zh-fact-004#1"
+      ],
+      "hit": true,
+      "mrr": 0.3333333333333333
+    },
+    {
+      "id": "multihop-comparison-001",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_comparison_query",
+      "question": "Do the TechCrunch article on software companies and the Hacker News article on The Epoch Times both report an increase in revenue related to payment and subscription models, respectively?",
+      "answer": "资料中没有相关信息。",
+      "expected_points": [
+        "Yes"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "How the conspiracy-fueled Epoch Times went mainstream and made millions",
+        "Temu was the most-downloaded iPhone app in the U.S. in 2023",
+        "Here’s how Rainforest, a budding Stripe rival, aims to win over software companies",
+        "Twitch’s money guy talks about the revenue split controversy and its monetization long game"
+      ],
+      "retrieved_context": "How the conspiracy-fueled Epoch Times went mainstream and made millions\n\nIn the runup to the 2020 election, a small news organization saw an opportunity.\n\nThe Epoch Times directed millions of dollars in advertising toward supporting President Donald Trump’s campaign and published dozens of articles parroting his lies about the election — resulting in huge growth to its audience and its coffers.\n\nThe strategy garnered criticism from fact-checking groups and got it banned from advertising on Facebook, but it ultimately paid off — putting the once-fringe newspaper on a path that perhaps only its leader, who claims to have supernatural powers, could have foreseen.\n\nToday, The Epoch Times is one of the country’s most successful and influential conservative news organizations. It’s powered by Falun Gong, a religious group persecuted in China, which launched The Epoch Times as a free propaganda newsletter more than two decades ago to oppose the Chinese Communist Party.\n\nFunded through aggressive online and real-world marketing campaigns and big-money conservative donors, The Epoch Times now boasts to be the country’s fourth-largest newspaper by subscriber count. (Unlike most major newspapers, The Epoch Times isn't audited by the two major independent collectors of circulation data.) The nonprofit has amassed a fortune, growing its revenue by a staggering 685% in two years, to $122 million in 2021, according to the group’s most recent tax records.\n\nIts editorial vision — fueled by a right-wing slant and conspiracy theories — is on display in recent reports on how “Jan. 6 Capitol Hill Security Footage Challenges Key Narratives” and “Meteorologists, Scientists Explain Why There Is ‘No Climate Emergency.’” Its video series include a documentary-style film alleging widespread vaccine injury and death and an exposé of an alleged world government agenda to harm farmers, cull the population and force survivors to eat bugs.\n\nWhat The Epoch Times lacks in standards, it makes up for \n\nTemu was the most-downloaded iPhone app in the U.S. in 2023\n\nTemu, the Chinese e-commerce company whose app is now attracting longer engagement times than Amazon, is Apple’s most downloaded free app in the U.S. for 2023. The Cupertino-based tech giant today released an App Store feature that showcases the top iPhone apps of the year, free and paid, as measured by app installs — its proxy for overall popularity. This year, apps from Chinese-based companies have taken over spots previously held by U.S. tech giants like Meta and Google, as CapCut and TikTok, which hail from Beijing-based ByteDance, came in at No. 3 and No. 5, respectively.\n\nMeta, which last year held the No. 3, No. 4 and No. 9 spots with WhatsApp, Instagram and Facebook, respectively, showed up in the top 10 this year with a slightly different mix. Gone from the charts is Facebook, while Meta’s new app Instagram Threads was the No. 3 app by U.S. downloads. Instagram and WhatsApp followed at No. 6 and No. 9, slipping in position from their ranking last year.\n\nGoogle, meanwhile, had dominated last year’s list with the No. 2 app YouTube, just behind TikTok, as well as No. 5 Google Maps, No. 6 Google Search and No. 7 Gmail. In 2023, however, Google’s only two apps in the top 10 by downloads included No. 7 Google Search and No. 8 YouTube, both also slipping in ranking from last year.\n\nThe shift in downloads could represent that U.S. tech giants are nearly at a market saturation point, where their apps aren’t as in demand as they were in previous years because many already have them installed. It also points to the growing demand for apps from Chinese firms, like ByteDance, which are attracting younger users’ attention along with government scrutiny, with TikTok being banned from a number of government devices over concerns about its China ties. Montana also attempted to ban TikTok in its state, but that ruling was put on hold by the courts for the time being as TikTok’s lawsuit progresses.\n\nThe negative att\n\nHere’s how Rainforest, a budding Stripe rival, aims to win over software companies\n\nWelcome back to The Interchange, where we take a look at the hottest fintech news of the previous week. If you want to receive The Interchange directly in your inbox every Sunday, head here to sign up! After a bit of a quiet period, things in the world of fintech picked up in a big way this past week. We wrote about some notable fundraises, how PayPal was hit with an antitrust lawsuit, how Bolt is trying to move on after an SEC probe, and much more.\n\nRainforest takes on the bigger players\n\nIt’s not every day that we’re pitched companies that feel like they are taking on bigger players in a really meaningful way. This past week, I wrote about Rainforest, an Atlanta-based startup that is taking on incumbents such as Fiserv and FIS, as well as trying to take market share from other fintechs such as Stripe with its offering. Rainforest works with software companies to help them embed financial services and payments into their platforms. In an interview with TechCrunch, CEO and co-founder Joshua Silver respectfully disagreed with a16z general partner Angela Strange about her 2019 statement that every company would become a fintech. In his view, most software companies don’t actually want to be fintechs and deal with all the regulatory and compliance issues that go with that. They really just want to be able to accept payments and generate more revenue from being able to do so.\n\nAccel led the company’s $8.5 million seed round, which included participation from Infinity Ventures, BoxGroup, The Fintech Fund, Tech Square Ventures, and Ardent Venture Partners.\n\nIt’s always cool to see startups outside the coasts growing, and Silver’s confidence that what Rainforest is building will make it a formidable player in the space feels like it has merit. Founded in 2022, the startup has seen impressive growth in a short period of time, securing client commitments representing more than $500 million in\n\nTwitch’s money guy talks about the revenue split controversy and its monetization long game\n\nTwitch has had a tense year, in part due to community backlash over policy changes that affect the way creators can monetize their content.\n\nLast year, the company announced that it would end the 70/30 subscription revenue split deal that it had offered select streamers in favor of prioritizing ad revenue. In June, Twitch launched the Partner Plus program, a new monetization tier that would grant eligible creators a 70/30 subscription revenue split on the first $100,000 they make per year. The program further strained its relationship with its community, because the requirements to qualify excluded the vast majority of streamers. Streamers need at least 350 monthly paid subscriptions, and gift subs and monthly subs that come with an Amazon Prime account don’t count.\n\nIn response, Twitch pivoted eligibility to a points-based system, assigning a value to each subscription tier. The higher-priced subscriptions now count more toward the point total.\n\n📣 We’re updating how we calculate progress toward the Partner Plus program. To recognize deeper support from your community, Tier 1, 2, and 3 subs will earn you 1, 2, and 6 points respectively towards qualifying for the program. pic.twitter.com/HdOiLvg3qC — Twitch Support (@TwitchSupport) August 28, 2023\n\nTwitch also walked back its policy restricting embedded ads and other sponsored content, following fallout from streamers who depend on branded content as the bulk of their income.\n\nThe company’s CEO Dan Clancy, who took over earlier this year, has prioritized engaging with Twitch streamers, and involving their perspectives in policy changes going forward. The company’s receptiveness to community feedback has marginally lessened animosity from its streamers, and community sentiment toward Twitch at this year’s TwitchCon in Las Vegas was significantly more positive than it was last year. New features and policy changes announced dur",
+      "expected_sources": [
+        "Here’s how Rainforest, a budding Stripe rival, aims to win over software companies",
+        "How the conspiracy-fueled Epoch Times went mainstream and made millions"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "multihop-comparison-002",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_comparison_query",
+      "question": "Does the TechCrunch article on Twitch's subscription revenue split policy indicate a different monetization strategy compared to the TechCrunch article on Beeper's plans for Beeper Mini subscriptions?",
+      "answer": "Yes. The TechCrunch article on Twitch’s subscription revenue split policy describes a platform-level monetization strategy centered on tiered revenue sharing (e.g., Partner Plus program with a 70/30 split on the first $100,000/year, eligibility based on subscription points), ad revenue prioritization, and policy adjustments in response to creator backlash. In contrast, the TechCrunch article on Beeper Mini describes a consumer-facing, third-party app monetization strategy: charging users $1.99/month for access to iMessage functionality on Android via a reverse-engineered protocol—no revenue sharing with Apple or creators, and no platform-tiered eligibility. The two articles cover fundamentally different business models—one is a live-streaming platform’s creator payout framework, the other is a startup’s subscription-based app service.",
+      "expected_points": [
+        "Yes"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "Twitch’s money guy talks about the revenue split controversy and its monetization long game",
+        "Beeper reversed engineered iMessage to bring blue bubble texts to Android users",
+        "TwitchCon 2023 was better than last year, but everyone hated Las Vegas",
+        "Beeper Mini is back in operation after Apple’s attempt to shut it down"
+      ],
+      "retrieved_context": "Twitch’s money guy talks about the revenue split controversy and its monetization long game\n\nTwitch has had a tense year, in part due to community backlash over policy changes that affect the way creators can monetize their content.\n\nLast year, the company announced that it would end the 70/30 subscription revenue split deal that it had offered select streamers in favor of prioritizing ad revenue. In June, Twitch launched the Partner Plus program, a new monetization tier that would grant eligible creators a 70/30 subscription revenue split on the first $100,000 they make per year. The program further strained its relationship with its community, because the requirements to qualify excluded the vast majority of streamers. Streamers need at least 350 monthly paid subscriptions, and gift subs and monthly subs that come with an Amazon Prime account don’t count.\n\nIn response, Twitch pivoted eligibility to a points-based system, assigning a value to each subscription tier. The higher-priced subscriptions now count more toward the point total.\n\n📣 We’re updating how we calculate progress toward the Partner Plus program. To recognize deeper support from your community, Tier 1, 2, and 3 subs will earn you 1, 2, and 6 points respectively towards qualifying for the program. pic.twitter.com/HdOiLvg3qC — Twitch Support (@TwitchSupport) August 28, 2023\n\nTwitch also walked back its policy restricting embedded ads and other sponsored content, following fallout from streamers who depend on branded content as the bulk of their income.\n\nThe company’s CEO Dan Clancy, who took over earlier this year, has prioritized engaging with Twitch streamers, and involving their perspectives in policy changes going forward. The company’s receptiveness to community feedback has marginally lessened animosity from its streamers, and community sentiment toward Twitch at this year’s TwitchCon in Las Vegas was significantly more positive than it was last year. New features and policy changes announced dur\n\nBeeper reversed engineered iMessage to bring blue bubble texts to Android users\n\nThe push to bring iMessage to Android users today adds a new contender. A startup called Beeper, which had been working on a multi-platform messaging aggregator, is now launching a new app called Beeper Mini which will allow Android users to send and receive end-to-end encrypted iMessage chats for just $1.99 per month. Beeper Mini was made possible because the team behind the app has managed to reverse-engineer the iMessage protocol, they say.\n\n“That’s the big breakthrough,” explains Beeper co-founder and CEO Eric Migicovsky, previously the founder of smartwatch startup Pebble. “We’re not actually a middleman anymore. The research that we’ve done is actually reverse-engineering the iMessage protocol, down to the lowest layer of the protocol. So Beeper Mini doesn’t use a Mac server as a relay like all the other apps — they have a Mac Mini in a data center somewhere. And when you send a message, you’re actually sending a message to the Mac Mini, which then forwards it to iMessage,” he explains. “Beeper Mini is a native implementation of the iMessage protocol.”\n\nBeeper does not have access to the contents of users’ messages, the company claims. And unlike the recently paused efforts by Sunbird, which had been trying to solve the same problem, messages are not sent in clear text.\n\nInstead, the message you send from an Android phone using Beeper Mini is end-to-end encrypted to the recipient, the startup says. It’s encrypted on the device before it leaves the app. Encryption keys are exclusively stored on your phone within the Android filesystem, similar to other apps like Signal and WhatsApp. The app doesn’t connect to any servers at Beeper itself, only to Apple servers, the way a “real” iMessage text would.\n\nThat means that Beeper Mini can function as a true iMessage client, supporting high-resolution photos and videos, threads, replies, read receipts, direct messages and group chats, tapba\n\nTwitchCon 2023 was better than last year, but everyone hated Las Vegas\n\nTwitchCon 2023 was better than last year, but everyone hated Las Vegas TwitchCon felt positive for the first time in a while, one streamer said, but 'we are positive we don't want TwitchCon to be in Vegas again.'\n\nCompared to the shitshow that went down last year, TwitchCon Las Vegas was largely a success. The problem? Nobody liked Las Vegas.\n\nThis year’s TwitchCon appeared to mitigate last year’s crowding issues and concluded without any foam pit tragedies. The fraught relationship between Twitch and its streamers is on the mend after the company opened the event by announcing that it now allows simulcasting, so that streamers can stream on multiple other platforms at the same time. Attendees gushed about the overall positive energy at the convention, posting that it “actually feels like Twitch is back.” Livestreaming competitor Kick “haunted” TwitchCon with its nearby gaming lounge, but that didn’t put a damper on TwitchCon’s good vibes. There was even a gay engagement onstage!\n\nI can’t believe I pulled this off 😆 what an amazing moment I will remember forever. Thank you Twitch 💜 https://t.co/Jx0k0Q2OsZ — Lowco @ TwitchCon (@LowcoTV) October 20, 2023\n\nThe generally positive consensus comes after a tense year for Twitch, punctuated by rounds of layoffs and unpopular policy changes. Dan Clancy, who had served as the company’s president since 2019, took the reins from Twitch co-founder Emmett Shear earlier this year, ending Shear’s 16-year tenure as CEO. Clancy’s leadership was initially met with trepidation; after meeting him at TwitchCon last year, streamer Jakenbake described him as “out of touch with what streamers need and want.”\n\nClancy appears to have made it up to the streamer community in time for this year’s event. Lowco, the streamer who proposed to her girlfriend onstage during TwitchCon’s opening ceremony, praised Twitch for improving its communication and transparency, and told Tech\n\nBeeper Mini is back in operation after Apple’s attempt to shut it down\n\nBeeper Mini, the app bringing blue bubble iMessage texts to Android users, is back in operation on Monday after a long weekend that saw Apple putting an end to Beeper’s services, claiming it was a security risk. Now, the startup behind the new app says it has resumed functioning, but hasn’t disclosed how that’s been made possible. In addition, Beeper Mini will be free for the time being given the unstable nature of Beeper’s status and Apple’s attempts at shutting it down.\n\nFounded by former Pebble smartwatch founder Eric Migicovsky, Beeper had originally been working on an app that aggregated all of a user’s chat apps into a single interface. However, upon the discovery of new technology that allowed it to reverse-engineer the iMessage protocol, it set out to build a new app called Beeper Mini that solely focused on bringing iMessage chats to Android users for $1.99 per month. That included support for high-quality photos and videos, tapback reactions, typing indicators, read receipts and more.\n\nThe app quickly climbed into the top 20 in the Play Store’s charts and saw over 100,000 downloads in its first 48 hours, the company claims.\n\nUnfortunately, Beeper Mini’s success was short-lived. Only days after launching, Apple on Friday night took action against the startup, having found a way to stop Beeper Mini’s messages from being passed from Android phones to its servers. The Cupertino tech giant explained that it needed to shut down the app because it “posed significant risks to user security and privacy, including the potential for metadata exposure and enabling unwanted messages, spam, and phishing attacks.” Essentially, Apple said that it couldn’t verify that Beeper’s claims of end-to-end encryption were true, and therefore it needed to take “steps to protect our users by blocking techniques that exploit fake credentials in order to gain access to iMessage.”\n\nAs the Beeper team scrambled for a",
+      "expected_sources": [
+        "Twitch’s money guy talks about the revenue split controversy and its monetization long game",
+        "Beeper Mini is back in operation after Apple’s attempt to shut it down"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "multihop-comparison-003",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_comparison_query",
+      "question": "Does 'The New York Times' article attribute the success of the Buffalo Bills' defense to the contributions of Jordan Poyer, while the 'Sporting News' article suggests that the Baltimore Ravens' defense needs to improve before their game against the Cincinnati Bengals?",
+      "answer": "资料中没有相关信息。",
+      "expected_points": [
+        "Yes"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "Alcoholism, Ayahuasca and the Enlightenment of an N.F.L. Player",
+        "MVPs for all 16 AFC teams at the midpoint",
+        "Bills vs. Bengals live score, updates, highlights from NFL 'Sunday Night Football' game",
+        "Bills vs. Chargers odds, props, predictions: Buffalo faces struggling L.A. with eyes on AFC playoff picture"
+      ],
+      "retrieved_context": "Alcoholism, Ayahuasca and the Enlightenment of an N.F.L. Player\n\nLAUDERDALE-BY-THE-SEA, Fla. — The Buffalo Bills have a new safety this season.\n\nHe sometimes plays close to the line of scrimmage, even lining up in the gaps and banging helmets with interior linemen. They use him as a hybrid linebacker in a three-safety dime package. He has played free safety, strong safety, outside cornerback, inside cornerback, left linebacker and right linebacker. And more.\n\nAdvertisement\n\nPhysically and mentally, he is being challenged, but he’s grateful, content and all in.\n\nThe Bills’ new safety is Jordan Poyer. It’s the same Jordan Poyer who played for the team the previous six seasons, the only player in the NFL to have 500 or more tackles, 20 or more interceptions and 10 or more sacks in that time frame, a Bills captain for the fourth time, an Ed Block Courage Award winner in 2017, a Pro Bowl safety last year and an All-Pro the year before.\n\nBut this is a new Jordan Poyer because of ayahuasca.\n\nIn the spring of 2020, NFL team facilities were closed because of COVID-19, so Bills defenders met in Washington, D.C., for a few days to train, study and bond.\n\nThe first evening, cornerback Josh Norman welcomed the players to his home, and out came the shots of tequila. When Poyer was handed a shot, he looked at it and then at his teammates.\n\nHe put it down.\n\nNorman and the others, who had never seen him turn down a drink, were taken aback.\n\n“What?” one said. “Come on, Deejay Poyo!”\n\nDeejay Poyo was Poyer’s alter ego. Inspired by tequila and a turntable, Poyer became someone else. And for Poyer, there was value in being someone else.\n\nWhat his teammates didn’t know was that Poyer had not put alcohol to his lips in about three months, since he downed a shot of tequila on March 13 in the Puerto Vallarta airport bar during a 12-hour flight delay.\n\nPoyer spent his childhood in Astoria, Ore., a picturesque town on the mouth of the Columbia River not far from the Pacific Ocean. His mother \n\nMVPs for all 16 AFC teams at the midpoint\n\nOf the 16 AFC team MVPs at the season's midpoint, five are quarterbacks. At least two of them should be in the running for league MVP after the season. Meanwhile, a wideout who might be on his way to the greatest individual season at the position is his team's MVP through nine games. Here are Yardbarker's team-by-team MVPs. (Find Yardbarker's NFC team MVPs here.)\n\nAFC East\n\nBUFFALO BILLS | QB Josh Allen: Allen probably won't finish in the top three of NFL MVP balloting as he did last season, but his value to the Bills is immeasurable. Through nine games, he is on pace to set a career-high in completion rate (71.3%) and tops all QBs in QBR (75.3). Allen has virtually carried the offense by himself, accounting for 24 of the team's 28 offensive touchdowns.\n\nMIAMI DOLPHINS | WR Tyreek Hill: Arguably the best wide receiver in the NFL, Hill has somehow reached a new level of dominance in his age-29 season. The seven-time Pro Bowler leads the NFL in receiving yards (1,076) and TD catches (eight). As long as the Dolphins maintain their success on offense down the stretch, Hill should earn Offensive Player of the Year honors. He's on pace to break Calvin Johnson's season record for receiving yards (1,964).\n\n\n\nNEW YORK JETS | LB Quincy Williams: While his brother, Quinnen, may be the better-known Jets defender in the family, Williams — the AFC Defensive Player of the Month for October — is also making a name for himself. Aside from being the fifth-highest-rated linebacker in the NFL by Pro Football Focus, Williams is tied for 17th in tackles (74) and tied for ninth in TFLs (nine) among all defenders.\n\nNEW ENGLAND PATRIOTS | S Jabrill Peppers: There hasn't been much to get excited about in New England, but the versatile defensive back is a bright spot and a respected voice in the locker room. Peppers has 54 tackles — three for loss — one interception, one forced fumble and a team-leading six passes defended. For a team facing as many \n\nBills vs. Bengals live score, updates, highlights from NFL 'Sunday Night Football' game\n\nFolks, the Bengals are back.\n\nWhen Cincinnati began the season 1-3, including a pair of blowout losses in which they scored just three points in each game against the Browns and Titans, it sure seemed Joe Burrow's calf injury would wind up holding the team back in what appeared to be one of their best chances to finally win that elusive Super Bowl.\n\nSince that loss to Tennessee, it's been the Bengals of old. And that team showed up again on \"Sunday Night Football\" against the Bills. Cincinnati jumped out to an first-half, 21-7 lead against Buffalo, and the defense did the rest, limiting the Bills to just 11 points the rest of the game as the Bengals won their fourth straight, beating the Bills 24-18.\n\nMORE: Is Damar Hamlin playing vs. Bengals on SNF?\n\nFans expected this to be an offensive showdown against two premier quarterbacks. And after the first three drives of the game, it sure appeared that's how it would go. The Bengals scored an opening-drive touchdown on just nine plays, matched quickly by a Bills' scoring drive of seven plays and 3:15. The Bengals re-took the lead on a 5:28 scoring drive to wrap up the first.\n\nFrom there, however, \"Mad Scientist\" Lou Anarumo's defense kept Josh Allen and the Bills off balance offensively for most of the remainder of the game. The next four drives of the half went punt, interception, punt, end of half.\n\nBurrow and the Bengals, meanwhile, hit a few bumps in Buffalo territory, but scored a touchdown on their final drive of of the first half to take a two-score lead into the locker room. Buffalo picked up a field goal on the first drive of the second half and held the Bengals to just three points in the second half, but it wasn't until 3:32 left that Allen finally got the Bills back into the end zone, with a 17-yard strike to Diggs and a subsequent 2-point try to make it a six-point game.\n\nMORE: Watch 'Sunday Night Football' live with Fub\n\nBills vs. Chargers odds, props, predictions: Buffalo faces struggling L.A. with eyes on AFC playoff picture\n\nThe Buffalo Bills (8-6) will be the first foes Los Angeles Chargers (5-9) interim head coach Giff Smith will face when the teams meet at SoFi Stadium in this Week 16 Saturday matchup. The Bills enter QB Josh Allen’s home state as 12-point favorites with the OVER/UNDER set at 44.\n\nThis game features one team heating up and looking like a unit no one will want to face in the playoffs, while the other is sifting through the rubble of a disastrous 2023 season and building for 2024 and beyond.\n\nBuffalo is in the thick of the AFC wild card hunt, trailing three other 8-6 teams (Bengals, Colts, Texans) by tiebreakers going into this week. They’re also riding high on the heels of their dominant 31-10 Week 15 home win over the Cowboys, led by RB James Cook’s 25-179-1 rushing bonanza. While Buffalo has had their ups and downs this year, if they make the postseason with their rushing game producing like this they will be an extremely tough out.\n\nThe Chargers are coming off a brutal 63-21 Thursday Night Football rout at the hands of the Raiders, which led to Los Angeles firing head coach Brandon Staley and GM Tom Telesco. Los Angeles was already twisting in the wind after QB Justin Herbert’s season-ending hand injury, but the magnitude of their 38-point loss last week was embarrassing enough to cause the team to clean house midseason.\n\nBetting odds for Bills vs. Chargers: Point spread, moneyline, total for Week 16 Saturday\n\nHere are the latest NFL betting odds for Bills vs. Chargers:\n\nMore NFL wagering: Top 5 NFL betting sites | Best NFL betting promos and bonuses\n\nBills betting news: Buffalo aims to continue hot streak ATS\n\nBuffalo is 6-7-1 ATS in 2023, and to say this team is streaky in this regard would be an understatement. The Bills went 3-1 ATS in their first four, but that ride on the gravy train was interrupted by what came next: a brutal six-game stretch between ",
+      "expected_sources": [
+        "Alcoholism, Ayahuasca and the Enlightenment of an N.F.L. Player",
+        "NFL power rankings: Lions, 49ers level up; Texans jump Bengals, Bills; Jets, Patriots sink to bottom for Week 11"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "multihop-inference-001",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_inference_query",
+      "question": "Who is the individual associated with the cryptocurrency industry facing a criminal trial on fraud and conspiracy charges, as reported by both The Verge and TechCrunch, and is accused by prosecutors of committing fraud for personal gain?",
+      "answer": "Sam Bankman-Fried",
+      "expected_points": [
+        "Sam Bankman-Fried"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "The FTX trial is bigger than Sam Bankman-Fried",
+        "Sex, Signal messages, and sabotaging FTX's code: SBF execs and Bahamas roommates tell all in court",
+        "SBF, riding high on FTX, reportedly offered $5B to Trump to cancel President re-run",
+        "Binance to pay $4.3B in fines and CEO ‘CZ’ to step down, plead guilty to anti-money laundering charges"
+      ],
+      "retrieved_context": "The FTX trial is bigger than Sam Bankman-Fried\n\nThe trial of Sam Bankman-Fried is likely to be more consequential than just whether the man himself is found guilty. Depending on what evidence is introduced during the trial, it could be rough for the entire crypto industry.\n\n“How much damage can this trial do to the already beaten-down reputation of the industry at this point?” asks Yesha Yadav, a law professor at Vanderbilt University. “This trial is going to be an excruciating moment for the industry because no one knows what kind of evidence might come out.”\n\nBankman-Fried, the founder of FTX and Alameda Research, is facing seven counts of criminal charges: two counts of wire fraud, and five counts of conspiracy charges. FTX was a failed cryptocurrency exchange founded in 2019. According to a now-deleted profile from FTX investors Sequoia Capital, FTX was founded because of Bankman-Fried’s frustration with other exchanges when he was running Alameda Research, his crypto trading firm. According to the SEC, FTX was a fraud “from the start,” diverting customers’ funds to Alameda.\n\nSam Bankman-Fried, the founder of failed cryptocurrency exchange FTX, is on trial for seven counts of wire fraud and conspiracy. FTX was a fraud “from the start,” the Securities and Exchange Commission alleges — with a “multi-billion-dollar deficiency caused by his own misappropriation of customer funds.” Follow along for all the latest news and regular updates from the trial.\n\n“Really just old-fashioned embezzlement.”\n\nWhat’s left of FTX is now being led by John J. Ray III — you may remember him as the guy who cleaned up Enron and who also said FTX is worse than Enron. Just before the trial began, the FTX lawyers filed suit against Bankman-Fried’s parents, saying they should give back millions of dollars they got from their kid. Ray has also referred to Bankman-Fried’s conduct as “really just old-fashioned embezzlement.”\n\nWe have some inkling of what the government will be arguing thanks t\n\nSex, Signal messages, and sabotaging FTX's code: SBF execs and Bahamas roommates tell all in court\n\nWitness Adam Yedidia answers questions during Sam Bankman-Fried fraud trial over the collapse of FTX, the bankrupt cryptocurrency exchange, at Federal Court in New York City, October 5, 2023, in this courtroom sketch. Jane Rosenberg | Reuters\n\nTwo of Sam Bankman-Fried's former friends from MIT, who also worked at crypto exchange FTX while living with the company's founder in the Bahamas, took the stand in a Manhattan courtroom this week to testify against their former classmate, confidant, and boss — a man who allegedly ran a crypto empire that defrauded thousands of customers out of billions of dollars. Gary Wang, the lesser-known co-founder of FTX, was asked by Assistant U.S. Attorney Nicolas Roos on Thursday, \"Did you commit financial crimes while working at FTX?\" \"Yes,\" responded Wang. He said that his crimes, including wire and commodities fraud, were carried out with the help of Bankman-Fried, FTX ex-engineering head Nishad Singh and Caroline Ellison, who ran sister hedge fund Alameda Research and had been Bankman-Fried's girlfriend. \"Mr. Wang, do you see any of the people you committed those crimes with in the courtroom today?\" Roos continued. Wang, dressed in an oversized and wrinkled suit with a red tie and glasses, awkwardly stood up and looked around the courtroom before responding, \"Yes.\" \"Who do you see?\" asked Roos. \"Sam Bankman-Fried,\" he said. The trial, set to last six weeks, will resume on Tuesday with key testimony expected from Ellison, who is considered the prosecution's star witness, having already pleaded guilty to multiple charges. Bankman-Fried faces seven federal charges, including wire fraud, securities fraud and money laundering, that could put him in prison for the rest of his life. Thus far, Bankman-Fried, 31, has remained mostly quiet in court intently listening to witnesses and at times writing notes to his attorneys. But as Wang testif\n\nSBF, riding high on FTX, reportedly offered $5B to Trump to cancel President re-run\n\nCome Tuesday, our eyes will be trained on the Manhattan Federal Court for the trial of Sam Bankman-Fried, the disgraced cryptocurrency entrepreneur accused of orchestrating “one of the biggest financial frauds in American history”: the multibillion-dollar collapse of FTX, the crypto exchange he founded and led.\n\nSBF, as he’s known, has pleaded not-guilty to some seven charges of fraud and conspiracy. But, as we wait to hear both his version and the government’s version of what happened, there will be another tale recounting how things played out: “Going Infinite,” a book by Michael Lewis chronicling the rise and fall of SBF, is set to debut on the first day of the trial.\n\nThe episode has fired up a lot of people, indignant at what they feel was too-easy treatment for someone who many believe brought down the whole crypto house.\n\n60 Minutes got rightly community noted here. How is it that SBF is _still_ getting super positive media coverage when the media has nothing good to say about the founders that have actually created things and brought value into the world? https://t.co/VPV1ORVHqf — tobi lutke (@tobi) October 2, 2023\n\nThe germination of “Going Infinite” sounds as unlikely as the story of SBF himself.\n\nIn an interview broadcast yesterday on 60 Minutes, Lewis, the famed chronicler of financial adventure and misadventure — his books include “Liar’s Poker,” “Moneyball” and “The Big Short” — said that he didn’t set out to write a book about SBF. Rather, Lewis claims he was introduced to him in early 2021 by a friend who wanted to back FTX. Before any financial commitment, that friend asked Lewis to meet the young billionaire — both lived in Berkeley — to “evaluate his character.”\n\nNo, we don’t find out who that friend is, nor do we find out if that particular investment was ever made — SBF did raise some $2 billion, including $1 billion in 2021, from backers that included Sequoia, \n\nBinance to pay $4.3B in fines and CEO ‘CZ’ to step down, plead guilty to anti-money laundering charges\n\nIt’s been an eventful week for crypto exchanges and the U.S. government.\n\nChangpeng Zhao, also known as “CZ,” the founder and CEO of Binance, is stepping down and has pleaded guilty to a number of violations brought on through the Department of Justice and other U.S. agencies. He appeared in a Seattle federal court on Tuesday to enter his plea.\n\nRichard Teng, Binance’s former global head of regional markets, will be the exchange’s new CEO, Zhao shared in a post on X Tuesday afternoon. Teng previously was the CEO of the Financial Services Regulatory Authority at Abu Dhabi Global Market, among other executive roles. In response to stepping down, Zhao said, “it is the right thing to do” adding, “I made mistakes, and I must take responsibility.” Zhao will remain a shareholder and said he will be “available to the team to consult as needed.”\n\nBinance, the world’s largest crypto exchange, has also agreed to pay about $4.3 billion to resolve the DOJ’s investigations, the agency said in a press release on Tuesday.\n\nAs a part of Binance’s guilty plea, it has also reached agreements with the Department of Treasury’s Financial Crimes Enforcement Network (FinCEN), the Office of Foreign Assets Control (OFAC) and the Commodity Futures Trading Commission (CFTC) and will credit about $1.8 billion toward those resolutions.\n\nThe crypto exchange “admits it engaged in anti-money laundering, unlicensed money transmitting and sanctions violations,” the DOJ release stated, calling it the “largest corporate resolution” that included criminal charges for an executive. Zhao pleaded guilty to failing to maintain an anti-money laundering program.\n\n“The message here should be clear: using new technology to break the law does not make you a disruptor, it makes you a criminal,” U.S. Attorney General Merrick Garland said in a statement.\n\nBinance, Zhao and other related parties “knowingly failed ",
+      "expected_sources": [
+        "The FTX trial is bigger than Sam Bankman-Fried",
+        "SBF’s trial starts soon, but how did he — and FTX — get here?",
+        "Sam Altman backs teens’ startup, Google unveils the Pixel 8 and TikTok tests an ad-free tier"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "multihop-inference-002",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_inference_query",
+      "question": "Which individual is implicated in both inflating the value of a Manhattan apartment to a figure not yet achieved in New York City's real estate history, according to 'Fortune', and is also accused of adjusting this apartment's valuation to compensate for a loss in another asset's worth, as reported by 'The Age'?",
+      "answer": "资料中没有相关信息",
+      "expected_points": [
+        "Donald Trump"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "Donald Trump defrauded banks with 'fantasy' to build his real estate empire, judge rules in a major repudiation against the former president",
+        "The $777 million surprise: Donald Trump is getting richer",
+        "SBF, riding high on FTX, reportedly offered $5B to Trump to cancel President re-run",
+        "Sen. Robert Menendez, facing bribery charges, stumps bank CEOs by asking how much their firms paid in settlements for allegedly ripping off consumers"
+      ],
+      "retrieved_context": "Donald Trump defrauded banks with 'fantasy' to build his real estate empire, judge rules in a major repudiation against the former president\n\nA judge ruled Tuesday that Donald Trump committed fraud for years while building the real estate empire that catapulted him to fame and the White House.\n\nJudge Arthur Engoron, ruling in a civil lawsuit brought by New York’s attorney general, found that the former president and his company deceived banks, insurers and others by massively overvaluing his assets and exaggerating his net worth on paperwork used in making deals and securing financing.\n\nEngoron ordered that some of Trump’s business licenses be rescinded as punishment and said he would continue to have an independent monitor oversee the Trump Organization’s operations.\n\nA Trump spokesperson did not immediately respond to a request for comment on the ruling. Trump has long insisted he did nothing wrong.\n\nThe decision, days before the start of a non-jury trial in Attorney General Letitia James’ lawsuit, is the strongest repudiation yet of Trump’s carefully coiffed image as a wealthy and shrewd real estate mogul turned political powerhouse.\n\nBeyond mere bragging about his riches, Trump, his company and key executives repeatedly lied about them on his annual financial statements, reaping rewards such as favorable loan terms and lower insurance premiums, Engoron found.\n\nThose tactics crossed a line and violated the law, the judge said, rejecting Trump’s contention that a disclaimer on the financial statements absolved him of any wrongdoing.\n\n“In defendants’ world: rent regulated apartments are worth the same as unregulated apartments; restricted land is worth the same as unrestricted land; restrictions can evaporate into thin air; a disclaimer by one party casting responsibility on another party exonerates the other party’s lies,” Engoron wrote in his 35-page ruling. “That is a fantasy world, not the real world.”\n\nManhattan prosecutors had looked into bringing a criminal \n\nThe $777 million surprise: Donald Trump is getting richer\n\nThousands of pages of exhibits detailing the performance of his assets made available during the trial have provided a deeper look into his fortune. The former president’s 2021 statement of financial condition, filed as part of the lawsuit, pegged his net worth at $US4.5 billion. Bloomberg’s calculation has consistently been below Trump’s figures. At the same time, Bloomberg measured the value of some Trump properties higher than what New York state claims. Trump took the stand and testified that the properties whose values he’s accused of inflating were actually undervalued, based on the premium his “brand” adds. He also said that banks didn’t rely on his statements of financial condition when weighing loans. “They just weren’t a very important element in banks’ decision-making process,” Trump told the court. “And we’ll explain that as this trial goes along.” Here’s a look at New York state’s valuation of four high-profile Trump properties where the prosecution alleges fraud occurred, along with Bloomberg’s own approach to assessing the assets.\n\nMar-a-Lago Trump’s valuation (2021): $US612.1 million , Bloomberg valuation (2023): $US240 million, New York’s valuation (2021): $US27.6 million It’s fair to say that Trump’s most famous property these days is no longer New York’s Trump Tower but his Mar-a-Lago Club, the historic Palm Beach estate built by Marjorie Merriweather Post in the 1920s that he now calls home. New York’s valuation of Donald Trump’s Mar-a-Lago estate has raised eyebrows. Credit: AP The sprawling resort has been at the centre of some publicised post-presidency scandals, from classified documents being kept in one of its bathrooms to the location where Trump is said to have shared nuclear submarine secrets with Australian businessman Anthony Pratt — something that Trump denies.\n\nIt’s also a major focus in Trump’s fraud lawsuit. Trump made a series of agreements with Palm Beach County and the N\n\nSBF, riding high on FTX, reportedly offered $5B to Trump to cancel President re-run\n\nCome Tuesday, our eyes will be trained on the Manhattan Federal Court for the trial of Sam Bankman-Fried, the disgraced cryptocurrency entrepreneur accused of orchestrating “one of the biggest financial frauds in American history”: the multibillion-dollar collapse of FTX, the crypto exchange he founded and led.\n\nSBF, as he’s known, has pleaded not-guilty to some seven charges of fraud and conspiracy. But, as we wait to hear both his version and the government’s version of what happened, there will be another tale recounting how things played out: “Going Infinite,” a book by Michael Lewis chronicling the rise and fall of SBF, is set to debut on the first day of the trial.\n\nThe episode has fired up a lot of people, indignant at what they feel was too-easy treatment for someone who many believe brought down the whole crypto house.\n\n60 Minutes got rightly community noted here. How is it that SBF is _still_ getting super positive media coverage when the media has nothing good to say about the founders that have actually created things and brought value into the world? https://t.co/VPV1ORVHqf — tobi lutke (@tobi) October 2, 2023\n\nThe germination of “Going Infinite” sounds as unlikely as the story of SBF himself.\n\nIn an interview broadcast yesterday on 60 Minutes, Lewis, the famed chronicler of financial adventure and misadventure — his books include “Liar’s Poker,” “Moneyball” and “The Big Short” — said that he didn’t set out to write a book about SBF. Rather, Lewis claims he was introduced to him in early 2021 by a friend who wanted to back FTX. Before any financial commitment, that friend asked Lewis to meet the young billionaire — both lived in Berkeley — to “evaluate his character.”\n\nNo, we don’t find out who that friend is, nor do we find out if that particular investment was ever made — SBF did raise some $2 billion, including $1 billion in 2021, from backers that included Sequoia, \n\nSen. Robert Menendez, facing bribery charges, stumps bank CEOs by asking how much their firms paid in settlements for allegedly ripping off consumers\n\nSen. Bob Menendez (D-N.J.), charged with bribery, gave Wall Street bank executives a pop quiz about their own corporate misbehavior that they all failed.\n\nOn Wednesday, at a congressional hearing, the embattled Menendez grilled Wall Street executives about how much money the Consumer Financial Protection Bureau ordered each of their firms to pay back to consumers for allegedly violating federal laws including charging illegal junk fees and opening fake customer accounts. Through his questioning, the senator was attempting to show that, contrary to what the bank CEOs argued, new financial regulations do benefit everyday customers.\n\nMenendez directed his arrows at four retail bank CEOs—all of whom were unable to respond. He started with JPMorgan Chase CEO Jamie Dimon and moved down a long table asking Bank of America’s Brian Moynihan, Citigroup CEO Jane Fraser, and Wells Fargo CEO Charles Scharff how much each had “returned to customers in the form of redresses and payments at the direction of CFPB?”\n\nThough the executives didn’t know the answer, the numbers are large, even for top Wall Street firms: $360 million for JPMorgan Chase, $819 million for Bank of America, $1 billion for Citigroup, and “over $2 billion” for Wells Fargo. All in all, it amounts to nearly $4 billion.\n\n“It’s amazing you don’t know the number because they’re not small in nature,” Menendez said. “It’s over $4 billion returned to hardworking consumers in the past dozen years.”\n\nMenendez’s own adherence to the law happens to also be in question. In September, the Justice Department charged him and his wife Nadine with accepting bribes and allegedly using his Senate seat to improperly aid the Egyptian government. A raid of Menendez’s house turned up $100,000 in gold bars and bundles of cash stuffed into jacket pockets. Menendez pleaded not guilty.\n\nThe",
+      "expected_sources": [
+        "Donald Trump defrauded banks with 'fantasy' to build his real estate empire, judge rules in a major repudiation against the former president",
+        "The $777 million surprise: Donald Trump is getting richer"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "multihop-inference-003",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_inference_query",
+      "question": "Who is the figure associated with generative AI technology whose departure from OpenAI was considered shocking according to Fortune, and is also the subject of a prevailing theory suggesting a lack of full truthfulness with the board as reported by TechCrunch?",
+      "answer": "Sam Altman",
+      "expected_points": [
+        "Sam Altman"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "WTF is going on at OpenAI? We have theories",
+        "OpenAI's ex-chairman accuses board of going rogue in firing Altman: 'Sam and I are shocked and saddened by what the board did'",
+        "Sam Altman ousted as OpenAI’s CEO",
+        "How the OpenAI fiasco could bolster Meta and the ‘open AI’ movement"
+      ],
+      "retrieved_context": "WTF is going on at OpenAI? We have theories\n\nIn perhaps the most unexpected tech news of the year, billionaire and AI evangelist Sam Altman has been ejected from his CEO role at OpenAI by the company’s board after an apparent vote of no confidence. Its exact wording in a release issued this afternoon: Altman’s “departure follows a deliberative review process by the board, which concluded that he was not consistently candid in his communications with the board, hindering its ability to exercise its responsibilities.”\n\nWhat the hell is happening at the most hyped company in the world?! Here are some totally speculative theories that occurred to us and others around the web.\n\n1. Did Altman circumvent the board in a major deal?\n\nBased on the board’s language and the way these giant tech companies work, this is the prevailing theory floating around right now. “Not consistently candid” is a very diplomatic way of saying Altman lied.\n\nIt’s possible that Altman — and potentially OpenAI President Greg Brockman, who stepped down as chairman simultaneously, then resigned — wanted to make a bold move that he knew the board would not like. It’s not uncommon for these deals to be hammered out quietly in smoke- (or vape-) filled rooms and then presented as a fait accompli, but if it was controversial enough and the board found out about these maneuvers, it could be fuel for an ouster.\n\nBut what kind of deal would be big and dangerous enough for a summary dismissal of the CEO and famous face of the company? The man was onstage two weeks ago; I just talked with him! What could have happened since then?\n\nFew would be shocked if Microsoft, which is deeply, deeply embedded in OpenAI as an investor and customer, is a factor here. Could Altman have been working with — or against — OpenAI’s patron in secret? If Altman wanted to kill the golden goose by going independent, that might have activated the board’s fiduciary or otherwise statutory duty. On the other hand, if he was negotiating s\n\nOpenAI's ex-chairman accuses board of going rogue in firing Altman: 'Sam and I are shocked and saddened by what the board did'\n\nChatGPT-maker Open AI said Friday it has pushed out its co-founder and CEO Sam Altman after a review found he was “not consistently candid in his communications” with the board of directors.\n\n“The board no longer has confidence in his ability to continue leading OpenAI,” the artificial intelligence company said in a statement.\n\nIn the year since Altman catapulted ChatGPT to global fame, he has become Silicon Valley’s sought-after voice on the promise and potential dangers of artificial intelligence and his sudden and mostly unexplained exit brought uncertainty to the industry’s future.\n\nMira Murati, OpenAI’s chief technology officer, will take over as interim CEO effective immediately, the company said, while it searches for a permanent replacement.\n\nThe announcement also said another OpenAI co-founder and top executive, Greg Brockman, the board’s chairman, would step down from that role but remain at the company, where he serves as president. But later on X, formerly Twitter, Brockman posted a message he sent to OpenAI employees in which he wrote, “based on today’s news, i quit.”\n\nIn another X post on Friday night, Brockman said Altman was asked to join a video meeting at noon Friday with the company’s board members, minus Brockman, during which OpenAI co-founder and Chief Scientist Ilya Sutskever informed Altman he was being fired.\n\n“Sam and I are shocked and saddened by what the board did today,” Brockman wrote, adding that he was informed of his removal from the board in a separate call with Sutskever a short time later.\n\nOpenAI declined to answer questions on what Altman’s alleged lack of candor was about. The statement said his behavior was hindering the board’s ability to exercise its responsibilities.\n\nAltman posted Friday on X: “i loved my time at openai. it was transformative for me personally, and hopefully the world a little bit\n\nSam Altman ousted as OpenAI’s CEO\n\nSam Altman has been fired from OpenAI, Inc., the 501(c)(3) nonprofit that acts as the governing body for OpenAI, the AI startup behind ChatGPT, DALL-E 3, GPT-4 and other highly capable generative AI systems. He’ll both leave the company’s board of directors and step down as CEO.\n\nIn a post on OpenAI’s official blog, the company writes that Altman’s departure follows a “deliberative review process by the board” that concluded that Altman “wasn’t consistently candid in his communications” with other board members, “hindering its ability to exercise its responsibilities.”\n\nTip TechCrunch\n\nDo you work at OpenAI and know more about Sam Altman’s departure?\n\nDo you work at OpenAI and know more about Sam Altman’s departure? Get in touch with TechCrunch\n\n“The board no longer has confidence in [Altman’s] ability to continue leading OpenAI,” the blog post reads.\n\nIn a post on X (formerly Twitter), Altman wrote that he “loved his time at OpenAI” and will have “more to say about what’s next later.”\n\ni loved my time at openai. it was transformative for me personally, and hopefully the world a little bit. most of all i loved working with such talented people. will have more to say about what’s next later. 🫡 — Sam Altman (@sama) November 17, 2023\n\nOpenAI’s dramatic leadership change will also see Greg Brockman — who was a member of the team that co-founded OpenAI, as was Altman — step down as chairman of the board but remain as OpenAI’s president, reporting to the company’s newly-appointed interim CEO, Mira Murati. Murati was previously OpenAI’s CTO.\n\nOpenAI says that it’ll begin conducting a formal search for a permanent CEO immediately.\n\n“OpenAI was deliberately structured to advance our mission: to ensure that artificial general intelligence benefits all humanity,” the board wrote in a joint statement. “The board remains fully committed to serving this mission. We are grateful for Sam’s many contributions to the founding and growth of OpenAI. A\n\nHow the OpenAI fiasco could bolster Meta and the ‘open AI’ movement\n\nIt has been a whirlwind four days for OpenAI, the generative AI poster child behind the smash hit ChatGPT.\n\nSeemingly out of nowhere, the OpenAI board ousted CEO and co-founder Sam Altman and demoted president and co-founder Greg Brockman, who subsequently resigned, paving the way for what looked like a mutiny by staff insisting the founders be reinstated post-haste. By then, Microsoft had already hired Altman and Brockman to head up a new internal AI unit, though, as things transpired, nothing had actually been signed yet, with rumors suggesting that the ousted leaders might actually return to OpenAI after all — in some capacity, at least.\n\nThe situation remains fluid, and any number of potential outcomes still remain on the table. But the whole debacle has shone a spotlight on the forces that control the burgeoning AI revolution, leading many to question what happens if you go all-in on a centralized proprietary player, and what happens if things then go belly-up?\n\n“The OpenAI / Microsoft drama underlines one of the big near-term risks with AI — that this next wave of technology is controlled by the same tiny set of players who have shaped that last era of the internet,” Mark Surman, president and executive director at the Mozilla Foundation, told TechCrunch. “We might have a chance of avoiding this if GPT-X were responsibly open sourced, giving researchers and startups a shot at making this technology safer, more useful and more trustworthy for people everywhere.”\n\nOpen and shut\n\nIn an open letter published by Mozilla a few weeks back, Meta’s chief AI scientist Yann LeCun joined some 70 other signatories in calling for more openness in AI development, though that letter has since garnered more than 1,700 signatures. The backdrop stems from Big Tech companies such as OpenAI and Google’s DeepMind calling for more regulation, warning of catastrophic consequences if the AI levers were to meet the wr",
+      "expected_sources": [
+        "OpenAI's ex-chairman accuses board of going rogue in firing Altman: 'Sam and I are shocked and saddened by what the board did'",
+        "WTF is going on at OpenAI? We have theories"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "multihop-temporal-001",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_temporal_query",
+      "question": "After the TechCrunch report on October 7, 2023, concerning Dave Clark's comments on Flexport, and the subsequent TechCrunch article on October 30, 2023, regarding Ryan Petersen's actions at Flexport, was there a change in the nature of the events reported?",
+      "answer": "资料中没有相关信息",
+      "expected_points": [
+        "Yes"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "The inside story of Dave Clark's tumultuous last days at Flexport",
+        "Sam Altman backs teens’ startup, Google unveils the Pixel 8 and TikTok tests an ad-free tier",
+        "Kick streamers consider leaving over CEO’s comments in a sex worker ‘prank’ stream",
+        "A timeline of Sam Altman’s firing from OpenAI — and the fallout"
+      ],
+      "retrieved_context": "The inside story of Dave Clark's tumultuous last days at Flexport\n\nIn this article SHOP-CA\n\nUPS\n\nFDX\n\nAMZN Follow your favorite stocks CREATE FREE ACCOUNT\n\nDave Clark (L) and Ryan Petersen (R) Getty Images\n\nOn Sept. 13, Flexport founder Ryan Petersen took the stage at North America's premier supply chain conference in Phoenix. It was exactly a week after he'd forced out his hand-picked successor as CEO, ex-Amazon executive Dave Clark, so Petersen could once again run the show. Sitting in the first few rows of attendees was Clark, the man he'd ousted just a year into the job. Petersen was surprised that he showed up, according to people with knowledge of the matter. Days earlier, Petersen had excoriated Clark, alleging he'd secretly expanded the company's headcount and taken on unnecessary leases without Petersen or the board's knowledge. On X, formerly known as Twitter, Petersen wrote, \"Strategic Plan, Day 1: Make better decisions!\" With Clark sitting a few feet away, Petersen struck a different tone. \"I think we're going to look back and go, 'Wow I'd probably do that all over again because of the progress that we've made,'\" Petersen said, in an interview on stage. Doing it over again would seem to suggest hiring Clark wasn't a bad decision. Petersen went even further, personally commending Clark for orchestrating the $1.3 billion purchase of Deliverr from Shopify , picking up supply chain technology for last-mile deliveries. That deal was announced in May. \"I'm very, very lucky because I wouldn't have had the courage to go and do that acquisition, but I give all the credit in the world to Dave Clark,\" Petersen said. \"There's no one probably in the world who would be better at running that last-mile e-com fulfillment network. Personally, I don't have any experience and I would've been pretty intimidated to try and go pull that off.\" The mixed messaging from the 43-year-old Flexport founder underscores the dysfunction surrounding the sudden firing of Clark, who previ\n\nSam Altman backs teens’ startup, Google unveils the Pixel 8 and TikTok tests an ad-free tier\n\nHiya, folks, and welcome to Week in Review (WiR), TechCrunch’s digest of the past week in tech news. It’s TC’s column that highlights the major stories over the past few days, and — we humbly submit — it’s a darn useful resource for folks on the go.\n\nThis week, we cover Sam Altman backing a teen’s AI startup, Google’s hardware event (and first impressions of the Pixel 8 Pro), Flexport drama, and the ongoing FTX fallout. Also on the agenda: Gmail’s harsher rules to prevent spam, TikTok testing an ad-free subscription plan, and LinkedIn going big on AI tools. And that’s not all.\n\nIf you haven’t, sign up here to get WiR in your inbox every Saturday. And if you have, our thanks. Now, let’s get on with the news.\n\nMost read\n\nAltman backs teen entrepreneurs: Sam Altman is among the backers of an AI startup, founded by two teenagers, that’s aiming to assist businesses in automating workflows in “previously unexplored” ways. Manish writes that Induced AI, founded this year, lets businesses input their back-office tasks in plain English and converts the instructions to pseudo-code in real time.\n\nGoogle unveils new hardware: This week was Google’s annual hardware event, where the search and consumer tech giant showed off what it’s been working on. Christine wrote up a thorough roundup of the news, which included updates on the Pixel 8 and Pixel 8 Pro, Pixel Fold, Android 14, Pixel Buds, Google Assistant, Bard, Pixel Watch 2 and other goodies.\n\nHands on with the Pixel 8 Pro: Darrell took the newly unveiled Pixel 8 Pro for a whirl, and he liked what he saw. While very similar to last year’s model (the Pixel 7 Pro), Darrell felt that the improved cameras, brighter screen and enhanced AI-powered features made it enough of an upgrade to (potentially) warrant a purchase — minus the underutilized temperature sensor. Stay tuned for his full review.\n\nTurmoil at Flexport: Dave Clark, the former\n\nKick streamers consider leaving over CEO’s comments in a sex worker ‘prank’ stream\n\nKick streamers consider leaving over CEO’s comments in a sex worker ‘prank’ stream With little moderation, many question if Kick is safe. Others can't afford to stop streaming.\n\nStreamers are leaving Kick en masse in protest of the platform’s lack of safety guidelines, after a prominent creator streamed an encounter with a sex worker without informing her that there were other people present. She was briefly prevented from leaving after she expressed discomfort, while Kick’s CEO posted laughing emotes in the stream chat.\n\n“It sucks to see a platform stand behind someone who clearly doesn’t respect sex workers or their safety,” Rachel, a streamer known as TheFoodieWaifu, told TechCrunch. “This was a job for her and to them a game. This woman clearly was afraid and was just trying to work and be safe.”\n\nPaul Denino, a creator also known as Ice Poseidon, streamed the encounter on September 21. The interactions with the sex worker took place in a living room, while Denino and fellow streamer Sam Pepper hid in an adjacent bedroom. The stream shows another man, named Andy, paying the sex worker $500 and asking for her consent to film. When the encounter became physical, Denino and Pepper made noises behind the door, which startled the woman. She tried to leave after receiving a text about the people in the other room, but Andy stopped her. When Andy reminded her that he had already paid her, she said the encounter was “creepy.”\n\n“Why is it creepy?” Andy said. “It’s you and me and no one else.”\n\nIn a post days later, Denino disputed claims of a “hidden camera” and alleged that the interaction was legal. Denino streamed from Brisbane, Australia, where sex work is legal in licensed brothels or if a sex worker is working in private and alone. He also posted footage of a call allegedly asking the sex worker he could film her, which she approved for an extra fee. Later in the clip, he tells Andy\n\nA timeline of Sam Altman’s firing from OpenAI — and the fallout\n\nIn a dramatic turn of events late Friday, ex-Y Combinator president Sam Altman was fired as CEO of AI startup OpenAI, the company behind viral AI hits like ChatGPT, GPT-4 and DALL-E 3, by OpenAI’s board of directors. Then, the company’s longtime president and co-founder, Greg Brockman, resigned — as did three senior OpenAI researchers. And the fallout continues.\n\nTip TechCrunch\n\nDo you work at OpenAI and know more about Sam Altman’s departure?\n\nDo you work at OpenAI and know more about Sam Altman’s departure? Get in touch with TechCrunch\n\nIt’s a fast-moving situation that we’re still trying to get to the bottom of. No doubt more will become clear as time goes on. To make it easier to follow all that’s happened in the meantime, though, we’ve put together a timeline; we’ll do our best to keep it current.\n\nTimeline of Sam Altman’s firing from OpenAI\n\nNovember 29\n\nMicrosoft gains a board observer\n\nMicrosoft will gain representation on the new initial board of directors in the form of a non-voting observer, OpenAI announced. It wasn’t immediately clear who this observer might be — only that they won’t have an official vote in board business.\n\nNovember 21\n\nSam Altman, OpenAI reach agreement on return as CEO and ‘initial’ new board\n\nIn a sudden late announcement, OpenAI revealed that it and Altman “have reached an agreement in principle” for him to return as the company’s CEO. In addition to Altman’s return, its new “initial” board will include former Salesforce chief executive Bret Taylor, former US Secretary of the Treasury Larry Summers and Quora founder Adam D’Angelo.\n\nWe have reached an agreement in principle for Sam Altman to return to OpenAI as CEO with a new initial board of Bret Taylor (Chair), Larry Summers, and Adam D'Angelo. We are collaborating to figure out the details. Thank you so much for your patience through this. — OpenAI (@OpenAI) November 22, 2023\n\nAltman also posted about the new deal, ",
+      "expected_sources": [
+        "Sam Altman backs teens’ startup, Google unveils the Pixel 8 and TikTok tests an ad-free tier",
+        "Cruise hits the brakes on driverless, UAW makes progress and more EV backpedaling"
+      ],
+      "hit": true,
+      "mrr": 0.5
+    },
+    {
+      "id": "multihop-temporal-002",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_temporal_query",
+      "question": "Was there no change in the portrayal of Google's influence on the digital ecosystem between the report from The Verge on Google's impact on the internet's appearance published on November 1, 2023, and the report from TechCrunch on a class action antitrust suit against Google published later?",
+      "answer": "资料中没有相关信息。",
+      "expected_points": [
+        "no"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "News publisher files class action antitrust suit against Google, citing AI’s harms to their bottom line",
+        "5 things we learned so far about the Google antitrust case",
+        "More from the US v Google trial: vertical search, pre-installs and the case of Firefox/Yahoo",
+        "Epic v. Google, explained"
+      ],
+      "retrieved_context": "News publisher files class action antitrust suit against Google, citing AI’s harms to their bottom line\n\nA new class action lawsuit filed this week in the U.S. District Court in D.C. accuses Google and parent company Alphabet of anticompetitive behavior in violation of U.S. antitrust law, the Sherman Act, and others, on behalf of news publishers. The case, filed by Arkansas-based publisher Helena World Chronicle, argues that Google “siphons off” news publishers’ content, their readers and ad revenue through anticompetitive means. It also specifically cites new AI technologies like Google’s Search Generative Experience (SGE) and Bard AI chatbot as worsening the problem.\n\nIn the complaint, Helena World Chronicle, which owns and publishes two weekly newspapers in Arkansas, argues that Google is “starving the free press” by sharing publishers’ content on Google, losing them “billions of dollars.”\n\nIn addition to new AI technologies, the suit points to Google’s older question-and-answer technologies, like the “Knowledge Graph” launched in May 2012, as part of the problem.\n\n“When a user searches for information on a topic, Google displays a ‘Knowledge Panel’ to the right of the search results. This panel contains a summary of content drawn from the Knowledge Graph database,” the complaint states. “Google compiled this massive database by extracting information from Publishers’ websites — what Google calls ‘materials shared across the web’ —and from ‘open source and licensed databases,'” it says.\n\nBy 2020, the Knowledge Graph had grown to 500 billion facts about 5 billion entities. But much of the “collective intelligence” that Google tapped into was content “misappropriated from Publishers,” the complaint alleges.\n\nOther Google technologies, like “Featured Snippets” where Google algorithmically extracts answers from webpages, were also cited as shifting traffic away from publishers’ websites.\n\nMore importantly, perhaps, is the suit’s tackling of how AI will impact publish\n\n5 things we learned so far about the Google antitrust case\n\nGoogle CEO Sundar Pichai testified Monday in the U.S. government’s antitrust trial against the company. The executive defended Google’s business tactics, including its deal with Apple and other partners to make Google the default search engine.\n\nThe lawsuit stems from a 2020 antitrust claim over Google’s dominance in the online search market. The claim is separate from one filed in January by the Department of Justice, along with eight states including New York, California and Colorado, that aims to “halt Google’s anticompetitive scheme, unwind Google’s monopolistic grip on the market and restore competition to digital advertising.”\n\nThe government has argued that Google uses its platforms and deals with partners to block out any competition in search or advertising, thus hindering competitors from accessing the data they’d need to improve their products.\n\nGoogle argues that it’s just doing business. Everybody wants Google as the default engine because it’s the best. That doesn’t make its actions illegal, the company says.\n\nMonday’s trial hearing revealed plenty of juicy tidbits, including the $26.3 billion Google spent making itself the default search engine across platforms in 2021, how Google tried to take it further and have Chrome preinstalled on iPhones and more.\n\nGoogle paid $26 billion in 2021 to be everyone’s default search engine\n\nWhen Google’s search head Prabhakar Raghavan testified in court on October 28, he revealed that the tech giant had paid $26.3 billion in 2021 to multiple browsers, phones and platforms, from companies including Apple, Samsung and Mozilla, The Verge reports.\n\nAbout $18 billion of that total amount went directly to Apple, according to a New York Times report published earlier this month. Google has had its deal with Apple in place since 2003.\n\nWhen questioned on the amount of money Google spends to get first pick of search engines, Pichai said that the decision was made wi\n\nMore from the US v Google trial: vertical search, pre-installs and the case of Firefox/Yahoo\n\nMore from the US v Google trial: Vertical search, pre-installs and the case of Firefox/Yahoo\n\nWe’re nearly two months into the Justice Department’s landmark antitrust case against Google — one of the biggest fights in tech antitrust since the U.S. took Microsoft to trial in the 1990s — and the revelations just keep getting juicier.\n\nIn our last roundup, we learned how Google spent $26.3 billion in 2021 making itself the default search engine across platforms and how Google tried to have Chrome preinstalled on iPhones. Over the past couple of weeks, more of the inner workings of Google has come to light, including some of the search engine’s most lucrative search queries, what the revenue-share agreements between Google and Android OEMs look like and why Expedia has a bone to pick with Google.\n\nBefore we go into some of these tidbits…\n\nWhy the Google vs. U.S. antitrust case matters\n\nThe government has argued that Google uses its platforms and deals with partners to block out any competition in search or advertising, thus hindering competitors from accessing the data they’d need to improve their products. If Judge Amit Mehta rules against Google, the search giant may have to change its behavior and share its APIs with third-party developers. It may also be banned from making anticompetitive and exclusive deals with smartphone and computer manufacturers and wireless carriers. Google might end up having to turn over all or most of the data it has collected to other search engines so they can improve their products and attract more users. The DOJ has said that Google gets 16 times more data than Bing does everyday. Enforcers want to show that antitrust law remains relevant and that even though Google is basically the God of the internet, it’s still no match for the U.S. law. The Google outcome could also have a ripple effect on other Big Tech cases. The FTC sued Amazon in Septem\n\nEpic v. Google, explained\n\nOn Monday, Fortnite publisher Epic Games will drag a tech giant into court, alleging that its mobile app store is an illegal monopoly. You may be feeling some déjà vu!\n\nAfter all, didn’t Epic already go to trial with Apple, resulting in a ruling where Apple (mostly) won? Didn’t Epic fail to #FreeFortnite with its Llamacorn legal gambit? Didn’t that all happen years ago? What are we doing here again?\n\nThe short answer: while Epic’s antitrust claims against Apple got their day in court, a similar lawsuit against Google never did. On November 6th, Epic v. Google will finally go to trial... a mere 1,180 days after Epic originally sued.\n\nHi, I’m Sean, and I’ll be your guide to this whole delightful mess.\n\nUpdate, December 15th, 2023: It’s basically over now. What happened? Read this, this, and this to get the whole picture.\n\nOriginal story continues:\n\nLlamacorn what now? What is happening?\n\nBefore we get to the Llamacorn, a little background. Epic is of course the studio behind Fortnite, the extraordinarily popular free-to-play game. Fortnite makes money by selling in-game items with its virtual currency V-Bucks. Players often buy V-Bucks the same place they play Fortnite. And until August 13th, 2020, if the player used an Android or iOS device and installed the game through an official app store, that purchase triggered an in-app payment fee to Google or Apple.\n\nCritics call such fees the “Google tax” or the “Apple tax,” and Epic definitely wasn’t a fan.\n\nWhen Epic decided to take action against these respective “taxes,” it made August 13th, 2020 a very busy day for Apple, Google, Epic, and us here at The Verge. First, Epic announced it was bypassing Apple and Google’s app store fees. It deployed a hotfix update to Fortnite without either company’s knowledge, letting you purchase V-Bucks directly through its own payment processing option at a discount. Apple and Google almost immediately reacted by kicking Fortnite off their app stores for bre",
+      "expected_sources": [
+        "The people who ruined the internet",
+        "Epic v. Google, explained",
+        "News publisher files class action antitrust suit against Google, citing AI’s harms to their bottom line"
+      ],
+      "hit": true,
+      "mrr": 1.0
+    },
+    {
+      "id": "multihop-temporal-003",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_temporal_query",
+      "question": "Has the advice provided by Sporting News to bettors regarding the evaluation of betting opportunities and offers involved reading requirements, going with the favored Eagles, and focusing on hype between the reports published on September 28, 2023, and December 18, 2023?",
+      "answer": "资料中没有相关信息",
+      "expected_points": [
+        "no"
+      ],
+      "should_refuse": false,
+      "retrieved_sources": [
+        "Monday Night Football DraftKings Picks: NFL DFS lineup advice for Week 15 Eagles-Seahawks Showdown tournaments",
+        "FanDuel 'Prop Stars' Picks: Best bets for Travis Kelce & Taylor Swift-inspired props for Chiefs-Jets Week 4",
+        "Best sportsbook bonus offers for NFL Monday Night Football Eagles vs. Seahawks: Claim over $5,000 in bonuses from Bet365, BetMGM, BetRivers, Caesars Sportsbook, DraftKings and FanDuel ",
+        "Hottest seat on each NFC team: Buns burning for these four head coaches"
+      ],
+      "retrieved_context": "Monday Night Football DraftKings Picks: NFL DFS lineup advice for Week 15 Eagles-Seahawks Showdown tournaments\n\nThe Seahawks are just about hanging on by a thread. At 6-7, the team is on the outside looking in when it comes to the playoff picture. A win on Monday night against the suddenly reeling Eagles could be a big boost in their chances going forward -- a matchup that is actually a pretty good one after looking beneath the surface. The Eagles come in as losers of two straight, losing in blowout fashion both times no less. Suddenly the sky is falling as the Cowboys have taken over the NFC East division lead, complicating matters as the regular season winds down. The sense of urgency for both sides means we are looking at two teams with plenty to lose, setting up for a fun Monday night under the lights at Lumen Field.\n\nBefore we get into our lineup and strategy, here are the key scoring settings for DraftKings Showdown contests: They're full-point PPR and there are three-point bonuses for 300 passing yards, 100 rushing yards, and 100 receiving yards. The Captain pick costs 1.5 times a player's original price, but he also gets his point total multiplied by 1.5.\n\nEagles-Seahawks DraftKings Picks: DFS lineup for Week 15 Monday Night Football\n\n$50,000 budget, need at least one player from each team.\n\nCaptain (1.5x points, 1.5x salary): WR DK Metcalf, Seahawks ($14,400)\n\nThe Eagles secondary issues are well-documented at this stage and they'll be made even worse with the absence of CB Darius Slay (knee) in Seattle on Monday night. Metcalf has four touchdowns in his last two games, including a three TD game against a stout Cowboys defense. The receiver has been prone to being undisciplined on the field, however, resulting in an ejection against the 49ers last week. That is always a concern when trusting Metcalf, but we take the good with the bad since the ceiling is so high. No matter who ends up starting at QB, the WR is in line for another dominant showing against on\n\nFanDuel 'Prop Stars' Picks: Best bets for Travis Kelce & Taylor Swift-inspired props for Chiefs-Jets Week 4\n\nTravis Kelce has been catching a lot more than footballs lately, and fans everywhere have been swift to hop on the Taylor Swift bandwagon. The celebrity couple has been in the news for well over a week now, and despite the fatigue from many -- Chris 'Mad Dog' Russo's rant being among the most vocal -- companies like FanDuel just can't help but lean into a profitable storyline. Are they for real or is this \"Love Story\" just some extravagant publicity stunt?\n\nTime will tell, but one thing's for certain when it comes to the media, social media, newspapers, football fans, Swifties, and just about everyone else within the 50 states and U.S. territories, including Puerto Rico and Guam: \"You need to calm down.\" Regardless, Kelce and Swift take their tour on the road to Broadway, a place that puts on all the great shows. The traditional circus hasn't been in town for a few years now, but that's simply because the New York Jets exist and there was only room for one. It seems like ages since Aaron Rodgers marched out of the MetLife Stadium tunnel holding an American flag, but this is Zach Wilson's team now, whether you like it or not.\n\nOne of the most hyped \"Sunday Night Football\" games of the year was expected to feature Rodgers against Patrick Mahomes for the first time. Instead, we're more likely to be treated to non-stop split screens involving Swift and Rodgers, two people who won't be on the field. There will be some actual football, though, even if it is just a sideshow to the event everyone can't stop talking about. So, buckle up and enjoy whatever this is, and for all the fans paying ridiculous prices for a glimpse of Ms. Swift — make sure your phone is charged.\n\nTo Travis and Taylor, \"Welcome to New York.\" It's been waiting for you. Well, actually, the swamps of northern New Jersey have. Enjoy the traffic and a look at the famous skyline.\n\nFor bettors, where \n\nBest sportsbook bonus offers for NFL Monday Night Football Eagles vs. Seahawks: Claim over $5,000 in bonuses from Bet365, BetMGM, BetRivers, Caesars Sportsbook, DraftKings and FanDuel \n\nMonday Night Football closes out the NFL’s Week 15 tonight with a pair of teams desperately looking to snap losing streaks. The Eagles vs. Seahawks matchup should be an exciting game, making it a great time to use our sportsbook bonus codes and links to sign up for new sports betting accounts and claim some fantastic welcome offers.\n\nBefore tonight’s MNF kickoff in Seattle, just use our exclusive bonus codes at Bet365, BetMGM, BetRivers, Caesars Sportsbook, DraftKings and FanDuel to claim more than $5,000 in bonuses.\n\nTop Sportsbook Bonuses Offer Promo Code Caesars Sportsbook Get $1,000 First Bet on Caesars NEWS1000 BetMGM $1,500 First Bet SPORTSPICK Bet365 First Bet Safety Net up to $1,000 --or-- Bet $5, Get $150 in bonus bets TSNCO FanDuel Bet $5 on any moneyline, Get $150 in bonus bets if your team wins Click to claim DraftKings Up to $1,200 in welcome offers Click to claim BetRivers 2nd chance bet up to $500 SPORTSRIV\n\nClaim $5,000+ in sports betting bonuses for Eagles vs. Seahawks on Monday Night Football with these promo codes and links\n\nBy using our exclusive bonus codes and links from Bet365, BetMGM, BetRivers, Caesars Sportsbook, DraftKings and FanDuel, new users can claim more than $5,000 in sports betting bonuses for NFL games like tonight’s Eagles/Seahawks MNF matchup.\n\nHere are the latest bonuses currently being offered by the top sportsbook apps:\n\nBet365 bonus code TSNCO unlocks First Bet Safety Net up to $1,000 or Bet $5, Get $150 in bonus bets for MNF Eagles vs. Seahawks\n\nNew Bet365 customers can choose from two excellent welcome offers when using our exclusive Bet365 promo code TSNCO:\n\nThe First Bet Safety Net offer gives new customers a refund of up to $1,000 in bonus bets if their first Bet365 bet is a loss.\n\nFor the Bet $5, Get $150 new user offer, you’ll receive \n\nHottest seat on each NFC team: Buns burning for these four head coaches\n\nEven the Philadelphia Eagles and Dallas Cowboys – two of the NFL's best teams – have hot seats. No seats, however, may be more sizzling than those occupied by two head coaches in the NFC South, one in the NFC North and another (surprisingly) in the NFC West.\n\nHere is the hottest seat on each NFC team as determined by Yardbarker NFL writers.\n\nNFC East\n\nDALLAS COWBOYS | Cornerback Trevon Diggs: In September, Diggs suffered a season-ending ACL injury. His replacement, DaRon Bland, has wowed us with an NFL-record five pick-sixes. There's no way Bland can go back to slot corner in 2024, so the heat will be on Diggs next season as a probable replacement for Stephon Gilmore at left cornerback.\n\nNEW YORK GIANTS | Quarterback Daniel Jones: Out for the season with an ACL injury, Jones has no way to dissuade Giants ownership from taking a quarterback high in the QB-rich 2024 NFL Draft. New York can (and will) get out of his $160M contract in 2025.\n\nPHILADELPHIA EAGLES | Wide receiver Quez Watkins: Philadelphia’s supposed No. 3 receiver has a measly four catches for 21 yards. While he missed five games with a hamstring injury, Olamide Zaccheaus and Julio Jones combined for 132 yards receiving and three touchdowns.\n\nWASHINGTON COMMANDERS | Owner Josh Harris: He oversaw the controversial “Process” as owner of the Philadelphia 76ers. He’ll need a better plan this offseason when “I’m not Dan Snyder” stops working. At 4-8, the Commanders are floundering in his first season of ownership. — Bruce Ewing\n\nNFC West\n\nARIZONA CARDINALS | Quarterback Kyler Murray: The inconsistent Murray has five more games this season to prove to a new front office and coaching staff that he is the long-term answer at quarterback. If he doesn’t show them what they want to see, the Cardinals have the draft capital (including two first-round picks) to land a franchise quarterback at the top of the QB-rich 2024 NFL Draft.\n\nLOS ANGELES RA",
+      "expected_sources": [
+        "NBA Rookie of the Year Odds - Wembanyama the early favorite",
+        "Best sportsbook bonus offers for NFL Monday Night Football Eagles vs. Seahawks: Claim over $5,000 in bonuses from Bet365, BetMGM, BetRivers, Caesars Sportsbook, DraftKings and FanDuel ",
+        "FanDuel 'Prop Stars' Picks: Best bets for Travis Kelce & Taylor Swift-inspired props for Chiefs-Jets Week 4"
+      ],
+      "hit": true,
+      "mrr": 0.5
+    },
+    {
+      "id": "multihop-null-001",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_null_query",
+      "question": "Considering the information from a BBC article detailing Sridevi's achievements in the Indian film industry and a Times of India report on her posthumous honors, which single character from a film portrayed by Sridevi has been recognized for its cultural impact and has also been commemorated with a special award after her passing?",
+      "answer": "资料中没有相关信息",
+      "expected_points": [
+        "Insufficient information."
+      ],
+      "should_refuse": true,
+      "retrieved_sources": [
+        "Mattel slammed for ‘inaccurate’ Cherokee Barbie",
+        "Shayda director Noora Niasari on family violence, Iranian liberation and taking her first film to the Oscars",
+        "Taylor Swift is Time’s Person of the Year",
+        "‘I see myself as a royal’: artist Vincent Namatjira on colonialism, satire and his great-grandfather’s legacy"
+      ],
+      "retrieved_context": "Mattel slammed for ‘inaccurate’ Cherokee Barbie\n\nStay ahead of the trend in fashion and beyond with our free weekly Lifestyle Edit newsletter Stay ahead of the trend in fashion and beyond with our free weekly Lifestyle Edit newsletter Please enter a valid email address Please enter a valid email address SIGN UP I would like to be emailed about offers, events and updates from The Independent. Read our privacy notice Thanks for signing up to the\n\nLifestyle Edit email {{ #verifyErrors }} {{ message }} {{ /verifyErrors }} {{ ^verifyErrors }} Something went wrong. Please try again later {{ /verifyErrors }}\n\nMattel has been criticised for its new Barbie doll honouring Wilma Mankiller, the first female Principal Chief of the Cherokee Nation.\n\nLast month, Mattel announced that it was releasing a doll of Mankiller, who inspired countless Native American children as a powerful but humble leader who expanded early education and rural healthcare. The creation of the doll is part of the toy company’s “Inspiring Women” series. On 6 December, the Cherokee Nation also hosted an event to to celebrate the Wilma Mankiller Barbie.\n\nMankiller was the nation’s first female Principal Chief, leading the tribe for a decade until 1995. She focused on improving social conditions through consensus and on restoring pride in Native heritage. The social worker, who died in 2010, met snide remarks about her surname — a military title — with humour, often delivering a straight-faced response: “Mankiller is actually a well-earned nickname.”\n\nAs noted by Mattel, the Barbie doll of Mankiller portrays her dark hair, as the toy “wears a richly pigmented turquoise dress with ribbon striping that represents the four directions: north, south, east and west”. The toy also comes with a basket, with her look inspired by an iconic photo of Mankiller where she’s holding a woven basket.\n\nHowever, Mattel has now faced some criticism over the doll, with people calling the toy company out for inaccuracies. Chuck Ho\n\nShayda director Noora Niasari on family violence, Iranian liberation and taking her first film to the Oscars\n\nWhen Noora Niasari was five years old, she lived in a women’s shelter with her Iranian mother. They were fleeing family violence in a country that wasn’t entirely familiar, trying to make a new life.\n\nThat personal experience has informed Niasari’s debut feature, Shayda, which has been storming the global festival circuit since it premiered at Sundance film festival in January, winning an audience award. Released in Australia on 5 October, the film has already claimed the top prize at CinefestOz, opened the Melbourne international film festival, and been selected to represent Australia in the international film category at the Oscars.\n\nIt’s a sensational reception for a first film, particularly given the specificity of its story: Shayda is a dramatisation of Niasari’s early life, set in the Iranian diaspora community of suburban Melbourne. “It was something I had experienced, but I hadn’t really seen on screen before,” Niasari says of the movie she started thinking about straight after finishing film school. “But I first had to ask my mum for her permission and participation, because I had such a blurry memory of that time.”\n\nNiasari asked her mother to write her memoirs, which took six months; that writing formed the basis of the first incarnation of Shayda’s script. Shayda evolved over time – and it’s not always a direct mirror of what happened to them both – but “it is very emotionally true to our experience”.\n\nExecutive produced by Cate Blanchett, Niasari’s movie tells the story of Shayda (Zar Amir Ebrahimi), an Iranian immigrant in Melbourne who leaves her abusive husband Hossein (Osamah Sami) with her daughter Mona (Selina Zahednia) in tow. Shayda finds refuge in a women’s shelter where the kindly Joyce (Leah Purcell) protects and guides her through the tough legal process of a custody fight.\n\nZar Amir Ebrahimi and Selina Zahednia as Shayda and Mona. P\n\nTaylor Swift is Time’s Person of the Year\n\nStay ahead of the trend in fashion and beyond with our free weekly Lifestyle Edit newsletter Stay ahead of the trend in fashion and beyond with our free weekly Lifestyle Edit newsletter Please enter a valid email address Please enter a valid email address SIGN UP I would like to be emailed about offers, events and updates from The Independent. Read our privacy notice Thanks for signing up to the\n\nLifestyle Edit email {{ #verifyErrors }} {{ message }} {{ /verifyErrors }} {{ ^verifyErrors }} Something went wrong. Please try again later {{ /verifyErrors }}\n\nTaylor Swift has officially been named Time’s 2023 Person of the Year.\n\nOn Wednesday 6 December, the magazine announced Swift had earned the honour after an “editors’ assessment of the individual who most shaped the headlines over the previous 12 months, for better or for worse”.\n\nThe recognition of Swift comes on the heels of a whirlwind year for the popstar, whose Eras Tour dominated ticket sales in 2023. “This is the proudest and happiest I’ve ever felt, and the most creatively fulfilled and free I’ve ever been,” Swift told Time. “Ultimately, we can convolute it all we want, or try to overcomplicate it, but there’s only one question... Are you not entertained?”\n\nSwift was chosen among a strong list of contenders, including Chinese President Xi Jinping, King Charles III, the live-action Barbie movie, and Vladimir Putin. “While her popularity has grown across the decades, this is the year that Swift, 33, achieved a kind of nuclear fusion: shooting art and commerce together to release an energy of historic force,” the magazine said about its selection.\n\nThis year alone, Swift has broken records with her career-spanning Eras Tour, which is estimated to have grossed over $1.4bn. Her concert film, the Eras Tour movie, has surpassed $250m at the global box office since its opening weekend in October. Not to mention her rumoured relationship with Kansas City Chiefs tight end Tra\n\n‘I see myself as a royal’: artist Vincent Namatjira on colonialism, satire and his great-grandfather’s legacy\n\nWhen Vincent Namatjira was living in Perth as a teenage ward of the state, a school excursion brought him face-to-sail with a replica of the HMS Endeavour, the vessel that fatefully delivered James Cook to Dharawal country in 1770. After his teacher announced there would be a prize for whoever drew the ship, the young Vincent got sketching.\n\n“Yeah, I won the prize,” Namatjira tells Guardian Australia with a grin, decades later. “That’s the first time.”\n\nMany more prizes would follow. The now 40-year-old has won some of Australia’s most high-profile art gongs, from his Cook-inspired Ramsay art prize win in 2019 to his Archibald-winning portrait of the AFL footballer Adam Goodes in 2020, and has been awarded an Order of Australia medal to boot.\n\nVincent Namatjira with his Archibald-prize- winning portrait of Adam Goodes, titled Stand Strong for Who You Are. Photograph: Iwantja Arts\n\nNamatjira’s colourfully idiosyncratic portraits both skewer and honour their subjects — sometimes at the same time, with what fellow artist and collaborator Tony Albert describes as “guerilla humour”. Often painting himself into the picture, in one scene Namatjira might be seen on a palace balcony gatecrashing a royal family photo op. The next he’s in an Acca Dacca T-shirt, patting a dingo and waving the Aboriginal flag alongside Cook and Queen Elizabeth II.\n\n“I’ve become rocketing,” he says. “Before I ever picked up a paintbrush, I was just a normal Aboriginal fella. And here I am today, popping up everywhere – it’s completely changed my life.”\n\nBack in the 1990s the teenage Vincent didn’t fully appreciate just how art, Cook and those colonial legacies would shape his life. Displaced from his Arrernte family, culture and country at a young age, he didn’t even know the significance of his last name.\n\n“At that time, I didn’t know that I was related to this well-known artist,” he sa",
+      "expected_sources": [],
+      "hit": null,
+      "mrr": null
+    },
+    {
+      "id": "multihop-null-002",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_null_query",
+      "question": "What is the first letter of the name of the company that, according to an article from The Financial Times, received the most European patents in 2021, and is also mentioned in a Bloomberg article as having faced a significant legal challenge at the European Patent Office over one of its key patents?",
+      "answer": "资料中没有相关信息",
+      "expected_points": [
+        "Insufficient information."
+      ],
+      "should_refuse": true,
+      "retrieved_sources": [
+        "5 things we learned so far about the Google antitrust case",
+        "ChatGPT: Everything you need to know about the AI-powered chatbot",
+        "Tim Sweeney on Epic’s victory royale over Google",
+        "OpenAI hosts a dev day, TechCrunch reviews the M3 iMac and MacBook Pro, and Bumble gets a new CEO"
+      ],
+      "retrieved_context": "5 things we learned so far about the Google antitrust case\n\nGoogle CEO Sundar Pichai testified Monday in the U.S. government’s antitrust trial against the company. The executive defended Google’s business tactics, including its deal with Apple and other partners to make Google the default search engine.\n\nThe lawsuit stems from a 2020 antitrust claim over Google’s dominance in the online search market. The claim is separate from one filed in January by the Department of Justice, along with eight states including New York, California and Colorado, that aims to “halt Google’s anticompetitive scheme, unwind Google’s monopolistic grip on the market and restore competition to digital advertising.”\n\nThe government has argued that Google uses its platforms and deals with partners to block out any competition in search or advertising, thus hindering competitors from accessing the data they’d need to improve their products.\n\nGoogle argues that it’s just doing business. Everybody wants Google as the default engine because it’s the best. That doesn’t make its actions illegal, the company says.\n\nMonday’s trial hearing revealed plenty of juicy tidbits, including the $26.3 billion Google spent making itself the default search engine across platforms in 2021, how Google tried to take it further and have Chrome preinstalled on iPhones and more.\n\nGoogle paid $26 billion in 2021 to be everyone’s default search engine\n\nWhen Google’s search head Prabhakar Raghavan testified in court on October 28, he revealed that the tech giant had paid $26.3 billion in 2021 to multiple browsers, phones and platforms, from companies including Apple, Samsung and Mozilla, The Verge reports.\n\nAbout $18 billion of that total amount went directly to Apple, according to a New York Times report published earlier this month. Google has had its deal with Apple in place since 2003.\n\nWhen questioned on the amount of money Google spends to get first pick of search engines, Pichai said that the decision was made wi\n\nChatGPT: Everything you need to know about the AI-powered chatbot\n\nChatGPT: Everything you need to know about the AI-powered chatbot\n\nChatGPT, OpenAI’s text-generating AI chatbot, has taken the world by storm. What started as a tool to hyper-charge productivity through writing essays and code with short text prompts has evolved into a behemoth used by more than 92% of Fortune 500 companies for more wide-ranging needs. And that growth has propelled OpenAI itself into becoming one of the most-hyped companies in recent memory, even if CEO and co-founder Sam Altman’s firing and swift return raised concerns about its direction and opened the door for competitors.\n\nWhat does that mean for OpenAI, ChatGPT and its other ambitions? The fallout is still settling, but it might empower competitors like Meta and its LLaMA family of large language models, or help other AI startups get attention and funding as the industry watches OpenAI implode and put itself back together.\n\nWhile there is a more…nefarious side to ChatGPT, it’s clear that AI tools are not going away anytime soon. Since its initial launch nearly a year ago, ChatGPT has hit 100 million weekly active users, and OpenAI is heavily investing in it.\n\nPrior to the leadership chaos, on November 6, OpenAI held its first developer conference: OpenAI DevDay. During the conference, it announced a slew of updates coming to GPT, including GPT-4 Turbo (super-charged versions of GPT-4, its latest language-writing model), a multimodal API and a GPT store where users can create and monetize their own custom versions of GPT.\n\nGPT-4, which can write more naturally and fluently than previous models, remains largely exclusive to paying ChatGPT users. But you can access GPT-4 for free through Microsoft’s Bing Chat in Microsoft Edge, Google Chrome and Safari web browsers. Beyond GPT-4 and OpenAI DevDay announcements, OpenAI recently connected ChatGPT to the internet for all users. And with the integration of DALL-E 3, users are also able\n\nTim Sweeney on Epic’s victory royale over Google\n\nTim Sweeney finally has a win.\n\nOn Monday, a federal jury surprised the world by siding with Fortnite maker Epic Games in its fight to break Google’s control over Android apps — even though “walled garden” rival Apple almost entirely won a similar case two years ago. The nine-person jury decided that Google has an illegal monopoly over Android app distribution and in-app payment systems, and that Google illegally tied its Google Play billing system to its app store.\n\nSweeney is Epic’s CEO, co-founder, and importantly its controlling shareholder. He’s the one behind these lawsuits, and it was his idea to challenge these companies in court. It’s been his fight from the very beginning, and he watched almost the entire trial in person from the best seat in the house — with a clear view of the jury, the judge, each witness, and the faces of Google’s lawyers.\n\nLast night, I asked him why, what he learned, and what’s next.\n\nThis interview has been lightly edited for brevity and clarity.\n\nThank you for being here with us. It’s been a very engaging trial to watch. I’ve been there every day of the trial, and you’ve been there every day save one. So my first question is why did you personally attend this trial every day save one — and what the heck happened on that one day?\n\nYeah, Epic is asking a lot of the court system and the jury here, spending four weeks on a major antitrust trial full of complicated facts and evidence. It wouldn’t be right to start something like this and not show up. So I had to do that. And, you know, Phil Schiller sat throughout the entire Epic v. Apple trial, as did I, so I think it’s just necessary to show respect for the legal process.\n\nWhat happened on that one day you weren’t here?\n\nOh — sorry I can’t share, but there were some... non-Epic issues I had to deal with.\n\nSo this trial has been four years in the making. I look back at a September 2019 email that was in discovery about a plan to draw Go\n\nOpenAI hosts a dev day, TechCrunch reviews the M3 iMac and MacBook Pro, and Bumble gets a new CEO\n\nHey, folks, and welcome to Week in Review (WiR), TechCrunch’s newsletter covering the past week (or so) in tech industry happenings. This week marked OpenAI’s first-ever dev conference, where the Microsoft-backed AI startup announced a host of new products. But that was far from the only item of note.\n\nIn this edition of WiR, we spotlight Brian’s review of the 16-inch M3 Max MacBook Air and M3 iMac 24-inch; Mozilla betting on a decentralized social networking future; Ford shuttering a company that was building an app for plumbers, electricians and other trades; and Tim Cook’s thoughts on generative AI. Also on the agenda is WeWork officially filing for bankruptcy, Bumble getting a new CEO, and the spectacular failure of EV startup Arrival.\n\nIt’s a lot to get through, as always — so we won’t delay. But first, a reminder to sign up here to receive WiR in your inbox every Saturday if you haven’t already done so.\n\nMost read\n\nOpenAI throws a dev day: OpenAI hosted its first-ever developer conference on Monday, and the company had a lot to talk about. Some of the more notable items announced were tools to create custom “GPTs” (i.e., domain-specific chatbots), new text-to-speech models, an API for the text-to-image model DALL-E 3, and an improved version of OpenAI’s flagship model, GPT-4, called GPT-4 Turbo.\n\nMac attack: Brian reviewed Apple’s new 16-inch M3 Max MacBook Pro and the M3 iMac 24-inch. He found the iMac to be lacking and not necessarily worth the upgrade from the 2021 model, excepting the M3 chip, which brings “impressive” performance gains over the already-powerful M1. As for the M3 Max MacBook Pro, Brian reports that, at $2,500 (plus some pricey add-ons), it successfully splits the difference between the Mac Studio and MacBook Air.\n\nMozilla bets on a decentralized future: Sarah spoke with Mozilla senior director of content Carolyn O’Hara, who outlined Mozilla’s",
+      "expected_sources": [],
+      "hit": null,
+      "mrr": null
+    },
+    {
+      "id": "multihop-null-003",
+      "benchmark": "MultiHop-RAG",
+      "category": "multihop_null_query",
+      "question": "Considering the features highlighted in an article from The Verge about the iPhone 13's camera system and the battery life improvements mentioned in a piece by CNET, which model of the iPhone 13 series, represented by a single Roman numeral, was noted for having the best combination of both attributes?",
+      "answer": "资料中没有相关信息",
+      "expected_points": [
+        "Insufficient information."
+      ],
+      "should_refuse": true,
+      "retrieved_sources": [
+        "41 Best Prime Day Apple Deals (2023)",
+        "The 30 best Amazon Prime Day deals for October 2023",
+        "Here are the best deals on headphones and wireless earbuds we could find",
+        "The best Apple Cyber Monday deals of 2023: Save on AirPods, iPads, Apple Watches and more"
+      ],
+      "retrieved_context": "41 Best Prime Day Apple Deals (2023)\n\nDiscounts on Apple products are few and far between. Luckily, with Amazon's second big sale event of the year (officially called Prime Big Deal Days), we've found a variety of Prime Day Apple deals. That includes iPads, Apple Watches, iPhone cases, and MagSafe accessories. These deals aren't just at Amazon either—we've linked to other retailers like Best Buy when available.\n\nWIRED Featured Deals\n\nUpdated October 11: We added new deals on the Apple Magic Keyboard, Apple Studio Display, ESR HaloLock 3-in-1 Travel Wireless Charging Set, Monoprice Extra Wide Microfiber Desk Mat, and Apple AirTags.\n\nTable of Contents\n\nWe test products year-round and independently recommend the best. If you buy something using links in our stories, we may earn a commission. This helps support our journalism. Learn more.\n\niPad Deals\n\nIf you'd like more info, check out our Best iPads guide for an overview of every iPad model.\n\niPad Photograph: Apple\n\nThe ninth-generation iPad (8/10, WIRED Recommends) is the best iPad for most people in our Best iPad guide. It's affordable (even without this discount) and packs a bunch of great features, including a 12-megapixel rear camera with support for Center Stage (which keeps you in the frame during video calls), 64 GB of storage on the base model, a True Tone display that adjusts the color temperature to match the ambient lighting in your environment, and a physical Touch ID-enabled home button. And since it's the same shape and size as its predecessors, all current accessories will work—like the first-generation Apple Pencil and Apple's Smart Keyboard. If you need cellular connectivity, the 4G LTE model is also on sale at Amazon for $379 ($21 off).\n\niPad Air Photograph: Apple\n\nWe recommend the iPad Air (8/10, WIRED Recommends) as an upgrade over the iPad (9th Gen). It packs a 10.9-inch LCD screen, a USB-C port, slim bezels, Touch ID built into the top power button, and the same M1 processor as the 2020 MacBook A\n\nThe 30 best Amazon Prime Day deals for October 2023\n\nEngadget has been testing and reviewing consumer tech since 2004. Our stories may include affiliate links; if you buy something through a link, we may earn a commission. Read more about how we evaluate products.\n\nHere are the best Prime Day deals we could find gathered in one place.\n\nAmazon's second Prime Day-like sale event for 2023 kicked off in the wee hours this morning, and it's turning out to be a great opportunity to get holiday shopping done early. Or, if you missed out on any of the deals from Prime Day in July, this year's \"Prime Big Deal Days\" will let you make up for that. The sale has brought back many of the same steep discounts we saw during the summer as well as new sales. We've also put together category roundups for deals on headphones, tablets, TVs, video games and other gadgets. If you've got your gift list handy, now's a good time to start checking it off so you won't be pressed for time or funds when Black Friday and Cyber Monday come around next month. A few deals are just for Prime members, but many are open to anyone looking to save. If you want to take advantage of some great tech deals, here are all of the best deals we found for October Prime Day.\n\nApple AirPods Pro\n\nThe second-generation AirPods Pro have dropped to $189 for Prime Day. Apple made a ton of small but noticeable improvements to these models, so now they have better sound quality, noise cancelation and Transparency Mode. There remains no competition if you have an iPhone and live within the Apple ecosystem — these are the best earbuds to get if you fall into that category.\n\nApple Watch SE\n\nThe Apple Watch SE is on sale for $199 right now. It's the best smartwatch to get if you're new to the wearable world, or you just want a basic, relatively affordable watch that has all of the basic features you'd need. On top of comprehensive health and fitness tracking, iPhone notifications and dozens of fun watch faces, you'll get feat\n\nHere are the best deals on headphones and wireless earbuds we could find\n\nWhen it comes to headphones and true wireless earbuds, there are a ton of brands and products to choose from. However, the sheer range of available models can also make them difficult to shop for, especially since many of them cater to different lifestyles, budgets, and priorities. Some are better suited for long-haul flights and vigorous workouts, for instance, while others let you tune out noise so you can focus better.\n\nThat’s why we’ve curated a list of the best headphone and earbud deals available. Here, you’ll find sales on all kinds of earbuds and over-ear headphones, all of which come with their own strengths and weaknesses. And if you want to do even more research before making a buying decision, we’ve put together guides to the best wireless earbuds and best noise-canceling headphones, which can help you determine which pair is right for you.\n\nBest Apple deals\n\nAirPods Pro (second-gen) deals\n\nIf you own an iPhone or multiple Apple products, the second-gen AirPods Pro are probably your best bet when it comes to wireless earbuds. In comparison to the base AirPods, the Pros offer better sound quality and feature active noise cancellation, not to mention seamless integration with iOS and a MagSafe-compatible charging case.\n\nIn 2022, Apple launched a new pair of AirPods Pro with improved sound quality and better noise cancellation. They also include onboard volume controls and a new MagSafe charging case, one that can beep if you ever misplace it thanks to its deeper Find My integration. The earbuds even come with an extra swappable tip for smaller ears.\n\nOne year later, Apple released the updated AirPods Pro with a USB-C charging case. Along with USB-C support, the buds also offer an even more robust IP54 rating for water and sweat resistance. Plus, when paired with Apple’s Vision Pro headset, they support lossless audio.\n\nDuring Black Friday, we saw steep discounts on both versions of t\n\nThe best Apple Cyber Monday deals of 2023: Save on AirPods, iPads, Apple Watches and more\n\nEngadget has been testing and reviewing consumer tech since 2004. Our stories may include affiliate links; if you buy something through a link, we may earn a commission. Read more about how we evaluate products.\n\nThere are still a handful more hours of Cyber Monday, so if you're searching for deals on Apple devices, you're in luck. Many of these deals started well before Black Friday, and all but a few are still live. Whether you need an iPad for couchside entertainment, or even productivity, or a new pair of AirPods Pro for a gift, this is a great time to shop. Surprisingly, Apple's latest products like the M3 MacBook Pro and the Apple Watch Series 9 are included in the discounts. If something catches your eye, you may want to click \"add to cart,\" as we expect many of these deals to expire before tomorrow hits. These are the best Cyber Monday Apple deals for 2023.\n\nAirPod Cyber Monday deals\n\nAirPods Pro (2nd gen, USB-C)\n\nWhen Apple announced the new iPhone 15 and its conversion to USB-C charging, the company also revealed the second generation AirPods Pro with the same connector. That version has dropped to $190 at Amazon and Target. They’ve gone or as low as $189 recently, so this is within a dollar of that price. Other than the port, the hardware hasn’t changed so you’re still getting the earbuds we named the best pick for iPhone users in our guide. In addition to pairing well with Apple’s handsets, the buds also offer one of the best transparency modes on the market along with solid ANC and richer fuller sound than the previous generation Pros. The Lightning version is on sale for $169 at Walmart.\n\nRead our full review of the Apple AirPods Pro (2nd Generation)\n\nAirPods Max\n\nThe over-ear AirPods Max are normally far too expensive for us to recommend. But now they're down to $450, which is a new low price and $30 cheaper than Prime Day in October. You can get the deal at Ama",
+      "expected_sources": [],
+      "hit": null,
+      "mrr": null
+    }
+  ]
+}

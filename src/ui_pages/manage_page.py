@@ -27,11 +27,14 @@ def _build_summary(chunks):
         source = chunk["source"]
         item = grouped.setdefault(source, {
             "来源文件": source,
+            "文件类型": set(),
             "分块数": 0,
             "最近入库时间": "",
             "操作人": set(),
         })
         item["分块数"] += 1
+        if chunk["file_type"]:
+            item["文件类型"].add(chunk["file_type"])
         if chunk["create_time"] > item["最近入库时间"]:
             item["最近入库时间"] = chunk["create_time"]
         if chunk["operator"]:
@@ -39,6 +42,8 @@ def _build_summary(chunks):
 
     rows = []
     for item in sorted(grouped.values(), key=lambda row: row["来源文件"]):
+        # 旧数据没有 file_type 元数据，统一显示为“未知”
+        item["文件类型"] = "、".join(sorted(item["文件类型"])) or "未知"
         item["操作人"] = "、".join(sorted(item["操作人"])) or "-"
         rows.append(item)
     return rows
@@ -74,7 +79,7 @@ def manage_page():
     )
 
     if not chunks:
-        st.info("当前向量库为空，请先到“知识库上传”页面导入 txt 文档。")
+        st.info("当前向量库为空，请先到“知识库上传”页面导入文档。")
         return
 
     st.divider()
@@ -90,6 +95,7 @@ def manage_page():
             st.text(chunk["content"])
             st.caption(
                 f"ID：{chunk['id']} ｜ "
+                f"类型：{chunk['file_type'] or '未知'} ｜ "
                 f"入库时间：{chunk['create_time'] or '-'} ｜ "
                 f"操作人：{chunk['operator'] or '-'}"
             )

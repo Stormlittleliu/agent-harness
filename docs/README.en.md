@@ -7,11 +7,12 @@
 A hands-on starter for local knowledge-base Q&A and retrieval-augmented generation (RAG):
 
 - Single-entry multi-page app: one Streamlit service contains knowledge-base upload, RAG chat, vector-store management, and before/after comparison pages
-- Upload `.txt` files in the browser; content is split automatically and written to a Chroma vector store
+- Upload `txt` / `pdf` / `docx` / `md` files in the browser; each type is parsed and chunked with its own parameters before being written to Chroma
 - Ask questions in a chat UI and get retrieval-augmented answers grounded in the knowledge base
-- Compare "plain LLM" and "RAG" answers for the same question to see what the knowledge base changes
+- Two comparison modes: "plain LLM vs. RAG" and "pure vector vs. hybrid retrieval", showing what the knowledge base and keyword fallback change
+- Retrieval parameters, hybrid weights, per-type chunking, and prompts are all configured in `config/*.yml`
 - Conversation history, per-user history isolation, and streaming output
-- Stack: Python / Streamlit / LangChain / Chroma / Embeddings / Qwen ChatModel
+- Stack: Python / Streamlit / LangChain / Chroma / Embeddings / BM25 / Qwen ChatModel
 
 ---
 
@@ -19,12 +20,13 @@ A hands-on starter for local knowledge-base Q&A and retrieval-augmented generati
 
 ### 1) Knowledge Base Upload
 
-- Upload a file from the Streamlit page and preview its basic format
-- Text content is read automatically
-- Content is split according to configuration (`RecursiveCharacterTextSplitter`)
-- Chunks are written to a locally persisted Chroma vector store
+- Upload `txt` / `pdf` / `docx` / `md` files from the Streamlit page; format and size are displayed
+- Parsers are dispatched by extension: `txt`/`md` are decoded as UTF-8 (with GBK fallback), `pdf` is extracted page by page with pypdf, and `docx` is read paragraph by paragraph plus tables with python-docx
+- **Per-type chunking**: each type has its own `chunk_size` / `chunk_overlap` / `separators` in `config/chroma.yml` (e.g. PDF chunks are smaller to preserve page boundaries, while Markdown prefers heading and list separators)
+- Chunks are written to a locally persisted Chroma vector store, with `source`, `file_type`, `chunk_id`, ingestion time, and operator in the metadata
 - **MD5 deduplication**: unchanged file content is not ingested again
 - Re-uploading updated content replaces the old chunks for that file, so old and new content never coexist
+- Parse failures (e.g. scanned PDFs or corrupted files) produce a clear message, and nothing is written to the vector store
 
 ### 2) RAG Chat
 
@@ -38,15 +40,16 @@ A hands-on starter for local knowledge-base Q&A and retrieval-augmented generati
 
 ### 3) RAG Before/After Comparison
 
-- Answers the same question twice: plain LLM vs. LLM with knowledge-base retrieval (RAG)
-- Shows the retrieved reference material (source file + snippet)
-- Comparison records are stored in `data/compare_history.json` and can be cleared from the sidebar
+- Mode 1 "plain LLM vs. RAG": the same question is answered both without and with knowledge-base retrieval (RAG)
+- Mode 2 "pure vector vs. hybrid retrieval": the same question goes through pure vector retrieval and through "vector + BM25 keyword fallback" hybrid retrieval, comparing both the retrieved chunks and the answers
+- Both sides show the retrieved reference material (source file + snippet)
+- Comparison records are stored in `data/compare_history.json` and can be cleared from the sidebar; older records without a mode field are shown as "plain LLM vs. RAG"
 
 ### 4) Vector Store Management
 
 - Shows total chunks, document count, deduplication-record count, and storage location
-- Summarizes each source file with chunk count, latest ingestion time, and operator
-- Expands each chunk to preview its text, ID, ingestion time, and operator
+- Summarizes each source file with its file type, chunk count, latest ingestion time, and operator (older data without a type shows "unknown")
+- Expands each chunk to preview its text, ID, type, ingestion time, and operator
 - Delete by document: removes all chunks for a source and its MD5 deduplication record, so the same file can be uploaded again
 - Clear vector store: removes all chunks and deduplication records (irreversible; confirmation required)
 - Deletion only affects the vector store and deduplication records, not chat history or comparison records
@@ -77,16 +80,22 @@ KnowledgeBase-RAG-LLM-System/
 ├─ README.md                   # Short bilingual pointer
 ├─ requirements.txt            # Dependencies (core versions pinned)
 ├─ .env                        # Local secrets (create it yourself; never commit)
+├─ config/                     # YAML business configuration (change settings without code)
+│  ├─ rag.yml                  # Models, Top-K, default retrieval mode, hybrid weights, tokenizer
+│  ├─ chroma.yml               # Collection, allowed file types, per-type chunking
+│  └─ prompts.yml              # Chat / history / plain / RAG prompt templates
 ├─ src/
 │  ├─ kbrag/                   # Business services (independent of Streamlit)
-│  │  ├─ config.py             # Models, paths, chunking and other settings
+│  │  ├─ config.py             # Loads config/*.yml + path derivation
 │  │  ├─ providers.py          # Unified embedding / LLM factory
 │  │  ├─ vector_store.py       # Vector-store retrieval wrapper (persistent)
-│  │  ├─ knowledge_base.py     # Read, split, ingest, deduplicate
+│  │  ├─ document_parser.py    # Multi-format parsing: txt/md/pdf/docx -> plain text
+│  │  ├─ knowledge_base.py     # Dedup, per-type splitting, ingestion
+│  │  ├─ retrievers.py         # Vector / BM25 keyword / hybrid retriever factory
 │  │  ├─ history.py            # Conversation history storage
-│  │  ├─ prompts.py            # Prompt templates and context formatting
+│  │  ├─ prompts.py            # Prompt loading and context formatting
 │  │  ├─ rag_service.py        # RAG chain assembly
-│  │  └─ compare_service.py    # Plain-LLM vs. RAG comparison service
+│  │  └─ compare_service.py    # Comparison service for both modes
 │  └─ ui_pages/                # Streamlit page layer (UI only)
 │     ├─ chat_page.py          # RAG chat
 │     ├─ upload_page.py        # Knowledge-base upload
@@ -97,8 +106,8 @@ KnowledgeBase-RAG-LLM-System/
 │  ├─ README.en.md             # Full English documentation (this file)
 │  └─ images/                  # README screenshots
 ├─ scripts/
-│  ├─ smoke_test.py            # End-to-end smoke test
-│  └─ assets/                  # Sample knowledge texts (4 txt files)
+│  ├─ smoke_test.py            # End-to-end smoke test (four formats + dual retrieval + comparison)
+│  └─ assets/                  # Sample knowledge texts (txt / md)
 ├─ data/                       # Runtime data (gitignored, created on first run)
 │  ├─ chroma_db/               # Local vector store
 │  ├─ chat_history/            # Per-user conversation history
@@ -117,9 +126,10 @@ Design notes:
 ### Data Flow
 
 ```text
-Upload:  txt file -> read text -> MD5 dedup -> split -> DashScope Embedding -> Chroma (data/chroma_db)
-Chat:    question -> Chroma top-k retrieval -> prompt with context -> qwen-plus -> streamed answer -> history file
-Compare: question -> plain LLM answer vs. retrieval + qwen-plus answer -> data/compare_history.json
+Upload:  file(txt/pdf/docx/md) -> parse by type -> MD5 dedup -> split by type -> DashScope Embedding -> Chroma (data/chroma_db)
+Chat:    question -> retrieval (vector / vector+BM25 hybrid) top-k -> prompt with context -> qwen-plus -> streamed answer -> history file
+Compare: mode 1 plain LLM answer vs. RAG answer
+         mode 2 pure-vector answer vs. hybrid-retrieval answer -> data/compare_history.json
 ```
 
 ---
@@ -161,9 +171,9 @@ streamlit run app.py
 Open `http://localhost:8501` and use the sidebar to switch pages:
 
 - **RAG Chat**: retrieve from the knowledge base first, then let the model answer with the retrieved context
-- **Knowledge Base Upload**: upload `.txt` files into the local vector store
+- **Knowledge Base Upload**: upload `txt` / `pdf` / `docx` / `md` files into the local vector store
 - **Vector Store Management**: inspect ingested chunks, delete a document, or clear the vector store
-- **RAG Before/After**: compare plain-LLM and RAG answers for the same question
+- **RAG Before/After**: compare plain-LLM vs. RAG, or pure-vector vs. hybrid retrieval, for the same question
 
 To continue a specific user's conversation, append `?user=xxx` to the URL, for example:
 
@@ -181,9 +191,10 @@ python scripts/smoke_test.py
 
 The script verifies, in order:
 
-1. Ingests the three sample documents under `scripts/assets/` (calling the embedding API per chunk)
-2. Runs a retrieval check with a sizing question
-3. Runs one complete RAG Q&A round
+1. Ingests four document types: the txt and md samples under `scripts/assets/`, plus a docx and a pdf generated on the fly by the script (calling the embedding API per chunk)
+2. Runs the same sizing question through pure vector retrieval and hybrid retrieval, printing hits and file types on both sides
+3. Runs one complete RAG Q&A round (using the default retrieval mode from `config/rag.yml`)
+4. Creates one "pure vector vs. hybrid retrieval" comparison record to exercise the new compare branch
 
 It uses an isolated `smoke_test` session, so real user history is untouched. If the sample documents were already ingested, the ingest step reports `[Repeat]`, which is expected MD5 deduplication behavior.
 
@@ -191,16 +202,31 @@ It uses an isolated `smoke_test` session, so real user history is untouched. If 
 
 ## ⚙️ Configuration
 
-Core settings live in `src/kbrag/config.py`:
+Business settings live in three YAML files under `config/`; `src/kbrag/config.py` only loads them and exposes module attributes.
 
-- `PROJECT_ROOT`: project root (derived automatically)
-- `DATA_DIR`: runtime data directory, fixed to `data/`
-- `chunk_size` / `chunk_overlap` / `separators`: text splitting parameters
-- `retrieval_k`: number of retrieved documents (top-k)
-- `embedding_model_name`: defaults to `text-embedding-v4`
-- `chat_model_name`: defaults to `qwen-plus`
+`config/rag.yml`:
 
-Model construction is centralized in `src/kbrag/providers.py`; to plug in local embeddings/LLMs later, add a branch there.
+| Option | Description | Default |
+| --- | --- | --- |
+| `chat_model_name` | Chat model | `qwen-plus` |
+| `embedding_model_name` | Embedding model | `text-embedding-v4` |
+| `retrieval_k` | Number of retrieved documents (Top-K) | `4` |
+| `retrieval_mode` | Default retrieval mode | `hybrid` (`vector` also available) |
+| `hybrid_weights` | Vector / BM25 fusion weights | `vector: 0.5, bm25: 0.5` |
+| `bm25_tokenizer` | Chinese tokenizer for BM25 | `jieba` (falls back to `bigram`) |
+
+`config/chroma.yml`:
+
+| Option | Description |
+| --- | --- |
+| `collection_name` | Chroma collection name |
+| `allow_file_types` | Allowed upload types, default `[txt, pdf, docx, md]` |
+| `max_split_char_number` | Documents shorter than this are ingested whole |
+| `chunking` | Per-type `chunk_size` / `chunk_overlap` / `separators` |
+
+`config/prompts.yml`: four templates used by the chat page, history prompt, plain-LLM answer, and RAG answer. Edit prompts without touching code.
+
+Path settings (`PROJECT_ROOT`, `DATA_DIR`, vector-store and history locations) are still derived in `src/kbrag/config.py`. Model construction stays centralized in `src/kbrag/providers.py`; to plug in local embeddings/LLMs later, add a branch there.
 
 ---
 
@@ -228,7 +254,7 @@ Model construction is centralized in `src/kbrag/providers.py`; to plug in local 
 Possible causes:
 
 - Upload and chat use different vector-store directories (check `DATA_DIR` in `src/kbrag/config.py`)
-- `collection_name` differs between services
+- `collection_name` differs between services (check `config/chroma.yml`)
 - The file content is identical to what was already ingested and was skipped by MD5 deduplication (the upload page reports `[Repeat]`)
 - Updated content was not uploaded again, so the old chunks are still in the store
 
@@ -236,7 +262,7 @@ Possible causes:
 
 Possible causes:
 
-- Splitting or retrieval parameters are unsuitable; tune `chunk_size` and `retrieval_k`
+- Splitting or retrieval parameters are unsuitable; tune per-type `chunking` in `config/chroma.yml`, or `retrieval_k` / `retrieval_mode` / `hybrid_weights` in `config/rag.yml`
 - Slow model API or network responses
 - The local vector store was not initialized correctly
 
@@ -244,7 +270,7 @@ Possible causes:
 
 Check, in order:
 
-- Paths and model settings in `src/kbrag/config.py`
+- Whether `config/*.yml` exist and are valid YAML (`config.py` raises clear errors when missing or malformed)
 - Whether `data/` exists (created automatically on first run)
 - Whether `DASHSCOPE_API_KEY` is set in the project-root `.env`
 - Whether you ran `streamlit run app.py` from the project root (absolute paths from other directories are also supported)
@@ -252,6 +278,12 @@ Check, in order:
 ### Q4: A LangChain deprecation warning appears at startup?
 
 `RunnableWithMessageHistory is deprecated...` is a framework notice and does not affect current functionality. It can be migrated to LangGraph's persistence mechanism later.
+
+### Q5: Hybrid retrieval is not taking effect, or results are unstable?
+
+- Check that `retrieval_mode` is `hybrid` and `hybrid_weights` are sensible in `config/rag.yml`
+- Without jieba, the tokenizer automatically falls back to character bigrams and logs a warning; installing `jieba==0.42.1` gives better Chinese keyword recall
+- The BM25 corpus is read from Chroma on every retrieval, so newly uploaded documents are searchable without restarting the service
 
 ---
 
@@ -274,6 +306,10 @@ Check, in order:
 | dashscope | 1.27.6 |
 | pydantic | 2.13.5 |
 | python-dotenv | 1.2.3 |
+| pypdf | 5.1.0 |
+| PyYAML | 6.0.2 |
+| jieba | 0.42.1 |
+| python-docx | 1.2.0 |
 
 ---
 
@@ -281,7 +317,8 @@ Check, in order:
 
 - Add deep reranking to improve retrieval quality (e.g., the rerank modules available in the LangChain ecosystem)
 - Polish the Streamlit UI and interactions
-- Support more file types (PDF / Markdown / Word) by adding parsers
+- Use `MarkdownHeaderTextSplitter` to split Markdown by heading level and keep section metadata
+- Extend to xlsx, html, and other file types by adding parsers
 - Single model -> multi-model blended output
 - Chroma -> FAISS: Chroma is lightweight and easy to reproduce locally; FAISS suits large-scale retrieval
 - Growth path: enterprise-grade RAG -> plugins -> Agent -> AI product
@@ -290,7 +327,7 @@ Check, in order:
 
 ## ⚠️ Limitations
 
-- Only plain text (`.txt`) upload is supported
+- Supports `txt` / `pdf` / `docx` / `md`; scanned PDFs (no text layer) require OCR first
 - No login/authentication; `?user=xxx` only isolates history files and is not a security boundary
 - Sample knowledge texts are for learning and demonstration only
 

@@ -1,0 +1,20 @@
+# ===================== 模型与检索策略 =====================
+# 对话模型与嵌入模型（阿里云百炼 DashScope）
+chat_model_name: qwen-plus
+embedding_model_name: text-embedding-v4
+
+# 检索返回的文档数量（Top-K）
+retrieval_k: 4
+
+# 默认检索模式：vector（纯向量检索）| hybrid（向量 + 关键词兜底）
+# 聊天页与「纯模型 vs RAG」对比都使用该默认模式
+retrieval_mode: hybrid
+
+# 混合检索融合权重（EnsembleRetriever 内部会自动归一化）
+hybrid_weights:
+  vector: 0.5
+  bm25: 0.5
+
+# 中文关键词分词方式：jieba | bigram | char
+# jieba 未安装时会自动降级为 bigram，并输出警告日志
+bm25_tokenizer: jieba
