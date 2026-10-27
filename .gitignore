@@ -1,0 +1,85 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Packaging / build
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Test / cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Runtime generated data
+# =========================
+chroma_db/
+models/
+md5.txt
+data/runtime/
+data/backups/
+chroma_db_backup_*/
+md5.txt.bak_*
+md5.text.bak_*
+tests/results/
+evals/reports/
+
+# Legacy KnowledgeBase files (preserved in legacy-main)
+/src/
+/scripts/
+/reports/
+/docs/README.md
+/docs/README.en.md
+/docs/images/
+/data/chroma_db/
+/data/chat_history/
+/data/md5.text
+/data/compare_history.json
+
+# Optional: if you later generate temp reports locally
+tmp/
+temp/
+*.tmp
+
+# =========================
+# Streamlit
+# =========================
+.streamlit/secrets.toml
+
+# =========================
+# IDE / Editor
+# =========================
+.idea/
+.vscode/
+
+# =========================
+# OS junk
+# =========================
+.DS_Store
+Thumbs.db

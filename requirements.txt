@@ -1,0 +1,54 @@
+# ==============================================
+# LangChain ReAct Agent · 智能客服
+# 安装：pip install -r requirements.txt
+# 版本与基础项目 KnowledgeBase-RAG-LLM-System 对齐
+# ==============================================
+
+# Web 界面
+streamlit==1.40.1
+
+# ===================== RAG 框架（LangChain 1.x） =====================
+langchain==1.4.2
+langchain-core==1.6.4
+langchain-community==0.4.2
+langchain-chroma==1.1.0
+langchain-text-splitters==1.1.2
+# EnsembleRetriever（混合检索加权融合）所在包
+langchain-classic==1.0.8
+# DeepSeek 使用 OpenAI 兼容接口
+langchain-openai==1.7.2
+
+# ===================== 本地 Embedding =====================
+# sentence-transformers + BGE，小模型 CPU 即可运行
+sentence-transformers==6.2.0
+langchain-huggingface==1.2.3
+# 可选：从 ModelScope 下载模型权重
+modelscope==1.40.2
+
+# ===================== Agent 编排（LangGraph 1.x） =====================
+langgraph==1.2.12
+langgraph-checkpoint==4.2.0
+langgraph-prebuilt==1.1.0
+langgraph-sdk==0.4.5
+
+# ===================== 向量数据库与数值计算 =====================
+chromadb==1.5.9
+numpy==1.26.4
+
+# ===================== DashScope 可选回退 =====================
+dashscope==1.27.6
+requests==2.34.2
+urllib3==2.8.0
+aiohttp==3.14.3
+anyio==4.15.1
+
+# ===================== 配置、校验与文件处理 =====================
+pydantic==2.13.5
+python-dotenv==1.2.3
+pillow==11.3.0
+pypdf==5.1.0
+python-docx==1.2.0
+PyYAML==6.0.2
+# 中文分词（BM25 关键词检索；未安装时自动降级为 bigram）
+jieba==0.42.1
+tqdm==4.70.1

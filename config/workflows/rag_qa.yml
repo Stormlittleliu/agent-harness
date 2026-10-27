@@ -1,0 +1,28 @@
+name: rag_qa
+description: 检索增强问答：检索 -> 生成 -> 拒答分流 -> 引用校验
+entry: retrieve
+nodes:
+  retrieve:
+    type: rag_retrieve
+    output: context
+    next: generate
+  generate:
+    type: rag_answer
+    output: answer
+    next: check_refusal
+  check_refusal:
+    type: router
+    field: answer
+    routes:
+      - if_contains: ["没有相关信息", "资料不足", "未提及", "无法确定"]
+        target: end
+      - default: verify
+  verify:
+    type: llm
+    prompt: |
+      你是事实核查员。只根据下面资料判断回答是否有依据，不要使用外部知识。
+      资料：{context}
+      回答：{answer}
+      只输出“有依据”或“无依据”。
+    output: verified
+    next: end

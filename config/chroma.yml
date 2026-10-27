@@ -1,0 +1,31 @@
+# ===================== 向量库与文档切片 =====================
+collection_name: agent
+persist_directory: data/runtime/chroma_db
+data_path: data/knowledge
+md5_hex_store: data/runtime/md5.txt
+
+# 允许入库的文件类型（与基础项目一致：txt / pdf / docx / md）
+allow_file_types: ["txt", "pdf", "docx", "md"]
+
+# 文本短于该长度时整段入库，不做切分
+max_split_char_number: 1000
+
+# 按文档类型差异化切片：每种类型单独配置
+# 注意：separators 中的换行必须使用 YAML 双引号，否则会变成字面量 "\n"
+chunking:
+  txt:
+    chunk_size: 1000
+    chunk_overlap: 100
+    separators: ["\n\n", "\n", ".", "!", "?", "。", "！", "？", " ", ""]
+  pdf:
+    chunk_size: 800
+    chunk_overlap: 80
+    separators: ["\n\n", "\n", ".", "!", "?", "。", "！", "？", " ", ""]
+  docx:
+    chunk_size: 1000
+    chunk_overlap: 100
+    separators: ["\n\n", "\n", ".", "!", "?", "。", "！", "？", " ", ""]
+  md:
+    chunk_size: 800
+    chunk_overlap: 80
+    separators: ["\n\n", "\n## ", "\n# ", "\n- ", "\n", ".", "。", " ", ""]

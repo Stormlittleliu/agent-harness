@@ -1,0 +1,21 @@
+# ===================== 模型与检索参数 =====================
+# 聊天模型：deepseek（OpenAI 兼容接口）| dashscope
+chat_provider: deepseek
+chat_model_name: deepseek-chat
+chat_base_url: https://api.deepseek.com
+chat_temperature: 0
+
+# Embedding：local（sentence-transformers + BGE，本地 CPU）| dashscope
+embedding_provider: local
+embedding_model_name: models/bge-small-zh-v1.5
+
+# 检索返回条数（Top-K）
+retrieval_k: 4
+# 默认检索模式：vector（纯向量）| hybrid（向量 + BM25 关键词兜底）
+retrieval_mode: hybrid
+# 混合检索加权 RRF 融合权重（两路权重之和建议为 1.0）
+hybrid_weights:
+  vector: 0.5
+  bm25: 0.5
+# BM25 中文分词方式：jieba | bigram | char
+bm25_tokenizer: jieba

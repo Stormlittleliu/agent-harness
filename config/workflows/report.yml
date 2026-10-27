@@ -1,0 +1,29 @@
+name: report
+description: 用户ID -> 当前月份 -> 使用记录 -> 报告
+entry: get_user_id
+nodes:
+  get_user_id:
+    type: tool
+    tool: get_user_id
+    output: user_id
+    next: get_current_month
+  get_current_month:
+    type: tool
+    tool: get_current_month
+    output: month
+    next: fetch_external_data
+  fetch_external_data:
+    type: tool
+    tool: fetch_external_data
+    args:
+      user_id: "{user_id}"
+      month: "{month}"
+    output: records
+    next: write_report
+  write_report:
+    type: llm
+    prompt: |
+      你是扫地机器人客服。根据以下使用记录，用中文写一份使用报告与保养建议。
+      使用记录：{records}
+    output: report
+    next: end

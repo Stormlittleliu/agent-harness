@@ -1,0 +1,15 @@
+# ===================== Agent 行为配置 =====================
+external_data_path: data/external/records.csv
+
+# 最大模型调用步数（ReAct 每思考一步算一次）；超限由中间件注入兜底回复
+max_model_calls: 8
+
+# 意图路由：命中关键词即判定为「报告生成」意图，否则为普通问答
+intent:
+  report_keywords:
+    - 报告
+    - 使用报告
+    - 月报
+    - 使用记录
+    - 使用情况
+    - 使用数据
