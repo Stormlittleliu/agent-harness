@@ -210,8 +210,8 @@ python test_entry.py workflow --run rag_qa --dry-run
 ### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/Stormlittleliu/LLM-RAG.git
-cd LLM-RAG
+git clone https://github.com/Stormlittleliu/agent-harness.git
+cd agent-harness
 ```
 
 ### 2. 安装依赖
@@ -269,7 +269,7 @@ streamlit run app.py
 ## 项目结构
 
 ```text
-LLM-RAG/
+agent-harness/
 │
 ├── agent/                          # Agent Runtime
 │   ├── react_agent.py              #   兼容层：按场景构建 Agent
