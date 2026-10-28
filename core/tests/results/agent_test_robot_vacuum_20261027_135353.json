@@ -1,0 +1,466 @@
+{
+  "summary": {
+    "scenario": "robot_vacuum",
+    "total": 13,
+    "passed": 11,
+    "by_category": {
+      "rag": 7,
+      "tool": 4,
+      "report": 1,
+      "refusal": 1
+    },
+    "tool_cases_ok": 12,
+    "refusal_correct": 0,
+    "refusal_count": 1
+  },
+  "results": [
+    {
+      "id": "agent-rag-001",
+      "category": "rag",
+      "question": "小户型适合哪些扫地机器人？",
+      "expected_points": [
+        "轻便",
+        "小户型"
+      ],
+      "expected_tools": [
+        "rag_summarize"
+      ],
+      "should_refuse": false,
+      "notes": "选购指南：独居小户型侧重轻便灵活",
+      "answer": "小户型选择扫地机器人，关键在于「灵活、精准、省心」。结合专业选购建议，我为您总结以下核心适配要点与推荐方向：\n\n✅ **机身尺寸优先**：选直径≤35cm、高度≤7.5cm的机型（如石头T4、米家1C），轻松钻入床底、沙发底等低矮空间，避免卡困。\n\n✅ **导航与避障**：小户型家具密集、动线复杂，推荐搭载**基础激光导航（LDS）+ 3D结构光避障**的机型，识别桌腿、电线、拖鞋更准，减少碰撞与漏扫。\n\n✅ **清洁性能匹配**：吸力≥3000Pa即可满足硬质地面与短毛地毯清洁；无需盲目追求万级吸力，小空间清洁频次高、单次时长较短，更看重稳定性与噪音控制（建议≤65dB）。\n\n✅ **拖地设计巧思**：水箱200ml左右为宜——容量过大易增重影响转向灵活性；优选**电动旋转拖布+自动抬升功能**，遇地毯/木地板可自动抬起拖布，避免打湿地毯，保护地板。\n\n✅ **智能体验加分项**：必须支持**断点续扫+APP分区命名+虚拟墙/禁扫区设置**，方便对玄关、厨房、宠物区等小区域精细化管理。\n\n✅ **售后与生态**：科沃斯（T系列）、石头（P/T系列）、小米生态链（米家、云鲸入门款）在小户型用户中口碑扎实，固件更新勤、配件易购、客服响应快。\n\n📌 小贴士：若您已有户型图或面积数据（如≤60㎡），我可进一步帮您筛选具体型号或对比参数。欢迎随时告诉我！",
+      "tool_calls": [
+        {
+          "name": "rag_summarize",
+          "args": {
+            "query": "小户型 扫地机器人 选购建议"
+          }
+        }
+      ],
+      "tool_names": [
+        "rag_summarize"
+      ],
+      "coverage": 0.5,
+      "matched_points": [
+        "小户型"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    },
+    {
+      "id": "agent-rag-002",
+      "category": "rag",
+      "question": "扫地机器人吸力选多大合适？",
+      "expected_points": [
+        "3000Pa",
+        "4000Pa"
+      ],
+      "expected_tools": [
+        "rag_summarize"
+      ],
+      "should_refuse": false,
+      "notes": "选购指南：家用≥3000Pa，地毯≥4000Pa",
+      "answer": "根据专业资料，扫地机器人吸力选择需匹配实际使用场景，而非一味追求“越大越好”。以下是具体建议：\n\n✅ **普通家庭（小户型/硬质地板如瓷砖、木地板）**：  \n推荐吸力 ≥3000Pa。该档位可高效清除灰尘、碎屑、毛发，兼顾清洁力与续航、噪音平衡。\n\n✅ **养宠家庭（猫狗掉毛多、浮毛+皮屑混合）**：  \n建议 ≥2500Pa 即可满足日常清理，但更关键的是**滚刷防缠绕设计+大尘盒+高频清扫习惯**；若地面有地毯或长毛宠物，建议升级至 ≥4000Pa 并开启地毯增压模式。\n\n✅ **铺设地毯（尤其短绒/中绒地毯）**：  \n必须 ≥4000Pa，并**优先选择带地毯识别+自动增压功能的机型**（如检测到地毯时吸力瞬时提升30%以上），否则易吸不净深层灰尘。\n\n⚠️ 注意事项：  \n- 吸力＞8000Pa 通常为旗舰机型，适合大面积+重度清洁需求，但可能伴随噪音上升（＞65dB）和续航缩短（约10%–20%）；  \n- 若同时使用扫拖一体功能，需关注“风道与水箱独立设计”，避免高吸力导致拖布过干或吸水干扰；  \n- 实际效果不仅取决于吸力数值，更依赖密封性、主刷贴地性、尘盒气流路径优化等系统工程。\n\n需要我帮您结合房屋面积、地面类型或宠物情况，进一步推荐具体机型或参数组合吗？",
+      "tool_calls": [
+        {
+          "name": "rag_summarize",
+          "args": {
+            "query": "扫地机器人吸力推荐"
+          }
+        }
+      ],
+      "tool_names": [
+        "rag_summarize"
+      ],
+      "coverage": 1.0,
+      "matched_points": [
+        "3000Pa",
+        "4000Pa"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    },
+    {
+      "id": "agent-rag-003",
+      "category": "rag",
+      "question": "扫地机器人日常需要做哪些维护？",
+      "expected_points": [
+        "擦拭",
+        "防撞条",
+        "充电触点"
+      ],
+      "expected_tools": [
+        "rag_summarize"
+      ],
+      "should_refuse": false,
+      "notes": "维护保养：机身、防撞条、充电触点",
+      "answer": "扫地机器人日常维护需坚持“每日清理、每周检查、每月保养”原则，具体如下：\n\n✅ **每日维护（使用后立即执行）**  \n- 清洁机身外壳、防撞条缝隙、驱动轮/万向轮缠绕毛发与碎屑  \n- 倾倒并彻底晾干尘盒，避免潮湿滋生细菌或堵塞滤网  \n- 清理底部传感器（悬崖、红外、激光窗口）、充电触点（确保接触良好）  \n- 扫拖一体机型：取下拖布清水冲洗、自然晾干，清空并擦干水箱  \n\n✅ **每周维护（建议固定时间执行）**  \n- 拆卸主刷/边刷，清除缠绕的毛发、线头，检查胶条是否老化或脱落  \n- 清理滚刷仓、风道、滤网（可水洗滤网需彻底晾干后再装回）  \n- 清洗水箱（用清水反复冲洗并排空），检查密封圈是否老化  \n- 检查APP连接状态、固件更新提示、边刷卡扣/硅胶配件是否松动或破损  \n- 查看轮组回弹是否顺畅、螺丝有无松动  \n\n✅ **每月深度保养（保障长期性能与寿命）**  \n- 擦拭避障摄像头镜头、激光雷达窗口、散热口及电池仓触点  \n- 检查HEPA滤网安装是否到位、吸力调节模块是否灵敏  \n- 清理电机散热风扇、主刷轴承及胶条，必要时更换耗材  \n- 水箱用1:10柠檬酸溶液浸泡30分钟除垢，再清水彻底冲洗  \n- 万向轮转轴、拖布支架转轴滴加1–2滴专用硅基润滑油（禁用WD-40等腐蚀性油剂）  \n\n⚠️ **重要注意事项**  \n- 全程务必断电操作；  \n- 禁用酒精、84消毒液、汽油等腐蚀性液体清洁电子部件；  \n- 避免硬质刷子刮擦传感器/镜头，推荐超细纤维布+少量清水；  \n- 不可直接用水冲洗主机、电池或电路板；  \n- 长期不用时请保持电量在40%–60%，存放于干燥常温环境。\n\n如您想了解某项维护的具体操作视频、耗材更换周期，或需要根据您的机型（如X50 Pro、T9 Plus等）定制维护提醒，欢迎随时告诉我！",
+      "tool_calls": [
+        {
+          "name": "rag_summarize",
+          "args": {
+            "query": "扫地机器人日常维护"
+          }
+        }
+      ],
+      "tool_names": [
+        "rag_summarize"
+      ],
+      "coverage": 1.0,
+      "matched_points": [
+        "擦拭",
+        "防撞条",
+        "充电触点"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    },
+    {
+      "id": "agent-rag-004",
+      "category": "rag",
+      "question": "机器人开机没反应怎么办？",
+      "expected_points": [
+        "电源适配器",
+        "电源线",
+        "电池"
+      ],
+      "expected_tools": [
+        "rag_summarize"
+      ],
+      "should_refuse": false,
+      "notes": "故障排除：检查电源适配器/电源线/电池",
+      "answer": "根据知识库检索结果，机器人开机无反应的常见原因及标准排查步骤如下：\n\n✅ **第一步：检查供电系统**  \n- 确认电源适配器是否牢固插入机器人底部充电接口（部分型号需听到“咔嗒”声）；  \n- 检查电源线是否有明显破损、弯折或接触不良；  \n- 查看充电座指示灯是否亮起（通常为蓝色/白色常亮），若不亮，尝试更换插座或使用其他电器测试该插座是否通电。\n\n✅ **第二步：检查电池状态**  \n- 打开机器人底盖，确认电池已完全推入卡槽，金属触点无氧化或异物遮挡；  \n- 若为可拆卸电池，取出后用干布清洁正负极触点，再重新安装并按压到位。\n\n✅ **第三步：强制重启（部分型号适用）**  \n- 长按机身「开关机键」10秒以上，观察是否有震动或提示音；  \n- 若有LED呼吸灯，观察是否闪烁异常（如红灯快闪可能表示主板通信故障）。\n\n⚠️ **温馨提示**：  \n- 切勿自行拆解主板或短接电路；  \n- 若完成上述操作仍无任何响应（无灯、无音、无震动），大概率为主板或电源管理芯片故障，建议通过App提交「硬件检测工单」或联系官方售后安排寄修。\n\n需要我帮您进一步判断具体型号的强制重启方式，或协助生成售后报修指引吗？",
+      "tool_calls": [
+        {
+          "name": "rag_summarize",
+          "args": {
+            "query": "机器人开机没反应"
+          }
+        }
+      ],
+      "tool_names": [
+        "rag_summarize"
+      ],
+      "coverage": 1.0,
+      "matched_points": [
+        "电源适配器",
+        "电源线",
+        "电池"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    },
+    {
+      "id": "agent-rag-005",
+      "category": "rag",
+      "question": "机器人连不上WiFi怎么办？",
+      "expected_points": [
+        "2.4G",
+        "密码",
+        "重启"
+      ],
+      "expected_tools": [
+        "rag_summarize"
+      ],
+      "should_refuse": false,
+      "notes": "故障排除：2.4G网络/密码/重启",
+      "answer": "根据专业资料，机器人连不上WiFi的常见原因和解决方法如下：\n\n✅ **基础检查（请按顺序操作）：**  \n1. **确认网络频段**：确保手机和机器人连接的是同一个 **2.4GHz WiFi网络**（机器人不支持5GHz频段）；  \n2. **核对密码**：检查输入的WiFi密码是否正确（区分大小写、特殊字符）；  \n3. **物理环境**：确认机器人顶部/机身WiFi模块区域无遮挡、无金属/厚墙阻挡，且距离路由器建议在10米内、无强干扰源（如微波炉、蓝牙设备）；  \n4. **重启设备**：同时重启路由器（断电30秒再通电）和机器人（长按电源键10秒强制关机后重启）。\n\n🔧 **进阶操作（若基础检查无效）：**  \n- 若近期修改过WiFi名称（SSID）或密码，请在机器人机身找到 **WiFi重置键**（通常为小孔状，需用卡针长按5–8秒至指示灯快闪），恢复网络配置；  \n- 打开APP → 进入「添加设备」流程，重新搜索并绑定新WiFi。\n\n💡 **小贴士：**  \n- 清洁机器人顶部WiFi天线区域的灰尘或污渍，可提升信号接收能力；  \n- 部分老旧路由器需关闭“WiFi定时关闭”或“AP隔离”功能。\n\n如以上步骤仍无法连接，可提供您的机器人型号和APP截图，我将进一步协助诊断。",
+      "tool_calls": [
+        {
+          "name": "rag_summarize",
+          "args": {
+            "query": "机器人连不上WiFi"
+          }
+        }
+      ],
+      "tool_names": [
+        "rag_summarize"
+      ],
+      "coverage": 1.0,
+      "matched_points": [
+        "2.4G",
+        "密码",
+        "重启"
+      ],
+      "tools_ok": true,
+      "refused": true,
+      "passed": true,
+      "judge": null
+    },
+    {
+      "id": "agent-rag-006",
+      "category": "rag",
+      "question": "扫拖一体机器人拖完地后拖布怎么处理？",
+      "expected_points": [
+        "拆卸",
+        "冲洗",
+        "晾干"
+      ],
+      "expected_tools": [
+        "rag_summarize"
+      ],
+      "should_refuse": false,
+      "notes": "维护保养：拖布拆卸、冲洗、晾干",
+      "answer": "根据专业资料，扫拖一体机器人拖布的处理需遵循“即用即清、干湿分离、定期保养”原则。以下是具体操作指南：\n\n✅ **拖布清洁（每次使用后必做）**  \n- 立即拆卸拖布，用流动清水彻底冲洗，重点揉搓纤维根部残留污渍；  \n- 用手拧干至无明显滴水（切勿机洗/暴晒），平铺或悬挂于通风处自然阴干（避免阳光直射导致纤维老化）。\n\n✅ **支架与水箱维护（每日+每周）**  \n- 每日：用软毛刷清理拖布支架卡槽，清除缠绕的毛发、线头；检查拖布是否平整无褶皱；  \n- 每次拖地后：排空水箱余水，用干软布擦拭水箱内壁、出水口及密封圈；  \n- 每周：用1:50柠檬酸溶液浸泡水箱10分钟除水垢，再用清水反复冲洗3遍并彻底晾干。\n\n✅ **长期保养提醒**  \n- 拖布寿命通常为2~3个月（高频使用建议每月更换），APP【耗材管理】中可实时查看剩余寿命；  \n- 支架转轴每月滴1滴专用润滑油（禁用WD-40等腐蚀性油剂）；  \n- 务必使用原装拖布——第三方拖布吸水率不足易留水痕，材质过硬可能刮伤地板或损伤旋转模组。\n\n⚠️ 特别注意：若拖布出现硬化、严重掉毛或异味，需立即更换，不可继续使用。",
+      "tool_calls": [
+        {
+          "name": "rag_summarize",
+          "args": {
+            "query": "扫拖一体机器人 拖布清洗保养"
+          }
+        }
+      ],
+      "tool_names": [
+        "rag_summarize"
+      ],
+      "coverage": 1.0,
+      "matched_points": [
+        "拆卸",
+        "冲洗",
+        "晾干"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    },
+    {
+      "id": "agent-rag-007",
+      "category": "rag",
+      "question": "扫地机器人续航一般要多久？",
+      "expected_points": [
+        "60分钟",
+        "120分钟"
+      ],
+      "expected_tools": [
+        "rag_summarize"
+      ],
+      "should_refuse": false,
+      "notes": "选购指南：小户型≥60分钟，大户型≥120分钟",
+      "answer": "参考资料已提供关键行业参数：小户型（≤80㎡）建议续航≥60分钟，大户型（≥120㎡）建议≥120分钟，并指出电池容量＞5200mAh更适配大户型。这与主流产品实际性能一致，可作为回答核心依据。\n\n结合专业常识补充说明：  \n- 续航时间指“标准清扫模式”下的理论值，实际受地面类型（硬质地板耗电低、长毛地毯耗电高）、清洁强度（静音/自动/强力档位切换）、是否启用拖地功能（扫拖一体机拖地模块增加约15–25%功耗）、以及电池老化程度（使用12–18个月后容量通常衰减5–10%）影响显著；  \n- 断点续扫功能可规避单次续航不足问题，是比单纯追求长续航更实用的解决方案；  \n- 若用户当前机器续航明显低于标称值（如新机仅40分钟），需检查是否长期处于强力模式、主刷/边刷缠绕毛发、尘盒满溢或滤网堵塞，这些均会导致电机负载增大、耗电加速。\n\n综上，我将整合参考资料与专业经验，向用户提供清晰、分场景、可落地的续航指导。",
+      "tool_calls": [
+        {
+          "name": "rag_summarize",
+          "args": {
+            "query": "扫地机器人续航时间"
+          }
+        },
+        {
+          "name": "rag_summarize",
+          "args": {
+            "query": "扫地机器人电池续航标准参数"
+          }
+        }
+      ],
+      "tool_names": [
+        "rag_summarize",
+        "rag_summarize"
+      ],
+      "coverage": 1.0,
+      "matched_points": [
+        "60分钟",
+        "120分钟"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    },
+    {
+      "id": "agent-tool-001",
+      "category": "tool",
+      "question": "现在几月份？",
+      "expected_points": [
+        "2025"
+      ],
+      "expected_tools": [
+        "get_current_month"
+      ],
+      "should_refuse": false,
+      "notes": "单工具：get_current_month",
+      "answer": "现在是2025年10月。",
+      "tool_calls": [
+        {
+          "name": "get_current_month",
+          "args": {}
+        }
+      ],
+      "tool_names": [
+        "get_current_month"
+      ],
+      "coverage": 1.0,
+      "matched_points": [
+        "2025"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    },
+    {
+      "id": "agent-tool-002",
+      "category": "tool",
+      "question": "深圳天气怎么样？",
+      "expected_points": [
+        "晴天",
+        "26"
+      ],
+      "expected_tools": [
+        "get_weather"
+      ],
+      "should_refuse": false,
+      "notes": "单工具：get_weather",
+      "answer": "深圳当前天气为晴天，气温26摄氏度，空气湿度50%，南风1级，AQI为21（属于优级空气质量），最近6小时降雨概率极低。这样的天气条件非常适宜使用扫地机器人或扫拖一体机器人进行清洁作业——湿度适中，不会影响拖布干湿平衡；无降雨，地面干燥，避免机器人在湿滑环境运行；空气质量优良，也意味着地面灰尘、花粉等颗粒物较少，机器人清洁负担相对较低。\n\n如需进一步了解如何根据天气调整机器人清洁策略（例如高湿天气下拖地模式的设置建议），欢迎随时提问！",
+      "tool_calls": [
+        {
+          "name": "get_weather",
+          "args": {
+            "city": "深圳"
+          }
+        }
+      ],
+      "tool_names": [
+        "get_weather"
+      ],
+      "coverage": 1.0,
+      "matched_points": [
+        "晴天",
+        "26"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    },
+    {
+      "id": "agent-tool-003",
+      "category": "tool",
+      "question": "我的用户ID是多少？",
+      "expected_points": [
+        "100"
+      ],
+      "expected_tools": [
+        "get_user_id"
+      ],
+      "should_refuse": false,
+      "notes": "单工具：get_user_id",
+      "answer": "您的用户ID是1001。",
+      "tool_calls": [
+        {
+          "name": "get_user_id",
+          "args": {}
+        }
+      ],
+      "tool_names": [
+        "get_user_id"
+      ],
+      "coverage": 1.0,
+      "matched_points": [
+        "100"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    },
+    {
+      "id": "agent-tool-004",
+      "category": "tool",
+      "question": "我所在城市今天适合用扫地机器人吗？",
+      "expected_points": [
+        "晴天",
+        "26"
+      ],
+      "expected_tools": [
+        "get_user_location",
+        "get_weather"
+      ],
+      "should_refuse": false,
+      "notes": "多工具：先定位再查天气",
+      "answer": "根据查询结果，杭州当前天气为晴天，气温26℃，空气湿度50%，南风1级，AQI 21（优），最近6小时降雨概率极低。\n\n结合扫地机器人使用场景分析：\n- ✅ 晴天、无降雨 → 地面干燥，拖地功能可安全启用，无打滑或水渍残留风险；\n- ✅ 湿度50%属舒适范围 → 不会因湿度过高导致拖布过湿难干、或过低导致静电扬尘加重；\n- ✅ 气温26℃适宜电子设备运行 → 电池与电机工作稳定，无高温降频或低温续航衰减问题；\n- ✅ AQI 21（优）→ 室内灰尘来源少，机器人清洁负担适中，滤网/尘盒不易快速堵塞；\n- ✅ 南风1级（室外风力）→ 对室内使用无影响，但若用户习惯开窗通风，轻风有助于减少浮尘二次扬起，提升清洁效果。\n\n✅ 结论：**今天非常适合使用扫地机器人（含扫拖一体模式）**。建议：\n- 可开启“深度拖地”模式，晴天+中等湿度利于水分自然蒸发；\n- 若家中有宠物或易落灰区域，可搭配“沿边清扫+高频吸力”提升效率；\n- 清洁后及时晾干拖布，避免静置滋生细菌（虽湿度适中，但仍是良好习惯）。\n\n如需进一步了解不同天气下的使用技巧，我可为您调取专业指南。",
+      "tool_calls": [
+        {
+          "name": "get_user_location",
+          "args": {}
+        },
+        {
+          "name": "get_weather",
+          "args": {
+            "city": "杭州"
+          }
+        }
+      ],
+      "tool_names": [
+        "get_user_location",
+        "get_weather"
+      ],
+      "coverage": 1.0,
+      "matched_points": [
+        "晴天",
+        "26"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    },
+    {
+      "id": "agent-report-001",
+      "category": "report",
+      "question": "给我生成我的使用报告",
+      "expected_points": [
+        "报告",
+        "清洁效率",
+        "耗材"
+      ],
+      "expected_tools": [
+        "get_user_id",
+        "get_current_month",
+        "fetch_external_data"
+      ],
+      "should_refuse": false,
+      "notes": "报告意图 + 三工具固定流程",
+      "answer": "Model call failed after 2 attempts with HTTPError: HTTP error occurred: status_code: 403 \n code: AllocationQuota.FreeTierOnly \n message: Free quota exhausted. To continue accessing the model on a paid basis, please add funds or disable the \"use free tier only\" mode in the management console.",
+      "tool_calls": [
+        {
+          "name": "get_user_id",
+          "args": {}
+        }
+      ],
+      "tool_names": [
+        "get_user_id"
+      ],
+      "coverage": 0.0,
+      "matched_points": [],
+      "tools_ok": false,
+      "refused": false,
+      "passed": false,
+      "judge": null
+    },
+    {
+      "id": "agent-refuse-001",
+      "category": "refusal",
+      "question": "你们支持七天无理由退货吗？",
+      "expected_points": [],
+      "expected_tools": [],
+      "should_refuse": true,
+      "notes": "知识库没有退货政策，应拒答",
+      "answer": "Model call failed after 2 attempts with HTTPError: HTTP error occurred: status_code: 403 \n code: AllocationQuota.FreeTierOnly \n message: Free quota exhausted. To continue accessing the model on a paid basis, please add funds or disable the \"use free tier only\" mode in the management console.",
+      "tool_calls": [],
+      "tool_names": [],
+      "coverage": 1.0,
+      "matched_points": [],
+      "tools_ok": true,
+      "refused": false,
+      "passed": false,
+      "judge": null
+    }
+  ]
+}

@@ -117,7 +117,7 @@ flowchart TD
     F --> CP[InMemorySaver<br/>thread_id]
     F --> W[LangGraph 工作流<br/>YAML]
     F --> TR[Trace / Eval]
-    E[evals/ + tests/] --> TR
+    E[data/evals/ + core/tests/] --> TR
 ```
 
 一句话讲架构：**"模型只负责决策，Harness 负责工具、上下文、状态、权限和评测。"**
@@ -198,15 +198,15 @@ flowchart TD
 ### Day 2：RAG 指标统一口径
 
 - [ ] 用 DeepSeek + 本地 BGE 重跑 20 条原始 RAG 评测集（10 normal / 3 edge / 2 conflict / 5 unanswerable）；
-- [ ] 跑 `python -m quality.runner judge` 复核；
+- [ ] 跑 `python -m core.quality.runner judge` 复核；
 - [ ] 记录 Hit@4、MRR、拒答、冲突、答案覆盖；
 - [ ] 如果时间允许，重跑 RGB 20 条抽样；MultiHop 可跳过；
 - [ ] 把指标填进第 6 节表格。
 
 **命令**：
 ```bash
-python test_entry.py rag retrieval --dataset evals/datasets/business/eval_set.jsonl
-python test_entry.py rag generation --dataset evals/datasets/business/eval_set.jsonl
+python test_entry.py rag retrieval --dataset data/evals/datasets/business/eval_set.jsonl
+python test_entry.py rag generation --dataset data/evals/datasets/business/eval_set.jsonl
 python test_entry.py rag judge
 ```
 
@@ -249,11 +249,11 @@ python test_entry.py rag judge
 
 - Agent 测试报告：运行 `python test_entry.py --all`，输出到 `outputs/agent/`（本地生成，不提交）
 - RAG 评测报告：运行 `python test_entry.py rag retrieval/generation/judge`，输出到 `outputs/rag/`（本地生成，不提交）
-- 公开基准报告：运行 `python test_entry.py bfcl ...` 或 `python -m quality.runner public`，输出到 `outputs/public/`
-- 失败集：`evals/failures/`（已提交）
-- HITL 演示：`tests/demos/hitl_demo.py`
-- 记忆演示：`tests/demos/memory_demo.py`
-- 工作流：`scenarios/robot_vacuum/graph.py`（rag_qa / report）
+- 公开基准报告：运行 `python test_entry.py bfcl ...` 或 `python -m core.quality.runner public`，输出到 `outputs/public/`
+- 失败集：`data/evals/failures/`（已提交）
+- HITL 演示：`core/tests/demos/hitl_demo.py`
+- 记忆演示：`core/tests/demos/memory_demo.py`
+- 工作流：`core/scenarios/robot_vacuum/graph.py`（rag_qa / report）
 - 优化方向全景：`docs/design/agent-optimization-landscape.md`
 
 ---

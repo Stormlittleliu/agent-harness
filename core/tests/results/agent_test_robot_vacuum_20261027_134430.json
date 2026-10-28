@@ -1,0 +1,72 @@
+{
+  "summary": {
+    "scenario": "robot_vacuum",
+    "total": 1,
+    "passed": 1,
+    "by_category": {
+      "report": 1
+    },
+    "tool_cases_ok": 1,
+    "refusal_correct": 0,
+    "refusal_count": 0
+  },
+  "results": [
+    {
+      "id": "agent-report-001",
+      "category": "report",
+      "question": "给我生成我的使用报告",
+      "expected_points": [
+        "报告",
+        "清洁效率",
+        "耗材"
+      ],
+      "expected_tools": [
+        "get_user_id",
+        "get_current_month",
+        "fetch_external_data"
+      ],
+      "should_refuse": false,
+      "notes": "报告意图 + 三工具固定流程",
+      "answer": "# 扫地机器人使用情况报告与保养建议\n\n## 用户概况\n- **居住环境**：80㎡两居室，铺设仿实木地板  \n- **特殊需求**：养宠家庭（存在持续毛发清洁挑战）  \n\n## 本月（2025年11月）使用表现\n- ✅ **清洁效率优异**：宠物毛发清理率达91%，自动回充成功率95%，在同类养宠家庭用户中处于前20%水平  \n- ✅ **核心部件状态良好**：胶刷无毛发缠绕，说明日常维护及时、地面毛发量可控  \n- ⚠️ **耗材余量提醒**：滤网剩余寿命40天，建议提前规划更换（推荐在剩余15天时下单备件）\n\n## 专业保养建议（基于养宠场景强化版）\n### 日常（每次清扫后）\n- 立即清空尘盒，用干布擦拭滤网表面浮毛（勿水洗），检查主刷两端是否卡入毛团  \n- 用镊子夹除边刷根部及万向轮沟槽内缠绕的宠物毛发与纤维线头  \n\n### 每周深度维护\n- 拆卸主刷仓，用软毛刷清除滚刷轴心、胶刷齿隙及仓体内壁积存的毛絮团  \n- 用微湿棉签轻擦红外传感器窗口、防撞条接触面及底部悬崖传感器，避免误判跌落  \n\n### 每月关键养护\n- 在驱动轮转轴、拖布支架活动关节处滴加1–2滴食品级硅基润滑油（禁用机油）  \n- 检查APP中「设备健康」模块的电池循环次数（如超300次需关注续航衰减）  \n\n### 特别提示（养宠家庭专属）\n- 拖布务必单次即洗：使用含酶宠物专用清洁剂浸泡10分钟再手洗，晾干时张开拖布避免褶皱霉变  \n- 滤网更换周期缩短至**每3个月**（原厂HEPA滤网），并同步清洁风道内壁积灰  \n- 若发现机器人频繁原地打转或避障迟钝，优先用压缩空气吹净轮组编码器缝隙（非电子元件区域）  \n\n> 💡 **小技巧**：在玄关、沙发底等毛发高发区放置静电除尘滚筒，可减少机器人吸入负荷，延长滤网寿命20%以上。",
+      "tool_calls": [
+        {
+          "name": "get_user_id",
+          "args": {}
+        },
+        {
+          "name": "get_current_month",
+          "args": {}
+        },
+        {
+          "name": "fetch_external_data",
+          "args": {
+            "user_id": "1009",
+            "month": "2025-11"
+          }
+        },
+        {
+          "name": "rag_summarize",
+          "args": {
+            "query": "养宠家庭扫地机器人保养建议"
+          }
+        }
+      ],
+      "tool_names": [
+        "get_user_id",
+        "get_current_month",
+        "fetch_external_data",
+        "rag_summarize"
+      ],
+      "coverage": 1.0,
+      "matched_points": [
+        "报告",
+        "清洁效率",
+        "耗材"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    }
+  ]
+}

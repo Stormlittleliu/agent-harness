@@ -41,7 +41,7 @@
 - [ ] 选 3 个演示 case：
   - `agent-rag-001`：RAG 知识问答
   - `agent-report-001`：多工具报告
-  - `tests/demos/hitl_demo.py --decision reject`：高风险审批
+  - `core/tests/demos/hitl_demo.py --decision reject`：高风险审批
 - [ ] 写 30 秒陈述（见 `docs/interview/resume-project-narrative.md` 第 2 节），读三遍录音；
 - [ ] 确认所有 API key、模型、向量库能跑。
 
@@ -51,7 +51,7 @@
 - [x] 跑 retail 20 条抽样（1 trial）：Pass^1 0.90，DB 19/20，read 100/110，write 22/23；NL judge 用 DeepSeek 替代；
 - [x] 跑 BFCL 200 条抽样：函数选择 100/100、参数 exact 89/100、无关工具不调用 80/100；
 - [x] 自建 13 条 / 42 条作为回归集，不抢主指标；
-- [x] 失败集已归档：`evals/failures/`（RAG 4、Agent 2、BFCL 31、τ² 2）；
+- [x] 失败集已归档：`data/evals/failures/`（RAG 4、Agent 2、BFCL 31、τ² 2）；
 - [ ] 把数字填进简历 bullet 和 2 分钟稿。
 
 ```bash
@@ -63,9 +63,9 @@ tau2 run --domain retail --agent-llm deepseek/deepseek-chat \
 
 ### Day 3（10/29 周四）：修一个短板 + 轨迹证据
 
-- [x] RAG 42 条 DeepSeek 重跑完成：38/42；4 条失败全部是冲突处理，已归档到 `evals/failures/rag_failures.jsonl`；
+- [x] RAG 42 条 DeepSeek 重跑完成：38/42；4 条失败全部是冲突处理，已归档到 `data/evals/failures/rag_failures.jsonl`；
 - [ ] 复现 `agent-refuse-001`：看回答为什么没有明确拒答；
-- [ ] 只做一个最小修复：在 `scenarios/robot_vacuum/config/prompts.yml` 的客服 Prompt 里加"资料不足必须拒绝、不补充外部知识"；
+- [ ] 只做一个最小修复：在 `core/scenarios/robot_vacuum/config/prompts.yml` 的客服 Prompt 里加"资料不足必须拒绝、不补充外部知识"；
 - [ ] 重跑 13 条，对比 11/13 → 新结果；
 - [ ] 如果修复无效，保留失败分析，不继续折腾；
 - [ ] 从 3 个演示 case 的报告里整理轨迹表：步数、工具序列、大致延迟；

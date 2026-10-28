@@ -1,0 +1,49 @@
+{
+  "summary": {
+    "scenario": "robot_vacuum",
+    "total": 1,
+    "passed": 1,
+    "by_category": {
+      "rag": 1
+    },
+    "tool_cases_ok": 1,
+    "refusal_correct": 0,
+    "refusal_count": 0
+  },
+  "results": [
+    {
+      "id": "agent-rag-001",
+      "category": "rag",
+      "question": "小户型适合哪些扫地机器人？",
+      "expected_points": [
+        "轻便",
+        "小户型"
+      ],
+      "expected_tools": [
+        "rag_summarize"
+      ],
+      "should_refuse": false,
+      "notes": "选购指南：独居小户型侧重轻便灵活",
+      "answer": "小户型用户选择扫地机器人，核心在于「灵活、高效、省心」。结合专业选购建议，我为您总结以下关键适配点与推荐方向：\n\n✅ **机身尺寸**：优先选高度 ≤7.5cm 的机型（如米家1C、石头T4），轻松钻入床底、沙发底等低矮空间，避免卡困；  \n✅ **导航与避障**：基础激光导航（LDS）已足够覆盖80㎡以内小户型，定位精准、建图快、断点续扫稳定；  \n✅ **清洁性能**：吸力 ≥3000Pa 可应对灰尘、毛发、碎屑；搭配双边刷+电动旋转拖布，干湿双清更彻底；  \n✅ **续航与水箱**：60分钟以上续航满足单次全屋清扫；水箱200ml左右为佳——太大易晃重，太小需频繁加水；  \n✅ **健康与安全**：HEPA H13滤网有效拦截微尘过敏原；防跌落传感器保障楼梯/台阶安全；  \n✅ **品牌与售后**：科沃斯、石头、小米生态链机型在小户型场景验证充分，品控稳、APP易用、售后响应快，3000元内即可覆盖全部核心需求。\n\n如您有具体预算、偏好品牌（如是否倾向小米生态）、或家中是否有宠物/地毯等细节，我可以进一步帮您缩小推荐范围。",
+      "tool_calls": [
+        {
+          "name": "rag_summarize",
+          "args": {
+            "query": "小户型 扫地机器人 推荐"
+          }
+        }
+      ],
+      "tool_names": [
+        "rag_summarize"
+      ],
+      "coverage": 0.5,
+      "matched_points": [
+        "小户型"
+      ],
+      "tools_ok": true,
+      "refused": false,
+      "passed": true,
+      "judge": null
+    }
+  ]
+}

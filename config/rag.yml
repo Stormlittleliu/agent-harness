@@ -7,7 +7,7 @@ chat_temperature: 0
 
 # Embedding：local（sentence-transformers + BGE，本地 CPU）| dashscope
 embedding_provider: local
-embedding_model_name: models/bge-small-zh-v1.5
+embedding_model_name: data/models/bge-small-zh-v1.5
 
 # 检索返回条数（Top-K）
 retrieval_k: 4

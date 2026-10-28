@@ -194,7 +194,7 @@
 
 **指标**：成功率、pass^k、工具 Precision/Recall、平均步数、p95 延迟、成本/成功、违规率、失败分类分布。
 **JD/面试问法**：Agent 怎么评估？LLM-as-Judge 怎么防偏？如何做回归测试？Trace 怎么设计？
-**本项目现状**：`evals/` 检索/生成/Judge/公开基准，`tests/` 13 条行为用例；缺轨迹级评测、CI 回归、OTel、线上反馈闭环。
+**本项目现状**：`data/evals/` 检索/生成/Judge/公开基准，`core/tests/` 13 条行为用例；缺轨迹级评测、CI 回归、OTel、线上反馈闭环。
 **证据**：AgentGuide `agent-evaluation-playbook.md`、`26-agent-evaluation-harness-guide.md`；Label Studio；LangChain Evaluation Framework；Arize Agent-as-a-Judge；AWS Eval Harness。
 
 ---
@@ -333,7 +333,7 @@
 
 **指标**：任务成功率、失败归因、成本/成功、迭代速度、组件引入后的净收益。
 **JD/面试问法**：什么是 Harness？Agent = Model + Harness 怎么理解？怎么设计一个 Agent 系统？
-**本项目现状**：已做 `agent/framework.py` + `scenarios/` 分离、LangGraph 工作流、内置中间件；下一步用 Trace/Eval 驱动组件取舍。
+**本项目现状**：已做 `core/agent/framework.py` + `core/scenarios/` 分离、LangGraph 工作流、内置中间件；下一步用 Trace/Eval 驱动组件取舍。
 **证据**：AgentGuide `27-agent-harness-engineering.md`、`agent-harness-playbook.md`；O'Reilly "Stop Overengineering Your Agent Harness"；harness-lab。
 
 ---
@@ -435,7 +435,7 @@
 | Function Calling / Tool Use / MCP | B/O | 7 个工具、参数校验、错误回注、ToolRetry；MCP Server（待做） |
 | Context Engineering | A | 分层上下文、Summarization、Token 预算、缓存友好前缀 |
 | Memory：短期/长期、用户画像 | D | Checkpoint 会话记忆；长期记忆/巩固（待做） |
-| 评测体系、LangSmith/Langfuse/Phoenix、Badcase | F | `evals/`、Judge、回归集、Trace；CI/OTel（待做） |
+| 评测体系、LangSmith/Langfuse/Phoenix、Badcase | F | `data/evals/`、Judge、回归集、Trace；CI/OTel（待做） |
 | 成本/延迟优化、模型部署 | I/P | DeepSeek + 本地 BGE；成本/成功、p95（待做） |
 | 安全、Guardrails、HITL、PII | H | HITL 审批、PII 脱敏；Sandbox/注入测试（待做） |
 | Multi-Agent / Supervisor / A2A | J/O | 只读 Subagent fan-out（待做） |

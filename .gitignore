@@ -44,6 +44,7 @@ models/
 md5.txt
 data/runtime/
 data/backups/
+data/legacy/
 chroma_db_backup_*/
 md5.txt.bak_*
 md5.text.bak_*
