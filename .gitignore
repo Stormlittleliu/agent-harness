@@ -49,6 +49,7 @@ chroma_db_backup_*/
 md5.txt.bak_*
 md5.text.bak_*
 tests/results/
+core/tests/results/
 evals/reports/
 outputs/
 
