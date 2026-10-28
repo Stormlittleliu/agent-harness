@@ -3,9 +3,9 @@
 框架与业务分离后，测试只依赖 `Scenario`：
 
 - `scenarios/<场景>/cases.jsonl`：该场景的测试用例；
-- `tests/runner.py`：通用 runner；
-- `tests/agent_judge.py`：可选 LLM-as-judge；
-- `test_entry.py`：统一入口。
+- `tools/eval/agent_eval.py`：行为层 runner（ReactAgent）；
+- `tools/eval/judge.py`：可选 LLM-as-judge；
+- `test_entry.py`：兼容入口；新入口是 `python -m tools.eval.runner agent`。
 
 ## 用法
 
@@ -15,6 +15,7 @@ python test_entry.py --list
 
 # 跑全部用例
 python test_entry.py --all
+python -m tools.eval.runner agent
 
 # 只跑一条
 python test_entry.py --case agent-rag-001
@@ -29,7 +30,7 @@ python test_entry.py --all --judge
 python test_entry.py --limit 3
 ```
 
-报告输出到 `tests/results/agent_test_<scenario>_<timestamp>.md/json`。
+报告输出到 `evals/reports/agent_test_<scenario>_<timestamp>.md/json`。
 
 ## Harness 能力演示
 
@@ -45,8 +46,8 @@ python tests/demos/memory_demo.py
 - `hitl_demo.py` 会尝试触发 `HumanInTheLoopMiddleware` 并打印审批请求；
   模型也可能出于安全考虑直接拒绝调用高风险工具，此时不会进入审批，属于正常行为。
   reject 时工具不会执行（可观察 `[SIDE EFFECT]` 是否出现）。
-- `memory_demo.py` 使用 `InMemorySaver` + 同一个 `thread_id`，验证多轮历史；
-  测试 runner 默认每次生成独立 thread_id，不会互相污染。
+- `memory_demo.py` 使用同一个 `thread_id` 验证多轮历史；默认 checkpointer 是 SQLite
+  （`scenarios/robot_vacuum/config/agent.yml`），测试 runner 每次生成独立 thread_id，不会互相污染。
 
 ## 用例字段
 

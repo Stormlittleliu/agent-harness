@@ -1,0 +1,11 @@
+# ===================== 可观测性 =====================
+# trace 输出目录（logs/ 已在 .gitignore 中忽略）
+trace_dir: logs/traces
+
+# 可选：按模型配置每百万 token 价格（单位：元）。
+# 不填时只统计 token，不计算 cost；价格请按模型官网更新。
+pricing: {}
+# pricing:
+#   deepseek-chat:
+#     input_per_1m: 2.0
+#     output_per_1m: 8.0

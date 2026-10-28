@@ -1,5 +1,5 @@
 """场景注册表：框架通过名字获取场景，不直接 import 具体业务。"""
-from scenarios.base import Scenario
+from agent.contracts import Scenario
 
 
 def _build_robot_vacuum() -> Scenario:

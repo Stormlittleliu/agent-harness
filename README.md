@@ -36,12 +36,12 @@
 
 ```text
 agent/framework.py          # 通用 ReAct 运行时：create_agent + 中间件 + 流式输出
-scenarios/base.py           # Scenario 接口：模型 / 提示词 / 工具 / 中间件 / context / 测试用例
+agent/contracts.py          # Scenario 契约：模型 / 提示词 / 工具 / 中间件 / context / 测试用例
 scenarios/registry.py       # 场景注册表
 scenarios/robot_vacuum/     # 预设业务场景：7 个工具 + 提示词 + 中间件 + cases.jsonl
 agent/react_agent.py        # 兼容层：默认加载 robot_vacuum，保持原 API
 test_entry.py               # 统一测试入口
-tests/runner.py             # 通用测试 runner
+tools/eval/agent_eval.py    # 行为层评测：ReactAgent 跑场景 cases
 ```
 
 - 框架层**不 import 任何业务工具**；
@@ -60,18 +60,26 @@ python test_entry.py workflow --list # LangGraph 工作流
 python test_entry.py workflow --run rag_qa --dry-run
 ```
 
-报告输出到 `tests/results/`。
+报告输出到 `evals/reports/`。
 
 ## RAG / LLM 评测
 
-`evals/` 已包含完整的 RAG/LLM 评测能力，复用本项目的 embedding、聊天模型和 RAG Prompt，
-使用内存 Chroma，不会污染业务知识库：
+`evals/` 保存数据集与报告，`tools/eval/` 保存评测代码。
+能力层（RAG 检索/生成、RGB/MultiHop）走 `FrameworkAgent.invoke_tool`，
+行为层（13 条用例）走 `ReactAgent`：
 
 ```bash
-python test_entry.py rag retrieval      # 检索 Hit@K / MRR
-python test_entry.py rag generation     # 生成 / 拒答 / 冲突标记
-python test_entry.py rag judge          # LLM-as-judge
-python test_entry.py benchmark public   # RGB + MultiHop-RAG
+python -m tools.eval.runner agent --limit 2          # 行为层
+python -m tools.eval.runner rag retrieval --limit 5  # 能力层：检索
+python -m tools.eval.runner rag generation --limit 5 # 能力层：生成
+python -m tools.eval.runner public --rgb-limit 2 --skip-multihop
+python -m tools.eval.runner bfcl --simple 2 --irrelevance 2
+
+# 兼容旧入口
+python test_entry.py rag retrieval
+python test_entry.py rag generation
+python test_entry.py rag judge
+python test_entry.py benchmark public
 ```
 
 数据在 `evals/datasets/`（42 条业务集 + RGB 20 条 + MultiHop-RAG 12 条），
@@ -84,10 +92,11 @@ python test_entry.py benchmark public   # RGB + MultiHop-RAG
 | BFCL v4（工具调用） | 200 | 函数选择 / 参数 exact / 无关请求不调用 | 100/100 · 89/100 · 80/100 |
 | τ²-bench retail（多轮工具 + 政策） | 20 | Pass^1 / DB 状态 | 0.90 · 19/20 |
 | 自建 RAG 业务集 | 42 | 总通过 / 拒答准确 | 38/42 · 10/10 |
-| Agent 行为回归 | 13 | 通过率 | 11/13 |
+| Agent 行为回归 | 13 | 通过率 | 10–12/13（工具类 13/13；RAG 覆盖受生成波动影响） |
 
 > BFCL 为 v4 抽样；τ²-bench 的 NL assertion judge 使用 DeepSeek 替代默认 OpenAI judge，
 > 不是官方评分口径。失败案例统一归档在 `evals/failures/`。
+> Agent 回归为单次运行，生成有波动；`agent-rag-006` 是已知的覆盖判定争议案例。
 
 ## Harness 能力补全（参考 learn-claude-code）
 
@@ -102,22 +111,70 @@ python test_entry.py benchmark public   # RGB + MultiHop-RAG
 | s03 Permission | `HumanInTheLoopMiddleware` | `reset_device` 高风险工具；模型可能先自拒答，审批作为第二层保护；`tests/demos/hitl_demo.py` |
 | s05 Todo Write | `TodoListMiddleware` | 自动注入 `write_todos` 工具 |
 | s08 Context Compact | `SummarizationMiddleware` | 30 条消息触发，保留最近 12 条 |
-| s09 Memory | `InMemorySaver` + `thread_id` | 同一 thread 保留多轮历史；`tests/demos/memory_demo.py` |
+| s09 Memory | `InMemorySaver` / `SqliteSaver` + `thread_id` | 同一 thread 保留多轮历史；SQLite 跨实例/重启保留；`tests/demos/memory_demo.py`、`tests/persistent_memory_demo.py` |
 | s11 Error Recovery | `ToolRetry` / `ModelRetry` / `ModelFallback` / `ToolError` | 工具与模型重试、异常回注（fallback 可配置） |
 | s03 PII | `PIIMiddleware` | email / credit_card / ip 脱敏 |
 | 工具循环控制 | `ToolCallLimitMiddleware` | 单次 run 最多 12 次工具调用 |
+| 工具权限 | `ToolPermissionMiddleware`（自研） | `tool_policy` 的 allow / deny / risk_levels；deny 直接返回 error ToolMessage |
+| 工具超时 | `ToolTimeoutMiddleware`（自研） | 默认 30s，`rag_summarize` 60s；超时返回 error ToolMessage |
+| 可观测性 | `TraceCallbackHandler`（自研） | 模型/工具/token/耗时写 `logs/traces/*.jsonl`；`python test_entry.py trace --last 10` |
 | s12 Task System | `TodoListMiddleware`（部分） | 任务清单；完整依赖图未实现 |
 | s06 Subagent / s07 Skill / s13-14 后台任务 / s18 Worktree / s19 MCP | 暂未引入 | 需要独立运行时或外部服务，当前客服场景优先级低 |
 
-配置入口在 `scenarios/base.py` 的 `Scenario`：`high_risk_tools`、`fallback_model`、
-`enable_todo`、`enable_summarization`、`tool_call_limit`、`pii_types`、`checkpoint`。
+配置入口在 `agent/contracts.py` 的 `Scenario`：`high_risk_tools`、`fallback_model`、
+`enable_todo`、`enable_summarization`、`tool_call_limit`、`pii_types`、`checkpoint`、
+`checkpoint_backend`、`checkpoint_path`、`tool_policy`、`tool_timeout_seconds`、`tool_timeouts`。
 
 ```bash
 python tests/demos/hitl_demo.py --decision reject
 python tests/demos/memory_demo.py
+python tests/persistent_memory_demo.py   # 两个实例共享 SQLite checkpoint
+python test_entry.py trace --last 10     # 查看最近 trace
 python test_entry.py workflow --list
 python test_entry.py workflow --run rag_qa --dry-run
 ```
+
+## 可观测性与持久化
+
+### 1. 本地 trace（不依赖 LangSmith）
+
+`observability/tracer.py` 实现 `TraceCallbackHandler`，作为 callback 挂到
+`agent.invoke/stream` 的 config 上，记录：
+
+- 每次模型调用的模型名、耗时、prompt/completion/total tokens；
+- 每次工具调用的工具名、参数、耗时、状态；
+- 一次 run 的 `run_end` 汇总：模型/工具调用次数、token 总量、总耗时、cost 估算。
+
+事件追加写入 `logs/traces/trace_YYYYMMDD.jsonl`，一行一个事件：
+
+```bash
+python test_entry.py trace --last 10
+python test_entry.py trace --trace-id run-xxxx
+```
+
+token 直接取 LangChain 的 `usage_metadata` / OpenAI 的 `token_usage`；
+cost 只有在 `config/observability.yml` 配置了价格时才计算，避免写死不准的价格。
+
+### 2. SQLite 会话持久化
+
+`agent/checkpoint.py` 提供 `build_checkpointer(backend, path)`：
+
+- `memory`：`InMemorySaver`，进程内记忆，重启即丢；
+- `sqlite`：`SqliteSaver` 写 `data/runtime/agent_checkpoints.sqlite`，跨实例/重启保留。
+
+`scenarios/robot_vacuum/config/agent.yml` 的 `checkpoint_backend` / `checkpoint_path` 控制。
+`tests/persistent_memory_demo.py` 用两个独立的 `ReactAgent` 实例验证：
+第一个实例说“我叫小明”，销毁后第二个实例用同一个 `thread_id` 仍能回答。
+
+### 3. 工具权限与超时
+
+- `ToolPermissionMiddleware`：按 `tool_policy` 做 allow / deny；deny 不执行工具，
+  直接返回 `status="error"` 的 ToolMessage，模型看到后改路；
+- `ToolTimeoutMiddleware`：默认 30s，`rag_summarize` 60s；同步链路放线程池，
+  异步链路用 `asyncio.wait_for`，超时返回 error ToolMessage。
+- 顺序：权限（最外层）→ 业务中间件 → HITL → 超时 → `ToolError` → `ToolRetry` → 工具调用上限 → 工具。
+  权限在最外层，deny 的工具不会进入审批/执行；超时在 HITL 内层，人工审批时间不计入工具超时；
+  `ToolError` 在 `ToolRetry` 外层，重试耗尽后才把异常转成 error ToolMessage。
 
 ## 效果展示
 
@@ -245,7 +302,7 @@ python -c "from modelscope import snapshot_download; snapshot_download('BAAI/bge
 ### 5. 初始化知识库（首次运行）
 
 ```bash
-python -c "from rag.vector_store import VectorStoreService; VectorStoreService().load_document()"
+python -c "from tools.rag.vector_store import VectorStoreService; VectorStoreService().load_document()"
 ```
 
 该命令会读取 `data/knowledge/` 下所有允许类型的文档，解析、切片并分批写入 Chroma。重复执行会自动跳过未变化的文件；文件内容变化时会替换旧分块。
@@ -272,29 +329,56 @@ streamlit run app.py
 agent-harness/
 │
 ├── agent/                          # Agent Runtime
+│   ├── contracts.py                #   Scenario / Tool / Workflow 契约
 │   ├── react_agent.py              #   兼容层：按场景构建 Agent
 │   ├── framework.py                #   通用 Runtime + 中间件装配
-│   ├── workflow.py                 #   LangGraph YAML 工作流引擎
+│   ├── checkpoint.py               #   memory / sqlite checkpointer 工厂
+│   ├── workflow.py                 #   通用 LangGraph 工作流运行时
 │   └── tools/
-│       ├── agent_tools.py          #   7 个工具（RAG/天气/定位/用户/月份/记录/重置）
-│       └── middleware.py           #   日志/参数校验/意图路由/步数限制等
+│       ├── middleware.py           #   日志/参数校验/步数限制
+│       └── policy.py               #   工具权限 + 超时
+│
+├── tools/                          # 能力层（业务 / RAG / 评测）
+│   ├── business/
+│   │   ├── constants.py            #   user_ids / month_arr
+│   │   └── tools.py                #   6 个业务工具（天气/定位/用户/月份/记录/重置）
+│   ├── rag/
+│   │   ├── embedding.py            #   本地 BGE / DashScope
+│   │   ├── vector_store.py         #   Chroma · 四格式入库 · MD5 去重
+│   │   ├── retrievers.py           #   纯向量 / BM25 / 混合检索
+│   │   ├── service.py              #   RAG 检索 → LLM 总结
+│   │   └── tools.py                #   rag_retrieve / rag_summarize
+│   └── eval/                       #   评测
+│       ├── runner.py               #   统一 CLI
+│       ├── datasets.py / metrics.py #   数据加载 / 指标
+│       ├── rag_harness.py          #   评测 Scenario 装配
+│       ├── agent_eval.py           #   行为层：ReactAgent
+│       ├── rag_eval.py             #   能力层：invoke_tool
+│       ├── public.py               #   RGB / MultiHop
+│       ├── judge.py / rag_judge.py #   LLM judge
+│       ├── bfcl.py                 #   BFCL 外部适配器
+│       └── failures.py             #   失败集
 │
 ├── scenarios/                      # 业务场景
 │   └── robot_vacuum/
 │       ├── scenario.py             #   工具 + 提示词 + 中间件 + 测试用例
-│       └── cases.jsonl
+│       ├── graph.py                #   该场景的 LangGraph 工作流
+│       ├── middleware.py           #   意图路由 / 提示词切换
+│       ├── validators.py           #   工具参数校验规则
+│       ├── cases.jsonl
+│       └── config/                 #   场景级 agent.yml / prompts.yml
 │
-├── rag/                            # RAG 检索增强
-│   ├── vector_store.py             #   Chroma · 四格式入库 · MD5 去重
-│   ├── retrievers.py               #   纯向量 / BM25 / 混合检索
-│   └── rag_service.py              #   RAG 检索 → LLM 总结
-│
-├── model/factory.py                # 模型工厂（DeepSeek / 本地 BGE / DashScope）
+├── model/factory.py                # 聊天模型工厂（DeepSeek / DashScope）
 ├── utils/                          # 配置、文件解析、日志、路径、提示词加载
 │
-├── config/                         # YAML 配置
-│   ├── agent.yml / chroma.yml / prompts.yml / rag.yml
-│   └── workflows/                  #   LangGraph 工作流 YAML
+├── observability/                  # 本地可观测性
+│   ├── tracer.py                   #   callback → JSONL（模型/工具/token/耗时）
+│   └── trace_report.py             #   查看最近 trace
+│
+├── config/                         # 全局能力配置
+│   ├── chroma.yml / rag.yml
+│   ├── rag_prompts.yml             #   RAG 总结提示词
+│   └── observability.yml           #   trace 目录 / 可选价格
 │
 ├── data/
 │   ├── knowledge/                  #   知识库文档（txt/pdf）
@@ -302,16 +386,14 @@ agent-harness/
 │   ├── runtime/                    #   Chroma / md5（gitignore）
 │   └── backups/                    #   旧向量库备份（gitignore）
 │
-├── evals/                          # 评测资产
+├── evals/                          # 评测数据与报告
 │   ├── datasets/                   #   业务集 + 公开基准抽样
-│   ├── scripts/                    #   检索/生成/Judge/BFCL/失败集
-│   └── failures/                   #   失败案例归档
+│   ├── failures/                   #   失败案例归档
+│   └── reports/                    #   运行报告（gitignore）
 │
-├── tests/                          # 测试
-│   ├── runner.py                   #   Agent 行为用例 runner
-│   ├── agent_judge.py              #   LLM Judge
-│   ├── demos/                      #   HITL / Memory 演示
-│   └── results/                    #   测试报告（gitignore）
+├── tests/                          # 演示
+│   ├── persistent_memory_demo.py   #   跨实例 SQLite 记忆
+│   └── demos/                      #   HITL / Memory 演示
 │
 ├── docs/
 │   ├── design/                     #   优化方向全景
@@ -344,7 +426,7 @@ agent-harness/
 ### 意图路由与提示词切换
 
 1. 一次 run 开始时，`intent_router`（`before_agent` 钩子）读取用户问题；
-2. 按 `config/agent.yml` 中的 `intent.report_keywords` 做关键词匹配；
+2. 按 `scenarios/robot_vacuum/config/agent.yml` 中的 `intent.report_keywords` 做关键词匹配；
 3. 命中 → `intent=report`，否则 `intent=qa`，写入 `runtime.context`；
 4. 每次模型调用前，`report_prompt_switch`（`wrap_model_call` 钩子）按意图返回报告 / 普通问答提示词。
 
@@ -360,29 +442,34 @@ agent-harness/
 
 ## 配置说明
 
-项目通过 `config/` 目录下的 YAML 文件统一管理配置：
+项目通过全局 `config/` 和场景级 `scenarios/<name>/config/` 管理配置：
 
 | 文件 | 配置项 | 说明 |
 |---|---|---|
-| `rag.yml` | `chat_provider` / `chat_model_name` | 聊天模型（默认 deepseek / deepseek-chat） |
+| `config/rag.yml` | `chat_provider` / `chat_model_name` | 聊天模型（默认 deepseek / deepseek-chat） |
 | | `embedding_provider` / `embedding_model_name` | Embedding（默认 local / BGE 本地模型） |
 | | `retrieval_k` | 检索返回条数（Top-K，默认 4） |
 | | `retrieval_mode` | `vector` 纯向量 / `hybrid` 向量+BM25（默认 hybrid） |
 | | `hybrid_weights` | 混合检索两路权重 |
 | | `bm25_tokenizer` | `jieba` / `bigram` / `char` |
-| `chroma.yml` | `collection_name` / `persist_directory` | 集合名与本地持久化目录 |
+| `config/chroma.yml` | `collection_name` / `persist_directory` | 集合名与本地持久化目录 |
 | | `data_path` / `md5_hex_store` | 文档目录与 MD5 记录文件 |
 | | `allow_file_types` | 允许入库的格式（txt/pdf/docx/md） |
 | | `max_split_char_number` | 短文本整段入库阈值 |
 | | `chunking` | 按文件类型配置 `chunk_size` / `chunk_overlap` / `separators` |
-| `prompts.yml` | `main_prompt` | 普通问答 System Prompt |
-| | `rag_summarize_prompt` | RAG 总结 Prompt（含 `{input}` / `{context}`） |
+| `config/rag_prompts.yml` | `rag_summarize_prompt` | RAG 总结 Prompt（含 `{input}` / `{context}`） |
+| `config/observability.yml` | `trace_dir` | trace 输出目录 |
+| | `pricing` | 可选：按模型配置每百万 token 价格，不填只统计 token |
+| `scenarios/robot_vacuum/config/prompts.yml` | `main_prompt` | 普通问答 System Prompt |
 | | `report_prompt` | 报告生成 System Prompt |
-| `agent.yml` | `external_data_path` | 外部使用记录 CSV 路径 |
+| `scenarios/robot_vacuum/config/agent.yml` | `external_data_path` | 外部使用记录 CSV 路径 |
 | | `max_model_calls` | 最大模型调用步数 |
 | | `intent.report_keywords` | 报告意图关键词列表 |
+| | `tool_policy` | 工具 allow / deny / require_approval / risk_levels |
+| | `tool_timeout_seconds` / `tool_timeouts` | 工具超时（默认 30s，RAG 60s） |
+| | `checkpoint_backend` / `checkpoint_path` | `memory` / `sqlite` 会话持久化 |
 
-> 修改配置后重启应用即可生效。提示词已全部内联到 `prompts.yml`，不再需要单独的 `prompts/*.txt` 文件。
+> 修改配置后重启应用即可生效。提示词按层级拆分：RAG 能力提示词在 `config/rag_prompts.yml`，场景提示词在 `scenarios/<name>/config/prompts.yml`。
 
 首次运行只需确保 **DeepSeek API Key 已设置**、本地 Embedding 模型已下载，且 `data/knowledge/` 目录下有知识库文档即可。
 
@@ -404,7 +491,7 @@ Agent Harness（本项目）
   └─ 最大步数限制
 ```
 
-两个项目共用同一套配置语义（模型、Top-K、混合权重、切片参数等），便于对照学习「RAG 问答」如何演进为「RAG + Agent」。后续可继续扩展的方向：checkpointer 多轮记忆、LLM 意图分类替代关键词规则、把公共底座抽取为共享包。
+两个项目共用同一套配置语义（模型、Top-K、混合权重、切片参数等），便于对照学习「RAG 问答」如何演进为「RAG + Agent」。后续可继续扩展的方向：长期记忆、MCP / Skills、线上评测与 A/B、把公共底座抽取为共享包。
 
 ## License
 

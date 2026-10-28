@@ -1,7 +1,6 @@
 # ==============================================
-# LangChain ReAct Agent · 智能客服
+# Agent Harness · 工具调用型 Agent 运行时
 # 安装：pip install -r requirements.txt
-# 版本与基础项目 KnowledgeBase-RAG-LLM-System 对齐
 # ==============================================
 
 # Web 界面
@@ -27,7 +26,8 @@ modelscope==1.40.2
 
 # ===================== Agent 编排（LangGraph 1.x） =====================
 langgraph==1.2.12
-langgraph-checkpoint==4.2.0
+langgraph-checkpoint==4.3.1
+langgraph-checkpoint-sqlite==3.1.2
 langgraph-prebuilt==1.1.0
 langgraph-sdk==0.4.5
 

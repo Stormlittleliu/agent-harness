@@ -1,0 +1,43 @@
+# ===================== Agent 行为配置 =====================
+external_data_path: data/external/records.csv
+
+# 最大模型调用步数（ReAct 每思考一步算一次）；超限由中间件注入兜底回复
+max_model_calls: 8
+
+# ===================== 工具权限 =====================
+# default=allow 时只拦截 deny；default=deny 时只放行 allow。
+# require_approval 里的工具会走 HumanInTheLoopMiddleware（人工审批）。
+tool_policy:
+  default: allow
+  allow: []
+  deny: []
+  require_approval:
+    - reset_device
+  risk_levels:
+    rag_summarize: low
+    get_weather: low
+    get_user_location: low
+    get_user_id: low
+    get_current_month: low
+    fetch_external_data: medium
+    reset_device: high
+
+# 单次工具执行超时（秒）；按工具覆盖，0 表示不限制
+tool_timeout_seconds: 30
+tool_timeouts:
+  rag_summarize: 60
+
+# ===================== 会话持久化 =====================
+# memory：进程内记忆，重启即丢；sqlite：写入本地文件，跨进程保留
+checkpoint_backend: sqlite
+checkpoint_path: data/runtime/agent_checkpoints.sqlite
+
+# 意图路由：命中关键词即判定为「报告生成」意图，否则为普通问答
+intent:
+  report_keywords:
+    - 报告
+    - 使用报告
+    - 月报
+    - 使用记录
+    - 使用情况
+    - 使用数据

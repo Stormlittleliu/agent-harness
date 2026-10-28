@@ -22,7 +22,7 @@
 1. 每条失败案例都应该进入回归集，修复后重跑；
 2. 不要只针对单条 case 调 Prompt，先归类失败类型；
 3. 面试时优先讲"失败类型 + 根因 + 下一步"，而不是单个 badcase；
-4. 重新生成：`python evals/scripts/build_failure_set.py`。
+4. 重新生成：`python -m tools.eval.runner failures`。
 
 ## 口径
 

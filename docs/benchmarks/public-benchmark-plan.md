@@ -105,7 +105,8 @@ python run_tau2_deepseek_judge.py run --domain retail \
 
 ### 4.1 选择
 
-- 先用 `evals/datasets/tool_calling/bfcl_sample.jsonl`（20 条：10 simple + 10 irrelevance）；
+- 使用 `E:\CODE\benchmarks\BFCL\...\BFCL_v4_simple_python.json` 和 `BFCL_v4_irrelevance.json`；
+- 运行 `python -m tools.eval.runner bfcl --simple 100 --irrelevance 100`（`tools/eval/bfcl.py`）；
 - 官方模型 ID：`DeepSeek-V3.2-Exp-FC`（BFCL 支持列表）；
 - 如果官方 handler 与当前 API 模型不匹配，退化为"BFCL v4 抽样 + 简化评分"，并在口径里写明。
 

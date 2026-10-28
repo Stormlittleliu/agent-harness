@@ -1,8 +1,7 @@
-"""YAML 配置加载：四个配置文件统一在这里读取。
+"""YAML 配置加载。
 
-与基础项目一致：
-- 使用 yaml.safe_load（不执行任意 Python 对象）
-- 文件缺失 / 格式错误时给出中文提示，便于排查
+能力配置（rag/chroma）是全局的；场景配置（agent/prompts）按路径加载，
+由 scenarios/<name>/scenario.py 负责传入。
 """
 import yaml
 
@@ -32,22 +31,19 @@ def load_chroma_config(config_path: str = get_abs_path("config/chroma.yml"), enc
     return _load_yml(config_path, "config/chroma.yml", encoding)
 
 
-def load_prompts_config(config_path: str = get_abs_path("config/prompts.yml"), encoding: str = "utf-8"):
-    return _load_yml(config_path, "config/prompts.yml", encoding)
+def load_prompts_config(config_path: str, encoding: str = "utf-8"):
+    return _load_yml(config_path, "prompts.yml", encoding)
 
 
-def load_agent_config(config_path: str = get_abs_path("config/agent.yml"), encoding: str = "utf-8"):
-    return _load_yml(config_path, "config/agent.yml", encoding)
+def load_agent_config(config_path: str, encoding: str = "utf-8"):
+    return _load_yml(config_path, "agent.yml", encoding)
 
 
 rag_conf = load_rag_config()
 chroma_conf = load_chroma_config()
-agent_conf = load_agent_config()
-prompts_conf = load_prompts_config()
 
 
 if __name__ == '__main__':
     print("chat_model_name:", rag_conf["chat_model_name"])
     print("retrieval_mode:", rag_conf["retrieval_mode"])
-    print("max_model_calls:", agent_conf["max_model_calls"])
-    print("prompt keys:", list(prompts_conf.keys()))
+    print("collection_name:", chroma_conf["collection_name"])

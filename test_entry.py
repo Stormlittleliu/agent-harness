@@ -19,9 +19,12 @@ RAG/LLM 评测：
     python test_entry.py workflow --list
     python test_entry.py workflow --run rag_qa --input "..."
     python test_entry.py workflow --run report --input "生成我的使用报告"
+
+可观测性：
+    python test_entry.py trace --last 10
+    python test_entry.py trace --trace-id run-xxxx
 """
 import argparse
-import subprocess
 import sys
 from pathlib import Path
 
@@ -29,17 +32,14 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 from scenarios.registry import list_scenarios  # noqa: E402
-from tests import runner  # noqa: E402
+from tools.eval import agent_eval, runner as eval_runner  # noqa: E402
 
 
 def main():
     # BFCL 工具调用评测
     if len(sys.argv) > 1 and sys.argv[1] == "bfcl":
-        result = subprocess.run(
-            [sys.executable, str(ROOT / "evals" / "run_eval.py"), "bfcl", *sys.argv[2:]],
-            cwd=str(ROOT),
-        )
-        raise SystemExit(result.returncode)
+        eval_runner.main(["bfcl", *sys.argv[2:]])
+        return
 
     # LangGraph 工作流入口
     if len(sys.argv) > 1 and sys.argv[1] == "workflow":
@@ -47,20 +47,30 @@ def main():
         workflow_main(sys.argv[2:])
         return
 
-    # RAG/LLM 评测统一转发到 evals/run_eval.py
+    # 本地 trace 查看
+    if len(sys.argv) > 1 and sys.argv[1] == "trace":
+        from observability.trace_report import main as trace_main
+        trace_main(sys.argv[2:])
+        return
+
+    # RAG/LLM 评测统一转发到 tools.eval.runner
     if len(sys.argv) > 1 and sys.argv[1] in {"rag", "benchmark"}:
         group = sys.argv[1]
         rest = sys.argv[2:]
-        valid = {"retrieval", "generation", "judge"} if group == "rag" else {"public"}
-        if not rest or rest[0] not in valid:
-            print(f"{group} 可用命令：{', '.join(sorted(valid))}")
-            return
-        command, extra = rest[0], rest[1:]
-        result = subprocess.run(
-            [sys.executable, str(ROOT / "evals" / "run_eval.py"), command, *extra],
-            cwd=str(ROOT),
-        )
-        raise SystemExit(result.returncode)
+        if group == "rag":
+            valid = {"retrieval", "generation", "judge"}
+            if not rest or rest[0] not in valid:
+                print(f"rag 可用命令：{', '.join(sorted(valid))}")
+                return
+            task, extra = rest[0], rest[1:]
+            command = ["judge", *extra] if task == "judge" else ["rag", task, *extra]
+        else:
+            if not rest or rest[0] != "public":
+                print("benchmark 可用命令：public")
+                return
+            command = ["public", *rest[1:]]
+        eval_runner.main(command)
+        return
 
     parser = argparse.ArgumentParser(description="ReAct Agent 测试入口")
     parser.add_argument("--scenario", default="robot_vacuum", help="场景名，默认 robot_vacuum")
@@ -75,19 +85,19 @@ def main():
     if args.list:
         print("可用场景：" + ", ".join(list_scenarios()))
         try:
-            runner.list_cases(args.scenario)
+            agent_eval.list_cases(args.scenario)
         except Exception as exc:  # noqa: BLE001
             print(f"加载场景 {args.scenario} 失败：{exc}")
         return
 
     if args.interactive:
-        runner.interactive(args.scenario)
+        agent_eval.interactive(args.scenario)
         return
 
     if args.case:
-        runner.run(args.scenario, case_id=args.case, judge=args.judge)
+        agent_eval.run(args.scenario, case_id=args.case, judge=args.judge)
     else:
-        runner.run(args.scenario, limit=args.limit, judge=args.judge)
+        agent_eval.run(args.scenario, limit=args.limit, judge=args.judge)
 
 
 if __name__ == "__main__":

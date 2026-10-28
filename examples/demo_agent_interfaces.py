@@ -197,23 +197,27 @@ def demo_memory():
     try:
         from langgraph.checkpoint.memory import InMemorySaver
         from langchain.agents import create_agent
-        from model.factory import chat_model
-        from utils.prompt_loader import load_system_prompts
-        from agent.tools.agent_tools import (rag_summarize, get_weather, get_user_location,
-                                             get_user_id, get_current_month,
-                                             fetch_external_data)
-        from agent.tools.middleware import monitor_tool, log_before_model, report_prompt_switch
+        from scenarios.registry import get_scenario
+        from scenarios.robot_vacuum.scenario import PROMPTS_PATH
+        from scenarios.robot_vacuum.middleware import ReportPromptSwitchMiddleware
+        from tools.business.tools import (get_weather, get_user_location,
+                                          get_user_id, get_current_month,
+                                          fetch_external_data)
+        from tools.rag.tools import build_rag_tools
+        from agent.tools.middleware import monitor_tool, log_before_model
     except ImportError as e:
         print(f"  当前环境不支持(checkpointer 相关依赖缺失):{e}")
         return
 
+    scenario = get_scenario()
+    rag_summarize, _ = build_rag_tools()
     agent_with_memory = create_agent(
-        model=chat_model,
-        system_prompt=load_system_prompts(),
+        model=scenario.model,
+        system_prompt=scenario.system_prompt,
         tools=[rag_summarize, get_weather, get_user_location, get_user_id,
                get_current_month, fetch_external_data],
         # 为聚焦会话记忆接口，这里只挂载日志与提示词中间件
-        middleware=[monitor_tool, log_before_model, report_prompt_switch],
+        middleware=[monitor_tool, log_before_model, ReportPromptSwitchMiddleware(PROMPTS_PATH)],
         checkpointer=InMemorySaver(),
     )
     config = {"configurable": {"thread_id": "demo_thread_001"}}

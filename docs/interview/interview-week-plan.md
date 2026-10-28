@@ -65,7 +65,7 @@ tau2 run --domain retail --agent-llm deepseek/deepseek-chat \
 
 - [x] RAG 42 条 DeepSeek 重跑完成：38/42；4 条失败全部是冲突处理，已归档到 `evals/failures/rag_failures.jsonl`；
 - [ ] 复现 `agent-refuse-001`：看回答为什么没有明确拒答；
-- [ ] 只做一个最小修复：在 `config/prompts.yml` 的客服 Prompt 里加"资料不足必须拒绝、不补充外部知识"；
+- [ ] 只做一个最小修复：在 `scenarios/robot_vacuum/config/prompts.yml` 的客服 Prompt 里加"资料不足必须拒绝、不补充外部知识"；
 - [ ] 重跑 13 条，对比 11/13 → 新结果；
 - [ ] 如果修复无效，保留失败分析，不继续折腾；
 - [ ] 从 3 个演示 case 的报告里整理轨迹表：步数、工具序列、大致延迟；

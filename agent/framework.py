@@ -7,7 +7,9 @@
 - HumanInTheLoopMiddleware：高风险工具审批（s03）
 - ToolRetry / ModelRetry / ModelFallback / ToolError：错误恢复（s11）
 - ToolCallLimit：工具调用上限，防止循环
-- InMemorySaver：会话记忆与 checkpoint（s09）
+- ToolPermission / ToolTimeout：工具权限与执行超时
+- InMemorySaver / SqliteSaver：会话记忆与 checkpoint（s09）
+- TraceCallbackHandler：模型/工具/token/耗时写入本地 trace
 """
 import uuid
 
@@ -24,10 +26,12 @@ from langchain.agents.middleware import (
     ToolRetryMiddleware,
 )
 from langchain_core.messages import AIMessage
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 
-from scenarios.base import Scenario
+from agent.checkpoint import build_checkpointer
+from agent.tools.policy import ToolPermissionMiddleware, ToolTimeoutMiddleware
+from observability.tracer import TraceCallbackHandler
+from agent.contracts import Scenario
 
 
 def _on_tool_error(exc: Exception, request) -> str:
@@ -48,8 +52,10 @@ class FrameworkAgent:
     def __init__(self, scenario: Scenario):
         self.scenario = scenario
         self.last_thread_id = None
+        self.last_trace_id = None
 
-        middleware = [*scenario.middleware]
+        # 权限放在最外层：deny 的工具不会进入 HITL / 超时 / 重试链路
+        middleware = [ToolPermissionMiddleware(scenario.tool_policy), *scenario.middleware]
 
         # 规划：复杂任务自动维护 todo
         if scenario.enable_todo:
@@ -77,8 +83,16 @@ class FrameworkAgent:
         if scenario.high_risk_tools:
             middleware.append(HumanInTheLoopMiddleware(interrupt_on=scenario.high_risk_tools))
 
-        # 工具/模型重试与降级
-        middleware.append(ToolRetryMiddleware(max_retries=1))
+        # 工具执行超时：放在 HITL 之后，人工审批时间不计入工具超时
+        middleware.append(ToolTimeoutMiddleware(
+            default_timeout=scenario.tool_timeout_seconds,
+            overrides=scenario.tool_timeouts,
+        ))
+
+        # 错误恢复：ToolError 在外层、ToolRetry 在内层。
+        # 先重试；重试耗尽后抛回 ToolError，再转成中文 error ToolMessage。
+        middleware.append(ToolErrorMiddleware(on_error=_on_tool_error))
+        middleware.append(ToolRetryMiddleware(max_retries=1, on_failure="error"))
         if scenario.tool_call_limit:
             middleware.append(ToolCallLimitMiddleware(
                 run_limit=scenario.tool_call_limit,
@@ -87,9 +101,11 @@ class FrameworkAgent:
         if scenario.fallback_model is not None:
             middleware.append(ModelFallbackMiddleware(scenario.fallback_model))
         middleware.append(ModelRetryMiddleware(max_retries=1))
-        middleware.append(ToolErrorMiddleware(on_error=_on_tool_error))
 
-        self.checkpointer = InMemorySaver() if scenario.checkpoint else None
+        self.checkpointer = (
+            build_checkpointer(scenario.checkpoint_backend, scenario.checkpoint_path)
+            if scenario.checkpoint else None
+        )
         self.agent = create_agent(
             model=scenario.model,
             system_prompt=scenario.system_prompt,
@@ -99,8 +115,32 @@ class FrameworkAgent:
         )
 
     @staticmethod
-    def _config(thread_id: str) -> dict:
-        return {"configurable": {"thread_id": thread_id}}
+    def _config(thread_id: str, tracer: TraceCallbackHandler | None = None) -> dict:
+        config = {"configurable": {"thread_id": thread_id}}
+        if tracer is not None:
+            config["callbacks"] = [tracer]
+            config["metadata"] = {"trace_id": tracer.trace_id, "thread_id": thread_id}
+        return config
+
+    def _start_trace(self, thread_id: str) -> TraceCallbackHandler:
+        tracer = TraceCallbackHandler(trace_id=f"run-{uuid.uuid4().hex}", thread_id=thread_id)
+        self.last_trace_id = tracer.trace_id
+        return tracer
+
+    def invoke_tool(self, name: str, args: dict | None = None):
+        """能力层入口：直接调用场景工具，不经过模型与中间件。
+
+        用 ToolCall 形式调用，返回 ToolMessage；content_and_artifact 工具的
+        artifact 会保留在 `.artifact` 上，供评测读取原始 docs / rank / source。
+        仅用于工具级评测/调试；权限、HITL、超时等 Harness 逻辑只在 `invoke` 中生效。
+        """
+        tool = self.scenario.get_tool(name)
+        return tool.invoke({
+            "name": name,
+            "args": args or {},
+            "id": f"invoke-{uuid.uuid4().hex}",
+            "type": "tool_call",
+        })
 
     def invoke(self, query: str, thread_id: str | None = None):
         """执行一次对话；thread_id 相同时会保留历史（checkpoint 记忆）。
@@ -109,11 +149,15 @@ class FrameworkAgent:
         """
         thread_id = thread_id or f"run-{uuid.uuid4().hex}"
         self.last_thread_id = thread_id
-        return self.agent.invoke(
-            {"messages": [{"role": "user", "content": query}]},
-            config=self._config(thread_id),
-            context=dict(self.scenario.context),
-        )
+        tracer = self._start_trace(thread_id)
+        try:
+            return self.agent.invoke(
+                {"messages": [{"role": "user", "content": query}]},
+                config=self._config(thread_id, tracer),
+                context=dict(self.scenario.context),
+            )
+        finally:
+            tracer.finalize_if_needed()
 
     def resume(self, thread_id: str, decisions: list[dict] | None = None):
         """恢复被 human-in-the-loop 中断的 run。
@@ -122,40 +166,48 @@ class FrameworkAgent:
         """
         decisions = decisions or [{"type": "approve"}]
         self.last_thread_id = thread_id
-        return self.agent.invoke(
-            Command(resume={"decisions": decisions}),
-            config=self._config(thread_id),
-            context=dict(self.scenario.context),
-        )
+        tracer = self._start_trace(thread_id)
+        try:
+            return self.agent.invoke(
+                Command(resume={"decisions": decisions}),
+                config=self._config(thread_id, tracer),
+                context=dict(self.scenario.context),
+            )
+        finally:
+            tracer.finalize_if_needed()
 
     def get_state(self, thread_id: str):
         return self.agent.get_state(self._config(thread_id))
 
     def execute_stream(self, query: str, thread_id: str = "default"):
         self.last_thread_id = thread_id
+        tracer = self._start_trace(thread_id)
         input_dict = {
             "messages": [
                 {"role": "user", "content": query},
             ]
         }
 
-        for chunk in self.agent.stream(
-            input_dict,
-            config=self._config(thread_id),
-            stream_mode="values",
-            context=dict(self.scenario.context),
-        ):
-            latest_message = chunk["messages"][-1]
+        try:
+            for chunk in self.agent.stream(
+                input_dict,
+                config=self._config(thread_id, tracer),
+                stream_mode="values",
+                context=dict(self.scenario.context),
+            ):
+                latest_message = chunk["messages"][-1]
 
-            # 只输出模型回复：跳过 HumanMessage、ToolMessage 和只有工具调用的空 AI 消息
-            if not isinstance(latest_message, AIMessage):
-                continue
-            content = latest_message.content
-            if isinstance(content, list):
-                content = "".join(
-                    str(block.get("text", ""))
-                    for block in content
-                    if isinstance(block, dict) and block.get("type") == "text"
-                )
-            if isinstance(content, str) and content.strip():
-                yield content.strip() + "\n"
+                # 只输出模型回复：跳过 HumanMessage、ToolMessage 和只有工具调用的空 AI 消息
+                if not isinstance(latest_message, AIMessage):
+                    continue
+                content = latest_message.content
+                if isinstance(content, list):
+                    content = "".join(
+                        str(block.get("text", ""))
+                        for block in content
+                        if isinstance(block, dict) and block.get("type") == "text"
+                    )
+                if isinstance(content, str) and content.strip():
+                    yield content.strip() + "\n"
+        finally:
+            tracer.finalize_if_needed()
