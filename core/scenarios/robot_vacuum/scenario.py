@@ -73,6 +73,7 @@ def build_scenario() -> Scenario:
         summarization_trigger=("messages", 30),
         summarization_keep=("messages", 12),
         tool_call_limit=12,
+        token_budget=int(agent_conf["token_budget"]) if agent_conf.get("token_budget") else None,
         pii_types=["email", "credit_card", "ip"],
         checkpoint=True,
         checkpoint_backend=agent_conf.get("checkpoint_backend", "memory"),

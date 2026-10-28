@@ -41,6 +41,9 @@ python core/tests/demos/hitl_demo.py --decision reject
 
 # 同一 thread_id 的多轮记忆
 python core/tests/demos/memory_demo.py
+
+# Token 预算截断
+python core/tests/token_budget_demo.py
 ```
 
 - `hitl_demo.py` 会尝试触发 `HumanInTheLoopMiddleware` 并打印审批请求；
@@ -48,6 +51,7 @@ python core/tests/demos/memory_demo.py
   reject 时工具不会执行（可观察 `[SIDE EFFECT]` 是否出现）。
 - `memory_demo.py` 使用同一个 `thread_id` 验证多轮历史；默认 checkpointer 是 SQLite
   （`core/scenarios/robot_vacuum/config/agent.yml`），测试 runner 每次生成独立 thread_id，不会互相污染。
+- `token_budget_demo.py` 把预算压到 200，验证 `TokenBudgetMiddleware` 在下一次模型调用前截断并返回预算提示。
 
 ## 用例字段
 

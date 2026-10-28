@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Harness 中间件：通用工具/模型控制，不含业务逻辑。"""
+from core.agent.middleware.budget import TokenBudgetMiddleware
 from core.agent.middleware.generic import (
     LimitStepsMiddleware,
     LogBeforeModelMiddleware,
@@ -14,6 +15,7 @@ __all__ = [
     "LimitStepsMiddleware",
     "LogBeforeModelMiddleware",
     "MonitorToolMiddleware",
+    "TokenBudgetMiddleware",
     "ValidateToolArgsMiddleware",
     "ToolPermissionMiddleware",
     "ToolTimeoutMiddleware",

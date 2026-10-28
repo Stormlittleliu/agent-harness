@@ -28,6 +28,7 @@ class Scenario:
     summarization_trigger: tuple = ("messages", 30)
     summarization_keep: tuple = ("messages", 12)
     tool_call_limit: int | None = 12
+    token_budget: int | None = None
     pii_types: list[str] = field(default_factory=list)
     checkpoint: bool = True
     checkpoint_backend: str = "memory"

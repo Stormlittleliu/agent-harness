@@ -84,7 +84,7 @@
 > **Agent Harness（工具调用型 Agent 运行时与评测，客服场景验证）｜Python / LangChain 1.x / LangGraph** | 个人项目
 >
 > - **Agent Runtime**：基于 LangChain 的 Agent 与中间件机制实现 ReAct Loop、7 个工具注册与调度、参数校验、工具错误回注、最大步数/工具调用上限；用 LangGraph Checkpoint 支持多轮状态与暂停/恢复，流式输出。
-> - **上下文与场景**：以客服任务作为验证场景，接入上下文压缩、Todo 规划、PII 脱敏与 HITL 高风险审批；用 LangGraph 工作流编排「检索→回答→拒答校验」和「报告生成」，通过场景注册机制解耦框架与业务；模型支持 DeepSeek / DashScope 切换，Embedding 使用本地 BGE（512 维，CPU）。
+> - **上下文与场景**：以客服任务作为验证场景，接入上下文压缩、token 预算、Todo 规划、PII 脱敏与 HITL 高风险审批；用 LangGraph 工作流编排「检索→回答→拒答校验」和「报告生成」，通过场景注册机制解耦框架与业务；模型支持 DeepSeek / DashScope 切换，Embedding 使用本地 BGE（512 维，CPU）。
 > - **可量化效果**：BFCL v4 抽样 200 条，函数选择 100/100、参数 exact 90/100、无关工具不调用 79/100；τ²-bench retail 20 条抽样 Pass^1 0.95（DB 20/20，非官方 judge）；自建 42 条 RAG 评测集总体 pass 37/42、拒答 10/10；13 条 Agent 回归集 11/13。
 
 ### 版本 A：Agent / Harness 方向（推荐）

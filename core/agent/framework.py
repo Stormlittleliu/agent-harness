@@ -8,6 +8,7 @@
 - ToolRetry / ModelRetry / ModelFallback / ToolError：错误恢复（s11）
 - ToolCallLimit：工具调用上限，防止循环
 - ToolPermission / ToolTimeout：工具权限与执行超时
+- TokenBudget：单次 run 的累计 token 上限（含工具内部模型调用）
 - InMemorySaver / SqliteSaver：会话记忆与 checkpoint（s09）
 - TraceCallbackHandler：模型/工具/token/耗时写入本地 trace
 """
@@ -29,7 +30,8 @@ from langchain_core.messages import AIMessage
 from langgraph.types import Command
 
 from core.agent.checkpoint import build_checkpointer
-from core.agent.middleware import ToolPermissionMiddleware, ToolTimeoutMiddleware
+from core.agent.middleware import TokenBudgetMiddleware, ToolPermissionMiddleware, ToolTimeoutMiddleware
+from core.observability.budget import RunBudget
 from core.observability.tracer import TraceCallbackHandler
 from core.agent.contracts import Scenario
 
@@ -98,6 +100,8 @@ class FrameworkAgent:
                 run_limit=scenario.tool_call_limit,
                 exit_behavior="end",
             ))
+        if scenario.token_budget:
+            middleware.append(TokenBudgetMiddleware())
         if scenario.fallback_model is not None:
             middleware.append(ModelFallbackMiddleware(scenario.fallback_model))
         middleware.append(ModelRetryMiddleware(max_retries=1))
@@ -122,10 +126,19 @@ class FrameworkAgent:
             config["metadata"] = {"trace_id": tracer.trace_id, "thread_id": thread_id}
         return config
 
-    def _start_trace(self, thread_id: str) -> TraceCallbackHandler:
-        tracer = TraceCallbackHandler(trace_id=f"run-{uuid.uuid4().hex}", thread_id=thread_id)
+    def _start_trace(self, thread_id: str, budget: RunBudget | None = None) -> TraceCallbackHandler:
+        tracer = TraceCallbackHandler(
+            trace_id=f"run-{uuid.uuid4().hex}",
+            thread_id=thread_id,
+            budget=budget,
+        )
         self.last_trace_id = tracer.trace_id
         return tracer
+
+    def _run_context(self, budget: RunBudget) -> dict:
+        context = dict(self.scenario.context)
+        context["_run_budget"] = budget
+        return context
 
     def invoke_tool(self, name: str, args: dict | None = None):
         """能力层入口：直接调用场景工具，不经过模型与中间件。
@@ -149,12 +162,13 @@ class FrameworkAgent:
         """
         thread_id = thread_id or f"run-{uuid.uuid4().hex}"
         self.last_thread_id = thread_id
-        tracer = self._start_trace(thread_id)
+        budget = RunBudget(self.scenario.token_budget)
+        tracer = self._start_trace(thread_id, budget)
         try:
             return self.agent.invoke(
                 {"messages": [{"role": "user", "content": query}]},
                 config=self._config(thread_id, tracer),
-                context=dict(self.scenario.context),
+                context=self._run_context(budget),
             )
         finally:
             tracer.finalize_if_needed()
@@ -166,12 +180,13 @@ class FrameworkAgent:
         """
         decisions = decisions or [{"type": "approve"}]
         self.last_thread_id = thread_id
-        tracer = self._start_trace(thread_id)
+        budget = RunBudget(self.scenario.token_budget)
+        tracer = self._start_trace(thread_id, budget)
         try:
             return self.agent.invoke(
                 Command(resume={"decisions": decisions}),
                 config=self._config(thread_id, tracer),
-                context=dict(self.scenario.context),
+                context=self._run_context(budget),
             )
         finally:
             tracer.finalize_if_needed()
@@ -181,7 +196,8 @@ class FrameworkAgent:
 
     def execute_stream(self, query: str, thread_id: str = "default"):
         self.last_thread_id = thread_id
-        tracer = self._start_trace(thread_id)
+        budget = RunBudget(self.scenario.token_budget)
+        tracer = self._start_trace(thread_id, budget)
         input_dict = {
             "messages": [
                 {"role": "user", "content": query},
@@ -193,7 +209,7 @@ class FrameworkAgent:
                 input_dict,
                 config=self._config(thread_id, tracer),
                 stream_mode="values",
-                context=dict(self.scenario.context),
+                context=self._run_context(budget),
             ):
                 latest_message = chunk["messages"][-1]
 

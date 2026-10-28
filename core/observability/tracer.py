@@ -19,6 +19,8 @@ from pathlib import Path
 import yaml
 from langchain_core.callbacks import BaseCallbackHandler
 
+from core.observability.budget import RunBudget
+
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TRACE_DIR = "outputs/traces"
 _WRITE_LOCK = threading.Lock()
@@ -37,9 +39,10 @@ def _load_config() -> dict:
 class TraceCallbackHandler(BaseCallbackHandler):
     """把一个 run 的模型/工具事件写成 JSONL。"""
 
-    def __init__(self, trace_id: str, thread_id: str | None = None):
+    def __init__(self, trace_id: str, thread_id: str | None = None, budget: RunBudget | None = None):
         self.trace_id = trace_id
         self.thread_id = thread_id
+        self.budget = budget
         self.started_at = time.time()
         self.model_calls = 0
         self.tool_calls = 0
@@ -92,6 +95,8 @@ class TraceCallbackHandler(BaseCallbackHandler):
         self.prompt_tokens += prompt
         self.completion_tokens += completion
         self.total_tokens += total
+        if self.budget is not None:
+            self.budget.add(total)
 
         model = self._model_name_from_response(response) or self._last_model
         cost = self._estimate_cost(model, prompt, completion)
@@ -149,6 +154,8 @@ class TraceCallbackHandler(BaseCallbackHandler):
         if self._finalized:
             return
         self._finalized = True
+        if self.budget is not None and self.budget.exceeded and status == "completed":
+            status = "budget_exceeded"
         self._write(
             "run_end",
             status=status,
@@ -160,6 +167,8 @@ class TraceCallbackHandler(BaseCallbackHandler):
             total_tokens=self.total_tokens,
             duration_ms=int((time.time() - self.started_at) * 1000),
             cost_est=round(self.cost_est, 6),
+            budget_limit=self.budget.max_tokens if self.budget else None,
+            budget_used=self.budget.total_tokens if self.budget else None,
         )
 
     def finalize_if_needed(self) -> None:

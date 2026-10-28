@@ -119,6 +119,7 @@ python test_entry.py benchmark public
 | 工具循环控制 | `ToolCallLimitMiddleware` | 单次 run 最多 12 次工具调用 |
 | 工具权限 | `ToolPermissionMiddleware`（自研） | `tool_policy` 的 allow / deny / risk_levels；deny 直接返回 error ToolMessage |
 | 工具超时 | `ToolTimeoutMiddleware`（自研） | 默认 30s，`rag_summarize` 60s；超时返回 error ToolMessage |
+| Token 预算 | `TokenBudgetMiddleware`（自研） | 单次 run 累计 token 上限，含 RAG 工具内部模型调用；超限返回兜底 |
 | 可观测性 | `TraceCallbackHandler`（自研） | 模型/工具/token/耗时写 `outputs/traces/*.jsonl`；`python test_entry.py trace --last 10` |
 | s12 Task System | `TodoListMiddleware`（部分） | 任务清单；完整依赖图未实现 |
 | s06 Subagent / s07 Skill / s13-14 后台任务 / s18 Worktree / s19 MCP | 暂未引入 | 需要独立运行时或外部服务，当前客服场景优先级低 |
@@ -131,6 +132,7 @@ python test_entry.py benchmark public
 python core/tests/demos/hitl_demo.py --decision reject
 python core/tests/demos/memory_demo.py
 python core/tests/persistent_memory_demo.py   # 两个实例共享 SQLite checkpoint
+python core/tests/token_budget_demo.py        # 低预算截断演示
 python test_entry.py trace --last 10     # 查看最近 trace
 python test_entry.py workflow --list
 python test_entry.py workflow --run rag_qa --dry-run
@@ -177,6 +179,16 @@ cost 只有在 `config/observability.yml` 配置了价格时才计算，避免�
 - 顺序：权限（最外层）→ 业务中间件 → HITL → 超时 → `ToolError` → `ToolRetry` → 工具调用上限 → 工具。
   权限在最外层，deny 的工具不会进入审批/执行；超时在 HITL 内层，人工审批时间不计入工具超时；
   `ToolError` 在 `ToolRetry` 外层，重试耗尽后才把异常转成 error ToolMessage。
+
+### 4. Token 预算
+
+- `core/observability/budget.py` 的 `RunBudget` 记录单次 run 的累计 token；
+- `TraceCallbackHandler` 在所有模型调用结束后累加，**包含 RAG 工具内部的总结模型调用**；
+- `TokenBudgetMiddleware` 在每次模型调用前检查，超限直接结束并返回兜底回复；
+- `core/scenarios/robot_vacuum/config/agent.yml` 的 `token_budget` 控制上限；
+- trace 的 `run_end` 会写 `budget_limit`、`budget_used`，超限时 status 为 `budget_exceeded`。
+
+验证：把预算临时设为 200，RAG case 实际用了 5560 tokens，在下一次模型调用前被截断并返回预算提示。
 
 ## 效果展示
 
@@ -338,7 +350,8 @@ agent-harness/
 │   │   ├── workflow.py                #     WorkflowRuntime
 │   │   └── middleware/
 │   │       ├── generic.py             #     日志 / 参数校验 / 步数限制
-│   │       └── policy.py              #     权限 / 超时
+│   │       ├── policy.py              #     权限 / 超时
+│   │       └── budget.py              #     token 预算
 │   │
 │   ├── tools/                         #   L2 能力层
 │   │   ├── business/
@@ -384,6 +397,7 @@ agent-harness/
 │   │
 │   ├── observability/                 #   trace
 │   │   ├── tracer.py
+│   │   ├── budget.py                  #   单次 run token 预算
 │   │   └── trace_report.py
 │   ├── llm/factory.py                 #   聊天模型工厂
 │   ├── utils/                         #   配置 / 日志 / 文件 / 路径 / prompt
@@ -479,6 +493,7 @@ agent-harness/
 | | `report_prompt` | 报告生成 System Prompt |
 | `core/scenarios/robot_vacuum/config/agent.yml` | `external_data_path` | 外部使用记录 CSV 路径 |
 | | `max_model_calls` | 最大模型调用步数 |
+| | `token_budget` | 单次 run 的累计 token 上限（含工具内部模型调用） |
 | | `intent.report_keywords` | 报告意图关键词列表 |
 | | `tool_policy` | 工具 allow / deny / require_approval / risk_levels |
 | | `tool_timeout_seconds` / `tool_timeouts` | 工具超时（默认 30s，RAG 60s） |
