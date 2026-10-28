@@ -1,29 +1,27 @@
 {
   "rag": {
-    "total": 4,
+    "total": 5,
     "types": {
-      "conflict_handling": 4
+      "conflict_handling": 5
     }
   },
   "agent": {
     "total": 2,
     "types": {
-      "incomplete_answer": 1,
-      "missing_refusal": 1
+      "incomplete_answer": 2
     }
   },
   "bfcl": {
     "total": 31,
     "types": {
-      "argument_mismatch": 11,
-      "unnecessary_tool_call": 20
+      "argument_mismatch": 10,
+      "unnecessary_tool_call": 21
     }
   },
   "tau2": {
-    "total": 2,
+    "total": 1,
     "types": {
-      "nl_assertion_missing": 1,
-      "db_state_mismatch": 1
+      "nl_assertion_missing": 1
     }
   }
 }

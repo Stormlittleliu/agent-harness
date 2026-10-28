@@ -57,10 +57,10 @@
 "目前能拿出的数字：
 
 - 13 条 Agent 行为用例：**11 条通过**，工具调用用例 **13/13** 都调用了预期工具；
-- τ²-bench retail **20 条抽样**：**Pass^1 0.90（18/20）**，DB 19/20、read 100/110、write 22/23，0 infra error；NL judge 用 DeepSeek 替代，非官方评分；
-- BFCL v4 抽样 200 条：**函数选择 100/100、参数 exact 89/100、无关工具不调用 80/100**；
-- RAG 评测集（DeepSeek + 本地 BGE）：42 条中总体 pass **38 条**，答案题 **28 pass + 2 partial / 32**，拒答 **10/10**，冲突 **1 pass / 2 partial / 2 fail**；
-- 公开 RGB / MultiHop 抽样（Qwen 时期）：19/20 + 1 partial、6/12；DeepSeek 下待重跑；
+- τ²-bench retail **20 条抽样**：**Pass^1 0.95（19/20）**，DB 20/20、read 102/110、write 25/26，0 infra error；NL judge 用 DeepSeek 替代，非官方评分；
+- BFCL v4 抽样 200 条：**函数选择 100/100、参数 exact 90/100、无关工具不调用 79/100**；
+- RAG 评测集（DeepSeek + 本地 BGE）：42 条中总体 pass **37 条**，答案题 **27 pass + 5 partial / 32**，拒答 **10/10**，冲突 **0 pass / 5 partial**；
+- 公开 RGB / MultiHop 抽样（DeepSeek + 新架构）：RGB Hit@4 **16/16（MRR 0.875）**；MultiHop Hit@4 **5/9（MRR 0.444）**；
 - 本地 BGE 512 维，知识库 66 个 chunk，CPU 可跑；
 - HITL reject 验证：拒绝后高风险工具没有执行；
 - 会话记忆验证：同一 thread 下能记住上一轮名字。"
@@ -85,15 +85,15 @@
 >
 > - **Agent Runtime**：基于 LangChain 的 Agent 与中间件机制实现 ReAct Loop、7 个工具注册与调度、参数校验、工具错误回注、最大步数/工具调用上限；用 LangGraph Checkpoint 支持多轮状态与暂停/恢复，流式输出。
 > - **上下文与场景**：以客服任务作为验证场景，接入上下文压缩、Todo 规划、PII 脱敏与 HITL 高风险审批；用 LangGraph 工作流编排「检索→回答→拒答校验」和「报告生成」，通过场景注册机制解耦框架与业务；模型支持 DeepSeek / DashScope 切换，Embedding 使用本地 BGE（512 维，CPU）。
-> - **可量化效果**：BFCL v4 抽样 200 条，函数选择 100/100、参数 exact 89/100、无关工具不调用 80/100；τ²-bench retail 20 条抽样 Pass^1 0.90（DB 19/20，非官方 judge）；自建 42 条 RAG 评测集总体 pass 38/42、拒答 10/10；13 条 Agent 回归集 11/13。
+> - **可量化效果**：BFCL v4 抽样 200 条，函数选择 100/100、参数 exact 90/100、无关工具不调用 79/100；τ²-bench retail 20 条抽样 Pass^1 0.95（DB 20/20，非官方 judge）；自建 42 条 RAG 评测集总体 pass 37/42、拒答 10/10；13 条 Agent 回归集 11/13。
 
 ### 版本 A：Agent / Harness 方向（推荐）
 
-> 构建扫地机器人客服 Agent（LangChain 1.x + LangGraph）：`create_agent` 集成 7 个业务工具与 RAG，设计参数校验、工具错误回注、最大步数与工具调用上限；高风险设备重置接入 HITL 审批，会话状态用 Checkpoint 持久化。BFCL v4 抽样 200 条：函数选择 100/100、参数 exact 89/100、无关工具不调用 80/100；τ²-bench retail 20 条抽样 Pass^1 0.90（DB 19/20，NL judge 用 DeepSeek 替代）。
+> 构建扫地机器人客服 Agent（LangChain 1.x + LangGraph）：`create_agent` 集成 7 个业务工具与 RAG，设计参数校验、工具错误回注、最大步数与工具调用上限；高风险设备重置接入 HITL 审批，会话状态用 Checkpoint 持久化。BFCL v4 抽样 200 条：函数选择 100/100、参数 exact 90/100、无关工具不调用 79/100；τ²-bench retail 20 条抽样 Pass^1 0.95（DB 20/20，NL judge 用 DeepSeek 替代）。
 
 ### 版本 B：RAG 方向
 
-> 构建本地知识库 RAG：文档解析 → 差异化切分 → 本地 BGE Embedding → Chroma → 向量 + BM25 混合检索；自建 42 条评测集（正常/边界/冲突/不可回答），DeepSeek + 本地 BGE 下总体 pass 38/42、拒答 10/10；接入 RGB / MultiHop-RAG 公开基准抽样。
+> 构建本地知识库 RAG：文档解析 → 差异化切分 → 本地 BGE Embedding → Chroma → 向量 + BM25 混合检索；自建 42 条评测集（正常/边界/冲突/不可回答），DeepSeek + 本地 BGE 下总体 pass 37/42、拒答 10/10；接入 RGB / MultiHop-RAG 公开基准抽样。
 
 ### 版本 C：平台 / 工程化方向
 
@@ -128,17 +128,17 @@ flowchart TD
 
 | 指标 | 数值 | 状态 | 说明 |
 |:---|:---|:---|:---|
-| Agent 行为用例 | 11/13 通过 | ✅ 已跑 | DeepSeek + 本地 BGE，2026-10-27 |
-| τ²-bench retail 20 条 | Pass^1 0.90；DB 19/20；read 100/110；write 22/23 | ✅ 已跑（DeepSeek NL judge 替代） | 20/114 base tasks；非官方评分 |
-| BFCL v4 抽样 | 函数选择 100/100、参数 exact 89/100、无关工具不调用 80/100 | ✅ 已跑 | 100 simple_python + 100 irrelevance；简化评分 |
+| Agent 行为用例 | 11/13 通过 | ✅ 已跑 | DeepSeek + 本地 BGE，2026-10-29 |
+| τ²-bench retail 20 条 | Pass^1 0.95；DB 20/20；read 102/110；write 25/26 | ✅ 已跑（DeepSeek NL judge 替代） | 20/114 base tasks；非官方评分 |
+| BFCL v4 抽样 | 函数选择 100/100、参数 exact 90/100、无关工具不调用 79/100 | ✅ 已跑 | 100 simple_python + 100 irrelevance；简化评分 |
 | 工具调用命中 | 13/13 | ✅ 已跑 | 期望工具全部被调用 |
 | 高风险审批 | reject 后未执行 | ✅ 已验证 | `reset_device` |
-| 会话记忆 | 同 thread 记住名字 | ✅ 已验证 | `InMemorySaver` |
+| 会话记忆 | 同 thread 记住名字 | ✅ 已验证 | SQLite checkpoint |
 | 本地 Embedding | 512 维，66 chunks | ✅ 已跑 | BGE small zh v1.5 |
-| RAG 42 条总体 pass | **38/42（90.5%）** | ✅ DeepSeek 重跑 | 28 pass + 2 partial / 32 答案题；拒答 10/10；冲突 1 pass / 2 partial / 2 fail |
+| RAG 42 条总体 pass | **37/42（88.1%）** | ✅ DeepSeek 重跑 | 27 pass + 5 partial / 32 答案题；拒答 10/10；冲突 0 pass / 5 partial |
 | 检索 Hit@4 / MRR | 100% / 1.0 | ✅ 42 条 | 语料小，已饱和；MRR 区分度有限 |
-| 公开 RGB 抽样 | 19/20 + 1 partial（Qwen 时期） | ⚠️ 待重跑 | 非官方完整榜单 |
-| 公开 MultiHop 抽样 | 6/12（Qwen 时期） | ⚠️ 待重跑 | 多跳/时序是弱项 |
+| 公开 RGB 抽样 | Hit@4 16/16；MRR 0.875 | ✅ DeepSeek 重跑 | 非官方完整榜单 |
+| 公开 MultiHop 抽样 | Hit@4 5/9；MRR 0.444 | ✅ DeepSeek 重跑 | 多跳/时序是弱项 |
 | 检索 Hit@4 | 100%（小样本） | ⚠️ 饱和 | 语料太小，MRR 更有区分度 |
 | 成本/延迟 | 未系统统计 | ❌ 待补 | 半周内至少记录 3 个典型 case |
 
@@ -238,8 +238,8 @@ python test_entry.py rag judge
 
 - ❌ "线上服务了多少用户 / 提升了多少业务指标"——没有生产流量。
 - ❌ "13 条用例代表全部场景"——只是回归集。
-- ❌ "RGB 19/20 是官方榜单成绩"——只是 20 条抽样。
-- ❌ "MultiHop 6/12 说明模型不行"——样本小，且是多跳英文任务，不是业务结论。
+- ❌ "RGB 16/16 是官方榜单成绩"——只是 20 条抽样。
+- ❌ "MultiHop 5/9 说明模型不行"——样本小，且是多跳英文任务，不是业务结论。
 - ❌ "独立设计了整个框架"——项目基于开源/教程演进，要说明哪些是自己改的。
 - ✅ 可以说："自建小样本评测"、"公开集抽样"、"个人项目"、"下一步计划"。
 

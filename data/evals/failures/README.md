@@ -6,10 +6,10 @@
 
 | 文件 | 数量 | 来源 | 主要失败类型 |
 |:---|:---:|:---|:---|
-| `rag_failures.jsonl` | 4 | RAG 42 条业务集 + Judge | {'conflict_handling': 4} |
-| `agent_failures.jsonl` | 2 | Agent 13 条行为用例 | {'incomplete_answer': 1, 'missing_refusal': 1} |
-| `bfcl_failures.jsonl` | 31 | BFCL 200 条抽样 | {'argument_mismatch': 11, 'unnecessary_tool_call': 20} |
-| `tau2_failures.jsonl` | 2 | τ²-bench retail 20 条抽样 | {'nl_assertion_missing': 1, 'db_state_mismatch': 1} |
+| `rag_failures.jsonl` | 5 | RAG 42 条业务集 + Judge | {'conflict_handling': 5} |
+| `agent_failures.jsonl` | 2 | Agent 13 条行为用例 | {'incomplete_answer': 2} |
+| `bfcl_failures.jsonl` | 31 | BFCL 200 条抽样 | {'argument_mismatch': 10, 'unnecessary_tool_call': 21} |
+| `tau2_failures.jsonl` | 1 | τ²-bench retail 20 条抽样 | {'nl_assertion_missing': 1} |
 
 ## 字段
 

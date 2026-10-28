@@ -196,18 +196,18 @@ python run_tau2_deepseek_judge.py run --domain retail \
 - [x] 5 条 initial smoke：2 条完成（reward 1.0），3 条因 NL judge 缺 OpenAI key / 超时未完成；
 - [x] 写 `run_tau2_deepseek_judge.py`，把 NL assertion judge 从 OpenAI `gpt-5.4-mini` 替换为 `deepseek/deepseek-chat`（**非官方评分口径**）；
 - [x] **20 条 retail 抽样完成**：
-  - **Pass^1 0.90（18/20）**，平均 reward 0.90；
-  - DB Match **19/20**；
-  - Read Actions **100/110（90.9%）**；
-  - Write Actions **22/23（95.7%）**；
+  - **Pass^1 0.95（19/20）**，平均 reward 0.95；
+  - DB Match **20/20**；
+  - Read Actions **102/110（92.7%）**；
+  - Write Actions **25/26（96.2%）**；
   - Infra Error **0**；
-  - 失败 2 条：task 3 NL assertion 未满足；task 5 DB state 不匹配；
+  - 失败 1 条：task 3 NL assertion 未满足；
 - [x] BFCL v4 抽样 200 条完成（100 simple_python + 100 irrelevance）：
   - 函数选择 **100/100**；
-  - 参数 exact **89/100**；
-  - 无关工具不调用 **80/100**（20 条误调用）；
+  - 参数 exact **90/100**；
+  - 无关工具不调用 **79/100**（21 条误调用）；
   - 调用错误 **0**；
 - [ ] 用公开基准结果更新简历和 2 分钟稿。
 
-> 最终样本口径：τ²-bench retail **20 条抽样，Pass^1 0.90**；NL judge 用 DeepSeek 替代，不是官方 OpenAI judge，不能称为官方榜单成绩。BFCL **200 条抽样**（简化评分）。
+> 最终样本口径：τ²-bench retail **20 条抽样，Pass^1 0.95**；NL judge 用 DeepSeek 替代，不是官方 OpenAI judge，不能称为官方榜单成绩。BFCL **200 条抽样**（简化评分）。
 > 成本暂不可用：LiteLLM 价格表未映射 `deepseek-flash`，所以 `agent_cost` 为 None。
