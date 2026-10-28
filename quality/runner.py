@@ -2,14 +2,14 @@
 """统一评测入口：能力层 + 行为层。
 
 用法：
-    python -m tools.eval.runner agent --limit 2
-    python -m tools.eval.runner agent --case agent-rag-001 --judge
-    python -m tools.eval.runner rag retrieval --limit 5
-    python -m tools.eval.runner rag generation --mode hybrid --limit 5
-    python -m tools.eval.runner public --rgb-limit 2 --skip-multihop
-    python -m tools.eval.runner judge --input evals/reports/eval_generation.json
-    python -m tools.eval.runner bfcl --simple 2 --irrelevance 2
-    python -m tools.eval.runner failures
+    python -m quality.runner agent --limit 2
+    python -m quality.runner agent --case agent-rag-001 --judge
+    python -m quality.runner rag retrieval --limit 5
+    python -m quality.runner rag generation --mode hybrid --limit 5
+    python -m quality.runner public --rgb-limit 2 --skip-multihop
+    python -m quality.runner judge --input outputs/rag/eval_generation.json
+    python -m quality.runner bfcl --simple 2 --irrelevance 2
+    python -m quality.runner failures
 """
 from __future__ import annotations
 
@@ -21,7 +21,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.eval import agent_eval, bfcl, failures, public, rag_eval, rag_judge  # noqa: E402
+from quality import agent_eval, bfcl, failures, public, rag_eval, rag_judge  # noqa: E402
+from quality.paths import RAG_OUT  # noqa: E402
 
 
 def _agent(args):
@@ -64,21 +65,25 @@ def _public(args):
 
 
 def _judge(args):
-    rag_judge.main([
+    cmd = [
         "--input", args.input,
-        "--out-dir", args.out_dir,
         "--prefix", args.prefix,
         "--limit", str(args.limit),
-    ])
+    ]
+    if args.out_dir:
+        cmd += ["--out-dir", args.out_dir]
+    rag_judge.main(cmd)
 
 
 def _bfcl(args):
-    bfcl.main([
+    cmd = [
         "--simple", str(args.simple),
         "--irrelevance", str(args.irrelevance),
         "--delay", str(args.delay),
-        "--out-dir", args.out_dir,
-    ])
+    ]
+    if args.out_dir:
+        cmd += ["--out-dir", args.out_dir]
+    bfcl.main(cmd)
 
 
 def _tau2(_args):
@@ -90,7 +95,7 @@ def _tau2(_args):
         "--num-tasks 20 --num-trials 1 --max-concurrency 2 --timeout 600 "
         "--save-to retail20_deepseek_judge"
     )
-    print("结果由 python -m tools.eval.runner failures 读取并归档。")
+    print("结果由 python -m quality.runner failures 读取并归档。")
 
 
 def build_parser():
@@ -160,9 +165,7 @@ def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
     if getattr(args, "input", None) is None and hasattr(args, "input"):
-        args.input = str(ROOT / "evals" / "reports" / "eval_generation.json")
-    if getattr(args, "out_dir", None) is None and hasattr(args, "out_dir"):
-        args.out_dir = str(ROOT / "evals" / "reports")
+        args.input = str(RAG_OUT / "eval_generation.json")
     args.func(args)
 
 

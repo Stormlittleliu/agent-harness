@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""通用 Agent 测试运行器：只依赖 ReactAgent + Scenario 的 cases.jsonl。
+"""通用 Agent 行为评测：FrameworkAgent + Scenario 的 cases.jsonl。
 
-不 import 任何具体业务工具；换场景只需要 --scenario。
+质量层直接依赖 Harness，不依赖 interfaces 的兼容门面。
 """
 import json
 import sys
@@ -15,9 +15,11 @@ if str(ROOT) not in sys.path:
 
 from langchain_core.messages import AIMessage  # noqa: E402
 
-from agent.react_agent import ReactAgent  # noqa: E402
-from tools.eval.judge import build_judge, judge_answer  # noqa: E402
-from tools.eval.metrics import score_case  # noqa: E402
+from agent.framework import FrameworkAgent  # noqa: E402
+from quality.judge import build_judge, judge_answer  # noqa: E402
+from quality.metrics import score_case  # noqa: E402
+from quality.paths import AGENT_OUT  # noqa: E402
+from scenarios.registry import get_scenario  # noqa: E402
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -72,7 +74,7 @@ def extract_tool_calls(messages) -> list[dict]:
 
 
 def run(scenario_name="robot_vacuum", case_id=None, limit=0, judge=False):
-    agent = ReactAgent(scenario_name)
+    agent = FrameworkAgent(get_scenario(scenario_name))
     scenario = agent.scenario
     cases_path = scenario.cases_path
     if not cases_path or not Path(cases_path).exists():
@@ -90,7 +92,7 @@ def run(scenario_name="robot_vacuum", case_id=None, limit=0, judge=False):
     results = []
 
     for index, case in enumerate(cases, 1):
-        final_state = agent.framework.invoke(case["question"])
+        final_state = agent.invoke(case["question"])
         messages = final_state["messages"]
         answer = extract_final_answer(messages)
         tool_calls = extract_tool_calls(messages)
@@ -141,7 +143,7 @@ def run(scenario_name="robot_vacuum", case_id=None, limit=0, judge=False):
     if judge:
         summary["judge_pass"] = sum(1 for row in results if (row["judge"] or {}).get("verdict") == "pass")
 
-    out_dir = ROOT / "evals" / "reports"
+    out_dir = AGENT_OUT
     out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     json_path = out_dir / f"agent_test_{scenario_name}_{stamp}.json"
@@ -196,16 +198,16 @@ def write_markdown(path: Path, summary, results, judge):
 
 
 def list_cases(scenario_name="robot_vacuum"):
-    agent = ReactAgent(scenario_name)
-    cases = load_cases(Path(agent.scenario.cases_path))
-    print(f"场景：{agent.scenario.name} — {agent.scenario.description}")
+    scenario = get_scenario(scenario_name)
+    cases = load_cases(Path(scenario.cases_path))
+    print(f"场景：{scenario.name} — {scenario.description}")
     for case in cases:
         print(f"  {case['id']:<20} [{case['category']}] {case['question']}")
     return cases
 
 
 def interactive(scenario_name="robot_vacuum"):
-    agent = ReactAgent(scenario_name)
+    agent = FrameworkAgent(get_scenario(scenario_name))
     print(f"场景：{agent.scenario.name}（输入 exit 退出）")
     while True:
         try:
@@ -217,7 +219,7 @@ def interactive(scenario_name="robot_vacuum"):
             break
         if not query:
             continue
-        state = agent.framework.invoke(query)
+        state = agent.invoke(query)
         answer = extract_final_answer(state["messages"])
         tools = [item["name"] for item in extract_tool_calls(state["messages"])]
         print(f"Agent：{answer}")

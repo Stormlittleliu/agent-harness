@@ -39,14 +39,14 @@ agent/framework.py          # 通用 ReAct 运行时：create_agent + 中间件 
 agent/contracts.py          # Scenario 契约：模型 / 提示词 / 工具 / 中间件 / context / 测试用例
 scenarios/registry.py       # 场景注册表
 scenarios/robot_vacuum/     # 预设业务场景：7 个工具 + 提示词 + 中间件 + cases.jsonl
-agent/react_agent.py        # 兼容层：默认加载 robot_vacuum，保持原 API
+interfaces/react_agent.py   # 兼容层：默认加载 robot_vacuum，保持原 API
 test_entry.py               # 统一测试入口
-tools/eval/agent_eval.py    # 行为层评测：ReactAgent 跑场景 cases
+quality/agent_eval.py       # 行为层评测：FrameworkAgent 跑场景 cases
 ```
 
 - 框架层**不 import 任何业务工具**；
 - 新增场景只需在 `scenarios/<name>/` 实现 `build_scenario()` 并在 `registry.py` 注册；
-- `react_agent.py`、`app.py`、`examples/demo_agent_interfaces.py` 的原有用法不变。
+- `react_agent.py`、`app.py`、`interfaces/examples/demo_agent_interfaces.py` 的原有用法不变。
 
 ## 测试入口
 
@@ -60,20 +60,20 @@ python test_entry.py workflow --list # LangGraph 工作流
 python test_entry.py workflow --run rag_qa --dry-run
 ```
 
-报告输出到 `evals/reports/`。
+报告输出到 `outputs/agent/`。
 
 ## RAG / LLM 评测
 
-`evals/` 保存数据集与报告，`tools/eval/` 保存评测代码。
+`evals/` 保存数据集，`quality/` 保存评测代码，报告写到 `outputs/`。
 能力层（RAG 检索/生成、RGB/MultiHop）走 `FrameworkAgent.invoke_tool`，
-行为层（13 条用例）走 `ReactAgent`：
+行为层（13 条用例）走 `FrameworkAgent.invoke`：
 
 ```bash
-python -m tools.eval.runner agent --limit 2          # 行为层
-python -m tools.eval.runner rag retrieval --limit 5  # 能力层：检索
-python -m tools.eval.runner rag generation --limit 5 # 能力层：生成
-python -m tools.eval.runner public --rgb-limit 2 --skip-multihop
-python -m tools.eval.runner bfcl --simple 2 --irrelevance 2
+python -m quality.runner agent --limit 2          # 行为层
+python -m quality.runner rag retrieval --limit 5  # 能力层：检索
+python -m quality.runner rag generation --limit 5 # 能力层：生成
+python -m quality.runner public --rgb-limit 2 --skip-multihop
+python -m quality.runner bfcl --simple 2 --irrelevance 2
 
 # 兼容旧入口
 python test_entry.py rag retrieval
@@ -83,7 +83,7 @@ python test_entry.py benchmark public
 ```
 
 数据在 `evals/datasets/`（42 条业务集 + RGB 20 条 + MultiHop-RAG 12 条），
-报告输出到 `evals/reports/`。详见 [evals/README.md](./evals/README.md)。
+报告输出到 `outputs/rag/`。详见 [evals/README.md](./evals/README.md)。
 
 ### 当前评测结果（抽样，非官方完整分数）
 
@@ -328,38 +328,27 @@ streamlit run app.py
 ```text
 agent-harness/
 │
-├── agent/                          # Agent Runtime
+├── agent/                          # L1 Harness
 │   ├── contracts.py                #   Scenario / Tool / Workflow 契约
-│   ├── react_agent.py              #   兼容层：按场景构建 Agent
 │   ├── framework.py                #   通用 Runtime + 中间件装配
 │   ├── checkpoint.py               #   memory / sqlite checkpointer 工厂
 │   ├── workflow.py                 #   通用 LangGraph 工作流运行时
-│   └── tools/
-│       ├── middleware.py           #   日志/参数校验/步数限制
+│   └── middleware/
+│       ├── generic.py              #   日志/参数校验/步数限制
 │       └── policy.py               #   工具权限 + 超时
 │
-├── tools/                          # 能力层（业务 / RAG / 评测）
+├── tools/                          # L2 能力层（业务 / RAG）
 │   ├── business/
 │   │   ├── constants.py            #   user_ids / month_arr
 │   │   └── tools.py                #   6 个业务工具（天气/定位/用户/月份/记录/重置）
-│   ├── rag/
-│   │   ├── embedding.py            #   本地 BGE / DashScope
-│   │   ├── vector_store.py         #   Chroma · 四格式入库 · MD5 去重
-│   │   ├── retrievers.py           #   纯向量 / BM25 / 混合检索
-│   │   ├── service.py              #   RAG 检索 → LLM 总结
-│   │   └── tools.py                #   rag_retrieve / rag_summarize
-│   └── eval/                       #   评测
-│       ├── runner.py               #   统一 CLI
-│       ├── datasets.py / metrics.py #   数据加载 / 指标
-│       ├── rag_harness.py          #   评测 Scenario 装配
-│       ├── agent_eval.py           #   行为层：ReactAgent
-│       ├── rag_eval.py             #   能力层：invoke_tool
-│       ├── public.py               #   RGB / MultiHop
-│       ├── judge.py / rag_judge.py #   LLM judge
-│       ├── bfcl.py                 #   BFCL 外部适配器
-│       └── failures.py             #   失败集
+│   └── rag/
+│       ├── embedding.py            #   本地 BGE / DashScope
+│       ├── vector_store.py         #   Chroma · 四格式入库 · MD5 去重
+│       ├── retrievers.py           #   纯向量 / BM25 / 混合检索
+│       ├── service.py              #   RAG 检索 → LLM 总结
+│       └── tools.py                #   rag_retrieve / rag_summarize
 │
-├── scenarios/                      # 业务场景
+├── scenarios/                      # L3 业务场景（组合根）
 │   └── robot_vacuum/
 │       ├── scenario.py             #   工具 + 提示词 + 中间件 + 测试用例
 │       ├── graph.py                #   该场景的 LangGraph 工作流
@@ -367,6 +356,25 @@ agent-harness/
 │       ├── validators.py           #   工具参数校验规则
 │       ├── cases.jsonl
 │       └── config/                 #   场景级 agent.yml / prompts.yml
+│
+├── interfaces/                     # L4 接口层
+│   ├── react_agent.py              #   兼容门面：按场景构建 Agent
+│   ├── cli.py                      #   test_entry 的实现
+│   ├── streamlit_app.py            #   Streamlit 应用
+│   └── examples/
+│       └── demo_agent_interfaces.py
+│
+├── quality/                        # L5 质量层
+│   ├── runner.py                   #   统一 CLI
+│   ├── datasets.py / metrics.py    #   数据加载 / 指标
+│   ├── paths.py                    #   datasets / outputs 路径
+│   ├── rag_harness.py              #   评测 Scenario 装配
+│   ├── agent_eval.py               #   行为层：FrameworkAgent
+│   ├── rag_eval.py                 #   能力层：invoke_tool
+│   ├── public.py                   #   RGB / MultiHop
+│   ├── judge.py / rag_judge.py     #   LLM judge
+│   ├── bfcl.py                     #   BFCL 外部适配器
+│   └── failures.py                 #   失败集
 │
 ├── model/factory.py                # 聊天模型工厂（DeepSeek / DashScope）
 ├── utils/                          # 配置、文件解析、日志、路径、提示词加载
@@ -386,10 +394,13 @@ agent-harness/
 │   ├── runtime/                    #   Chroma / md5（gitignore）
 │   └── backups/                    #   旧向量库备份（gitignore）
 │
-├── evals/                          # 评测数据与报告
+├── evals/                          # 评测数据
 │   ├── datasets/                   #   业务集 + 公开基准抽样
-│   ├── failures/                   #   失败案例归档
-│   └── reports/                    #   运行报告（gitignore）
+│   └── failures/                   #   失败案例归档
+│
+├── outputs/                        # L6 运行产物（gitignore）
+│   ├── agent/ rag/ public/ bfcl/
+│   └── traces/
 │
 ├── tests/                          # 演示
 │   ├── persistent_memory_demo.py   #   跨实例 SQLite 记忆
@@ -401,9 +412,9 @@ agent-harness/
 │   ├── benchmarks/                 #   公开基准方案
 │   └── assets/                     #   截图
 │
-├── examples/demo_agent_interfaces.py  # 主循环接口演示
-├── app.py                          # Streamlit 入口
-├── test_entry.py                   # 统一测试入口
+├── interfaces/examples/demo_agent_interfaces.py  # 主循环接口演示
+├── app.py                          # 兼容入口：streamlit run app.py
+├── test_entry.py                   # 兼容入口：python test_entry.py ...
 ├── requirements.txt
 └── README.md
 ```

@@ -49,6 +49,7 @@ md5.txt.bak_*
 md5.text.bak_*
 tests/results/
 evals/reports/
+outputs/
 
 # Legacy KnowledgeBase files (preserved in legacy-main)
 /src/

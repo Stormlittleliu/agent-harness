@@ -3,9 +3,9 @@
 框架与业务分离后，测试只依赖 `Scenario`：
 
 - `scenarios/<场景>/cases.jsonl`：该场景的测试用例；
-- `tools/eval/agent_eval.py`：行为层 runner（ReactAgent）；
-- `tools/eval/judge.py`：可选 LLM-as-judge；
-- `test_entry.py`：兼容入口；新入口是 `python -m tools.eval.runner agent`。
+- `quality/agent_eval.py`：行为层 runner（FrameworkAgent）；
+- `quality/judge.py`：可选 LLM-as-judge；
+- `test_entry.py`：兼容入口；新入口是 `python -m quality.runner agent`。
 
 ## 用法
 
@@ -15,7 +15,7 @@ python test_entry.py --list
 
 # 跑全部用例
 python test_entry.py --all
-python -m tools.eval.runner agent
+python -m quality.runner agent
 
 # 只跑一条
 python test_entry.py --case agent-rag-001
@@ -30,7 +30,7 @@ python test_entry.py --all --judge
 python test_entry.py --limit 3
 ```
 
-报告输出到 `evals/reports/agent_test_<scenario>_<timestamp>.md/json`。
+报告输出到 `outputs/agent/agent_test_<scenario>_<timestamp>.md/json`。
 
 ## Harness 能力演示
 

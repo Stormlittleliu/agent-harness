@@ -17,21 +17,21 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.eval.datasets import (  # noqa: E402
+from quality.datasets import (  # noqa: E402
     DATASETS_DIR,
-    REPORTS_DIR,
     build_retrievers,
     build_store,
     load_jsonl,
     split_documents,
 )
-from tools.eval.metrics import (  # noqa: E402
+from quality.metrics import (  # noqa: E402
     REFUSAL_MARKERS,
     detect_conflict,
     normalize,
     score_retrieval,
 )
-from tools.eval.rag_harness import (  # noqa: E402
+from quality.paths import RAG_OUT  # noqa: E402
+from quality.rag_harness import (  # noqa: E402
     build_eval_agent,
     docs_from_artifact,
     result_parts,
@@ -42,7 +42,7 @@ from tools.eval.rag_harness import (  # noqa: E402
 def run_retrieval(dataset=None, docs_dir=None, modes=("vector", "hybrid"), k=4, limit=0, out_dir=None):
     dataset = Path(dataset or DATASETS_DIR / "business" / "eval_set_all.jsonl")
     docs_dir = Path(docs_dir or DATASETS_DIR / "business" / "docs")
-    out_dir = Path(out_dir or REPORTS_DIR)
+    out_dir = Path(out_dir or RAG_OUT)
 
     cases = load_jsonl(dataset)
     if limit:
@@ -131,7 +131,7 @@ def run_retrieval(dataset=None, docs_dir=None, modes=("vector", "hybrid"), k=4, 
 def run_generation(dataset=None, docs_dir=None, mode="hybrid", k=4, limit=0, out_dir=None):
     dataset = Path(dataset or DATASETS_DIR / "business" / "eval_set_all.jsonl")
     docs_dir = Path(docs_dir or DATASETS_DIR / "business" / "docs")
-    out_dir = Path(out_dir or REPORTS_DIR)
+    out_dir = Path(out_dir or RAG_OUT)
 
     cases = load_jsonl(dataset)
     if limit:

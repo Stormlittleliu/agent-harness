@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DIR = ROOT / "logs" / "traces"
+DEFAULT_DIR = ROOT / "outputs" / "traces"
 
 
 def load_events(trace_dir: Path) -> list[dict]:

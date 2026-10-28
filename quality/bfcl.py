@@ -22,7 +22,7 @@ if str(ROOT) not in sys.path:
 
 from langchain_core.messages import HumanMessage  # noqa: E402
 
-from tools.eval.datasets import REPORTS_DIR  # noqa: E402
+from quality.paths import BFCL_OUT  # noqa: E402
 from model.factory import chat_model  # noqa: E402
 
 BFCL_DATA = Path(r"E:\CODE\benchmarks\BFCL\berkeley-function-call-leaderboard\bfcl_eval\data")
@@ -164,7 +164,7 @@ def main(argv=None):
     parser.add_argument("--simple", type=int, default=100)
     parser.add_argument("--irrelevance", type=int, default=100)
     parser.add_argument("--delay", type=float, default=0.2)
-    parser.add_argument("--out-dir", default=str(REPORTS_DIR))
+    parser.add_argument("--out-dir", default=str(BFCL_OUT))
     args = parser.parse_args(argv)
 
     simple_items = list(read_jsonl(SIMPLE))[: args.simple]

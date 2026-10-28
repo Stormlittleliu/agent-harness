@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """RAG 生成结果复核：LLM-as-judge。
 
-输入 evals/reports/eval_generation.json，输出 <prefix>_judged.json/md。
+输入 outputs/rag/eval_generation.json，输出 <prefix>_judged.json/md。
 """
 import argparse
 import json
@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
 from langchain_core.output_parsers import StrOutputParser  # noqa: E402
 from langchain_core.prompts import ChatPromptTemplate  # noqa: E402
 
-from tools.eval.datasets import REPORTS_DIR  # noqa: E402
+from quality.paths import RAG_OUT  # noqa: E402
 from model.factory import chat_model  # noqa: E402
 
 try:
@@ -79,8 +79,8 @@ def parse_json(text: str) -> dict:
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", default=str(REPORTS_DIR / "eval_generation.json"))
-    parser.add_argument("--out-dir", default=str(REPORTS_DIR))
+    parser.add_argument("--input", default=str(RAG_OUT / "eval_generation.json"))
+    parser.add_argument("--out-dir", default=str(RAG_OUT))
     parser.add_argument("--prefix", default="eval_generation")
     parser.add_argument("--limit", type=int, default=0)
     args = parser.parse_args(argv)

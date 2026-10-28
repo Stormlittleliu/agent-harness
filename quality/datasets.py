@@ -24,10 +24,8 @@ from tools.rag.retrievers import (  # noqa: E402
     get_tokenizer,
 )
 from utils.config_handler import chroma_conf, rag_conf  # noqa: E402
+from quality.paths import DATASETS_DIR  # noqa: E402
 
-EVALS_ROOT = ROOT / "evals"
-DATASETS_DIR = EVALS_ROOT / "datasets"
-REPORTS_DIR = EVALS_ROOT / "reports"
 BATCH_SIZE = 10
 
 

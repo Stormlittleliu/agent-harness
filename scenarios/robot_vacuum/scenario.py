@@ -6,7 +6,7 @@
 from pathlib import Path
 
 from agent.contracts import Scenario
-from agent.tools.middleware import (
+from agent.middleware import (
     LimitStepsMiddleware,
     ValidateToolArgsMiddleware,
     log_before_model,

@@ -29,7 +29,7 @@ from langchain_core.messages import AIMessage
 from langgraph.types import Command
 
 from agent.checkpoint import build_checkpointer
-from agent.tools.policy import ToolPermissionMiddleware, ToolTimeoutMiddleware
+from agent.middleware import ToolPermissionMiddleware, ToolTimeoutMiddleware
 from observability.tracer import TraceCallbackHandler
 from agent.contracts import Scenario
 

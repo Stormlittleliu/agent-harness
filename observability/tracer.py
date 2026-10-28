@@ -2,7 +2,7 @@
 """本地 trace：记录一次 run 的模型/工具调用、token 与耗时。
 
 不依赖 LangSmith / OpenTelemetry；每次调用追加写入
-`logs/traces/trace_YYYYMMDD.jsonl`。一行一个事件，便于 grep 和后续聚合。
+`outputs/traces/trace_YYYYMMDD.jsonl`。一行一个事件，便于 grep 和后续聚合。
 
 用法：
     tracer = TraceCallbackHandler(trace_id="...", thread_id="...")
@@ -20,7 +20,7 @@ import yaml
 from langchain_core.callbacks import BaseCallbackHandler
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_TRACE_DIR = "logs/traces"
+DEFAULT_TRACE_DIR = "outputs/traces"
 _WRITE_LOCK = threading.Lock()
 
 

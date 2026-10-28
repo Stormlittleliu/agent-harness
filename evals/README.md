@@ -1,6 +1,6 @@
 # RAG / Agent / LLM 评测
 
-评测代码在 `tools/eval/`，本目录只保存数据与报告：
+评测代码在 `quality/`，本目录只保存数据；报告统一写到 `outputs/`。
 
 ```text
 evals/
@@ -14,8 +14,15 @@ evals/
 │       ├── rag_rgb_sample.jsonl
 │       ├── rag_multihop_sample.jsonl
 │       └── multihop_corpus.json
-├── failures/                   # 失败集（RAG / Agent / BFCL / τ²）
-└── reports/                    # 运行产物（gitignore）
+└── failures/                   # 失败集（RAG / Agent / BFCL / τ²）
+```
+
+报告目录：
+
+```text
+outputs/
+├── agent/  rag/  public/  bfcl/
+└── traces/
 ```
 
 ## 两层评测
@@ -23,7 +30,7 @@ evals/
 | 层 | 调用链 | 测什么 |
 |:---|:---|:---|
 | 能力层 | `FrameworkAgent.invoke_tool` → `Scenario.get_tool` → `rag_retrieve` / `rag_summarize` | 检索 Hit@K/MRR、RAG 生成、拒答、grounded |
-| 行为层 | `ReactAgent` → `FrameworkAgent.invoke` → model + middleware + tools | 工具选择、参数、拒答、多步 |
+| 行为层 | `FrameworkAgent.invoke` → model + middleware + tools | 工具选择、参数、拒答、多步 |
 
 能力层把 query 原样传给工具，k 由评测控制；RAG 指标不会被模型改写 query / 多次调用污染。
 
@@ -31,21 +38,21 @@ evals/
 
 ```bash
 # 行为层：13 条 Agent 用例
-python -m tools.eval.runner agent
-python -m tools.eval.runner agent --limit 2
-python -m tools.eval.runner agent --case agent-rag-001 --judge
+python -m quality.runner agent
+python -m quality.runner agent --limit 2
+python -m quality.runner agent --case agent-rag-001 --judge
 
 # 能力层：RAG 检索 / 生成
-python -m tools.eval.runner rag retrieval --limit 5
-python -m tools.eval.runner rag generation --mode hybrid --limit 5
+python -m quality.runner rag retrieval --limit 5
+python -m quality.runner rag generation --mode hybrid --limit 5
 
 # 公开 benchmark
-python -m tools.eval.runner public --rgb-limit 2 --skip-multihop
-python -m tools.eval.runner bfcl --simple 2 --irrelevance 2
+python -m quality.runner public --rgb-limit 2 --skip-multihop
+python -m quality.runner bfcl --simple 2 --irrelevance 2
 
 # LLM judge / 失败集
-python -m tools.eval.runner judge --input evals/reports/eval_generation.json
-python -m tools.eval.runner failures
+python -m quality.runner judge --input outputs/rag/eval_generation.json
+python -m quality.runner failures
 ```
 
 兼容旧入口：
@@ -88,6 +95,6 @@ python test_entry.py bfcl --simple 2 --irrelevance 2
 - `tau2_failures.jsonl`：τ²-bench 外部结果；
 - `README.md`：字段、分类、使用方式。
 
-重新生成：`python -m tools.eval.runner failures`。
+重新生成：`python -m quality.runner failures`。
 
 > BFCL / τ² 保留外部官方 harness 口径；能力层 RAG 指标是工具级指标，不是 Agent 端到端指标。

@@ -2,9 +2,9 @@
 """把评测中的失败/部分通过案例归档为 failure set，供回归与面试复盘使用。
 
 输入：
-- evals/reports/eval_generation_judged.json（RAG 生成 + judge）
-- evals/reports/agent_test_robot_vacuum_*.json（最新 Agent 测试）
-- evals/reports/eval_bfcl.json（BFCL 抽样）
+- outputs/rag/eval_generation_judged.json（RAG 生成 + judge）
+- outputs/agent/agent_test_*.json（最新 Agent 测试）
+- outputs/bfcl/eval_bfcl.json（BFCL 抽样）
 
 输出：
 - evals/failures/{rag,agent,bfcl,tau2}_failures.jsonl
@@ -15,9 +15,9 @@ import glob
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-REPORTS = ROOT / "evals" / "reports"
-FAILURES = ROOT / "evals" / "failures"
+from quality.paths import AGENT_OUT, BFCL_OUT, FAILURES_DIR, RAG_OUT
+
+FAILURES = FAILURES_DIR
 TAU2_RESULTS = Path(r"E:\CODE\benchmarks\tau2-bench\data\simulations\retail20_deepseek_judge\results.json")
 TAU2_TASKS = Path(r"E:\CODE\benchmarks\tau2-bench\data\tau2\domains\retail\tasks.json")
 
@@ -48,7 +48,7 @@ def classify_rag(row):
 
 
 def build_rag_failures():
-    path = REPORTS / "eval_generation_judged.json"
+    path = RAG_OUT / "eval_generation_judged.json"
     if not path.exists():
         return []
     data = load_json(path)
@@ -74,7 +74,7 @@ def build_rag_failures():
 
 
 def build_agent_failures():
-    paths = sorted(glob.glob(str(REPORTS / "agent_test_*.json")), key=lambda p: Path(p).stat().st_mtime)
+    paths = sorted(glob.glob(str(AGENT_OUT / "agent_test_*.json")), key=lambda p: Path(p).stat().st_mtime)
     if not paths:
         return []
     data = load_json(Path(paths[-1]))
@@ -100,7 +100,7 @@ def build_agent_failures():
 
 
 def build_bfcl_failures():
-    path = REPORTS / "eval_bfcl.json"
+    path = BFCL_OUT / "eval_bfcl.json"
     if not path.exists():
         return []
     data = load_json(path)
@@ -153,7 +153,7 @@ def build_tau2_failures():
 
 def main():
     FAILURES.mkdir(parents=True, exist_ok=True)
-    agent_paths = sorted(glob.glob(str(REPORTS / "agent_test_*.json")), key=lambda p: Path(p).stat().st_mtime)
+    agent_paths = sorted(glob.glob(str(AGENT_OUT / "agent_test_*.json")), key=lambda p: Path(p).stat().st_mtime)
 
     def json_total(path: Path) -> int:
         try:
@@ -170,9 +170,9 @@ def main():
 
     # 只接受完整规模的报告，避免 smoke 结果覆盖已提交的失败集
     availability = {
-        "rag": json_total(REPORTS / "eval_generation_judged.json") >= 42,
+        "rag": json_total(RAG_OUT / "eval_generation_judged.json") >= 42,
         "agent": bool(agent_paths) and json_total(Path(agent_paths[-1])) >= 13,
-        "bfcl": bfcl_total(REPORTS / "eval_bfcl.json") >= 200,
+        "bfcl": bfcl_total(BFCL_OUT / "eval_bfcl.json") >= 200,
         "tau2": TAU2_RESULTS.exists() and TAU2_TASKS.exists(),
     }
 
@@ -233,7 +233,7 @@ def main():
 1. 每条失败案例都应该进入回归集，修复后重跑；
 2. 不要只针对单条 case 调 Prompt，先归类失败类型；
 3. 面试时优先讲"失败类型 + 根因 + 下一步"，而不是单个 badcase；
-4. 重新生成：`python -m tools.eval.runner failures`。
+4. 重新生成：`python -m quality.runner failures`。
 
 ## 口径
 

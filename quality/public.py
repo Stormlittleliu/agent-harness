@@ -17,14 +17,14 @@ if str(ROOT) not in sys.path:
 
 from langchain_core.documents import Document  # noqa: E402
 
-from tools.eval.datasets import (  # noqa: E402
+from quality.datasets import (  # noqa: E402
     DATASETS_DIR,
-    REPORTS_DIR,
     build_store,
     load_jsonl,
 )
-from tools.eval.metrics import format_context, score_retrieval  # noqa: E402
-from tools.eval.rag_harness import (  # noqa: E402
+from quality.metrics import format_context, score_retrieval  # noqa: E402
+from quality.paths import PUBLIC_OUT  # noqa: E402
+from quality.rag_harness import (  # noqa: E402
     build_eval_agent,
     docs_from_artifact,
     result_parts,
@@ -170,9 +170,9 @@ def run(benchmarks=("rgb", "multihop"), rgb_limit=0, multihop_limit=0):
         rows.extend(run_multihop(multihop_limit))
 
     summary = summarize(rows)
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    json_path = REPORTS_DIR / "eval_public_results.json"
-    md_path = REPORTS_DIR / "eval_public_retrieval.md"
+    PUBLIC_OUT.mkdir(parents=True, exist_ok=True)
+    json_path = PUBLIC_OUT / "eval_public_results.json"
+    md_path = PUBLIC_OUT / "eval_public_retrieval.md"
     json_path.write_text(json.dumps({"summary": summary, "results": rows}, ensure_ascii=False, indent=2), encoding="utf-8")
 
     lines = [
@@ -196,7 +196,7 @@ def run(benchmarks=("rgb", "multihop"), rgb_limit=0, multihop_limit=0):
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     print(f"results: {json_path}")
     print(f"report: {md_path}")
-    print("\nnext: python -m tools.eval.runner judge --input "
+    print("\nnext: python -m quality.runner judge --input "
           f"{json_path} --prefix eval_public")
     return summary
 

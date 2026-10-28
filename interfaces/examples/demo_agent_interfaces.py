@@ -16,9 +16,9 @@ Agent 主循环调用接口演示脚本
   --demo all       依次跑 invoke/values/updates/messages/events/batch(默认)
 
 用法示例:
-  python examples/demo_agent_interfaces.py                      # 跑 all
-  python examples/demo_agent_interfaces.py --demo events        # 只看事件流
-  python examples/demo_agent_interfaces.py --demo values --question "深圳天气怎么样"   # 自定义问题
+  python interfaces/examples/demo_agent_interfaces.py                      # 跑 all
+  python interfaces/examples/demo_agent_interfaces.py --demo events        # 只看事件流
+  python interfaces/examples/demo_agent_interfaces.py --demo values --question "深圳天气怎么样"   # 自定义问题
 
 运行前提:
   1. 环境变量 DEEPSEEK_API_KEY 已配置(或项目根目录存在 .env 文件)
@@ -32,7 +32,7 @@ import sys
 import uuid
 
 # 把项目根目录加入 sys.path,支持从任意目录运行本脚本
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # Windows 控制台默认 gbk,统一为 utf-8 避免中文乱码
 try:
@@ -47,7 +47,7 @@ try:
 except ImportError:
     pass
 
-from agent.react_agent import ReactAgent
+from interfaces.react_agent import ReactAgent
 
 # 演示默认使用的问题:触发一次工具调用,能完整看到 model → tools → model 的循环
 DEFAULT_QUESTION = "现在几月份?"
@@ -204,7 +204,7 @@ def demo_memory():
                                           get_user_id, get_current_month,
                                           fetch_external_data)
         from tools.rag.tools import build_rag_tools
-        from agent.tools.middleware import monitor_tool, log_before_model
+        from agent.middleware import monitor_tool, log_before_model
     except ImportError as e:
         print(f"  当前环境不支持(checkpointer 相关依赖缺失):{e}")
         return

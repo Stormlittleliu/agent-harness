@@ -193,12 +193,12 @@ flowchart TD
 - [ ] 记录这 3 个 case 的步数、工具调用、大致延迟；
 - [ ] 写 30 秒版陈述，读三遍。
 
-**输出**：`evals/reports/agent_test_<scenario>_<timestamp>.md` + 3 个演示 case。
+**输出**：`outputs/agent/agent_test_<scenario>_<timestamp>.md` + 3 个演示 case。
 
 ### Day 2：RAG 指标统一口径
 
 - [ ] 用 DeepSeek + 本地 BGE 重跑 20 条原始 RAG 评测集（10 normal / 3 edge / 2 conflict / 5 unanswerable）；
-- [ ] 跑 `python -m tools.eval.runner judge` 复核；
+- [ ] 跑 `python -m quality.runner judge` 复核；
 - [ ] 记录 Hit@4、MRR、拒答、冲突、答案覆盖；
 - [ ] 如果时间允许，重跑 RGB 20 条抽样；MultiHop 可跳过；
 - [ ] 把指标填进第 6 节表格。
@@ -210,7 +210,7 @@ python test_entry.py rag generation --dataset evals/datasets/business/eval_set.j
 python test_entry.py rag judge
 ```
 
-**输出**：`evals/reports/eval_retrieval.md`、`eval_generation_judged.md`、一张指标表。
+**输出**：`outputs/rag/eval_retrieval.md`、`eval_generation_judged.md`、一张指标表。
 
 ### Day 3：写叙事 + 简历 bullet + 追问
 
@@ -247,9 +247,9 @@ python test_entry.py rag judge
 
 ## 10. 资料路径
 
-- Agent 测试报告：运行 `python test_entry.py --all`，输出到 `evals/reports/`（本地生成，不提交）
-- RAG 评测报告：运行 `python test_entry.py rag retrieval/generation/judge`，输出到 `evals/reports/`（本地生成，不提交）
-- 公开基准报告：运行 `python test_entry.py bfcl ...` 或 `python -m tools.eval.runner public`，输出到 `evals/reports/`
+- Agent 测试报告：运行 `python test_entry.py --all`，输出到 `outputs/agent/`（本地生成，不提交）
+- RAG 评测报告：运行 `python test_entry.py rag retrieval/generation/judge`，输出到 `outputs/rag/`（本地生成，不提交）
+- 公开基准报告：运行 `python test_entry.py bfcl ...` 或 `python -m quality.runner public`，输出到 `outputs/public/`
 - 失败集：`evals/failures/`（已提交）
 - HITL 演示：`tests/demos/hitl_demo.py`
 - 记忆演示：`tests/demos/memory_demo.py`

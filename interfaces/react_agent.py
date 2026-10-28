@@ -5,6 +5,13 @@
 - scenarios/<name>/：业务场景，提供工具、提示词、中间件、测试用例；
 - 本文件只负责“按名字取场景 + 交给框架”，不再直接组装工具。
 """
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from agent.framework import FrameworkAgent
 from scenarios.registry import get_scenario
 
