@@ -399,7 +399,6 @@ agent-harness/
 │   ├── external/                      #   外部使用记录 CSV
 │   ├── models/                        #   本地 BGE 权重（gitignore）
 │   ├── runtime/                       #   Chroma / md5 / sqlite（gitignore）
-│   ├── backups/                       #   旧向量库备份（gitignore）
 │   └── evals/
 │       ├── datasets/                  #   业务集 + 公开基准抽样
 │       ├── failures/                  #   失败案例归档
