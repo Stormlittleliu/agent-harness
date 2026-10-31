@@ -9,6 +9,7 @@
     python -m core.quality.runner public --rgb-limit 2 --skip-multihop
     python -m core.quality.runner judge --input outputs/rag/eval_generation.json
     python -m core.quality.runner bfcl --simple 2 --irrelevance 2
+    python -m core.quality.runner structured --limit 5
     python -m core.quality.runner failures
 """
 from __future__ import annotations
@@ -21,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from core.quality import agent_eval, bfcl_simplified as bfcl, failures, public_sample as public, rag_eval, rag_judge  # noqa: E402
+from core.quality import agent_eval, bfcl_simplified as bfcl, failures, public_sample as public, rag_eval, rag_judge, structured_eval  # noqa: E402
 from core.quality.paths import RAG_OUT  # noqa: E402
 
 
@@ -151,6 +152,17 @@ def build_parser():
     p_bfcl.add_argument("--delay", type=float, default=0.2)
     p_bfcl.add_argument("--out-dir")
     p_bfcl.set_defaults(func=_bfcl)
+
+    p_structured = sub.add_parser("structured", help="结构化输出评测：Pydantic schema")
+    p_structured.add_argument("--scenario", default="structured_demo")
+    p_structured.add_argument("--case")
+    p_structured.add_argument("--limit", type=int, default=0)
+    p_structured.add_argument("--out-dir")
+    p_structured.set_defaults(
+        func=lambda args: structured_eval.run(
+            args.scenario, args.case, args.limit, args.out_dir
+        )
+    )
 
     p_fail = sub.add_parser("failures", help="归档失败集")
     p_fail.set_defaults(func=lambda _args: failures.main())

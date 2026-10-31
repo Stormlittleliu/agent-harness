@@ -4,6 +4,7 @@
 
 **基于 LangChain 1.x + LangGraph 的 Agent Runtime / Harness：工具调用、上下文、权限、记忆与评测，以扫地机器人客服为验证场景**
 
+> 当前版本：**v0.1（2026-10-31 冻结）**。边界见 [docs/PROJECT.md](./docs/PROJECT.md) 第 9 节。
 > 项目边界、能力范围与 AgentGuide 对照：[docs/PROJECT.md](./docs/PROJECT.md)
 > 当前结果总览：[docs/benchmarks/current-results.md](./docs/benchmarks/current-results.md)
 
@@ -96,12 +97,13 @@ python test_entry.py benchmark public
 | τ²-bench retail（多轮工具 + 政策） | 20 | Pass^1 / DB 状态 | 0.95 · 20/20 |
 | 自建 RAG 业务集 | 42 | 总通过 / 拒答准确 | 37/42 · 10/10 |
 | RGB（抽样） | 20 | Hit@4 / MRR | 16/16 · 0.875 |
-| MultiHop-RAG（抽样） | 12 | Hit@4 / MRR | 5/9 · 0.444 |
+| MultiHop-RAG（全量） | 2255 | Hits@4 | 57.1%（95% CI 55.0–59.1） |
 | Agent 行为回归 | 13 | 通过率 | 11/13（工具类 13/13） |
 
 > BFCL 为 v4 抽样；τ²-bench 的 NL assertion judge 使用 DeepSeek 替代默认 OpenAI judge，
 > 不是官方评分口径。失败案例统一归档在 `data/evals/failures/`。
 > Agent 回归为单次运行，生成有波动；`agent-rag-006` 是已知的覆盖判定争议案例。
+> RAG 42 条业务集是服装域历史结果，与当前扫地机器人知识库不匹配，不应作为当前结果引用。
 
 ## Harness 能力补全（参考 learn-claude-code）
 
@@ -332,7 +334,7 @@ RAG / 对话入口：
 streamlit run app_rag.py
 ```
 
-Agent 可视化控制台（架构 / 任务执行 / 测试用例 / 公开基准 / 优化循环 / Benchmark 目录 / 评测记录）：
+Agent 可视化控制台（架构 / 任务执行 / 测试用例 / 公开基准 / 优化循环 / Benchmark 目录 / 成本时延 / 评测记录）：
 
 ```bash
 streamlit run app_agent.py
@@ -340,16 +342,17 @@ streamlit run app_agent.py
 
 浏览器自动打开 http://localhost:8501
 
-左侧“场景 / 前端预设”可以在 `coding_demo`（文件 / 命令 / 任务图 / hooks）、`general`（默认白板）、`mcp_demo`（Memory + Fetch）和 `robot_vacuum`（扫地机器人）之间切换；不同场景可以配置不同的页签与示例任务。“页面”支持总览（保留顶部全部标签）或直接进入单页。总览顶部有一行只读 KPI：最新完成迭代、BFCL / RAG 的 pass^k 与 mean、修复/回归数，以及目录任务数与来源数。控制台通常包含七个页签；`coding_demo` 额外有运行窗口：
+左侧“场景 / 前端预设”可以在 `coding_demo`（文件 / 命令 / 任务图 / hooks / subagent）、`general`（默认白板）、`mcp_demo`（Memory + Fetch）、`robot_vacuum`（扫地机器人）和 `structured_demo`（Pydantic 结构化输出）之间切换；不同场景可以配置不同的页签与示例任务。“页面”支持总览（保留顶部全部标签）或直接进入单页。总览顶部有一行只读 KPI：最新完成迭代、BFCL / RAG 的 pass^k 与 mean、修复/回归数，以及目录任务数与来源数。控制台通常包含八个页签；`coding_demo` 额外有运行窗口：
 
 - **Agent 架构**：工具、风险等级、中间件执行顺序、LangGraph 工作流图；
 - **任务执行**：输入任务，查看工具调用、模型步数、token、时延与 trace 时间线；
-- **测试用例**：直接运行 `cases.jsonl`，复用 `core.quality.agent_eval` 的评分与判定；支持按通过/失败、判定依据（关键词 / LLM judge）、类别筛选，并可点开单条查看要点命中、工具调用、完整回答与 trace；
+- **测试用例**：直接运行 `cases.jsonl`，复用 `core.quality.agent_eval` 的评分与判定；支持按通过/失败、判定依据（关键词 / LLM judge）、类别筛选，并可点开单条查看要点命中、工具调用、完整回答与 trace；`structured_demo` 的严格 schema 评测走 `core.quality.structured_eval`；
 - **公开基准**：读取 BFCL、RGB / MultiHop、τ²-bench 的已有报告，展示汇总指标与逐条明细；
 - **优化循环**：读取 `outputs/demo/iteration_*.json` 与 `report.md`，展示运行状态卡（最新写入、已完成迭代数）、BFCL / RAG 的 pass^k、mean、失败类型分布（按数量降序，BFCL 蓝 / RAG 橙）、同类任务通过率、修复/回归 case 与逐条筛选，并提供迭代走势柱状图、A/B 对比（指标差值、逐条明细与按 `trace_id` 加载的执行轨迹）与报告全文；case 表支持 ID / 问题 / 期望函数搜索，可下载 `report.md` 和搜索筛选后的 case CSV；
 - **Benchmark 目录**：读取 `data/benchmarks/manifest.json` 与 `catalog.jsonl`，展示 8 个来源的可用性 / 许可 / 运行方式，以及 320 条样例任务按来源、类别、bucket、任务类型的筛选；任务表支持 ID / 指令搜索，并可下载搜索筛选结果 CSV；
+- **成本 / 时延**：聚合 `outputs/traces/trace_*.jsonl`，展示成功率、p50/p95、token、按模型/工具统计与估算成本；只读 trace，不触发模型调用；
 - **运行窗口**（`coding_demo`）：任务图看板、任务详情、命令日志，可对 ready 任务执行 Agent；
-- **评测记录**：扫描 `outputs/agent`、`rag`、`public`、`bfcl`、`tau2`、`demo` 与 `traces` 下的既有报告，按类型 / 文件名筛选并按更新时间倒序展示；JSON 显示 summary 指标与 results 逐条结果（通过/失败、类别、来源筛选，最多 200 行），Markdown 直接渲染，trace JSONL 可按 `trace_id` 选择并查看执行时间线；普通大小文件提供原始下载，超大 JSON 只预览 summary，避免把数百 MB 文件读入页面。
+- **评测记录**：扫描 `outputs/agent`、`rag`、`public`、`bfcl`、`tau2`、`demo`、`structured`、`experiments`、`traces` 与成本报告的既有文件，按类型 / 文件名筛选并按更新时间倒序展示；JSON 显示 summary 指标与 results 逐条结果（通过/失败、类别、来源筛选，最多 200 行），Markdown 直接渲染，trace JSONL 可按 `trace_id` 选择并查看执行时间线；普通大小文件提供原始下载，超大 JSON 只预览 summary，避免把数百 MB 文件读入页面。
 
 数据页签顶部会标注文件更新时间；报告、样例集与 trace 索引按 path + mtime 缓存，表格默认最多展示 200 行（下载 CSV 包含全部筛选结果），缺失或部分缺失时显示可执行的生成命令。评测记录页只读扫描 `outputs/`，不会重新运行评测或触发模型调用；超大 JSON 超过解析上限时退化为 summary 预览。优化循环页面每次加载只检查一次文件状态，不会自动轮询，后台评测写入后可手动刷新页面。
 
@@ -407,7 +410,8 @@ python -m core.quality.runner agent --scenario mcp_demo
 - **任务图**：SQLite 持久化，`pending / in_progress / completed / failed` + `blocked_by` 依赖；
 - **文件工具**：`read_file` / `glob`；
 - **命令执行**：`run_command`，危险命令拒绝，输出写入 `data/runtime/run_window/`；
-- **运行窗口**：控制台 🖥 页签展示任务图、任务详情、命令日志，并可执行 ready 任务。
+- **运行窗口**：控制台 🖥 页签展示任务图、任务详情、命令日志，并可执行 ready 任务；
+- **Subagent**：`subagent` 工具派生单层子 Agent，fresh context、工具白名单、超时/预算/步数，只返回摘要。
 
 示例场景：
 
@@ -424,7 +428,9 @@ python -m streamlit run app_agent.py   # 场景选 coding_demo
 python -m pytest
 ```
 
-覆盖任务图依赖 / 持久化、workspace 读取与危险命令拒绝、metrics 的 `expected_tools_any`、以及控制台 AppTest 启动。
+当前 **34 passed**。覆盖任务图依赖 / 持久化、workspace 读取与危险命令拒绝、metrics 的
+`expected_tools_any`、subagent 子上下文 / 工具白名单、hook 触发与异常隔离、结构化输出
+schema、成本报告聚合、评测门禁、故障注入（超时 / 权限 / 参数 / 空检索 / 拒答），以及控制台 AppTest 启动。
 
 ### 验证运行
 
@@ -444,6 +450,7 @@ agent-harness/
 │   │   ├── contracts.py               #     Scenario / Tool / Workflow 契约
 │   │   ├── framework.py               #     ReAct loop + 中间件装配
 │   │   ├── hooks.py                   #     HookManager + Pre/Post tool middleware
+│   │   ├── subagent.py                #     单层子 Agent（fresh context）
 │   │   ├── checkpoint.py              #     memory / sqlite checkpointer
 │   │   ├── workflow.py                #     WorkflowRuntime
 │   │   └── middleware/
@@ -454,7 +461,7 @@ agent-harness/
 │   ├── tools/                         #   L2 能力层
 │   │   ├── business/
 │   │   │   ├── constants.py
-│   │   │   └── tools.py               #     6 个业务工具
+│   │   │   └── tools.py               #     7 个业务工具
 │   │   └── rag/
 │   │       ├── embedding.py           #     本地 BGE / DashScope
 │   │       ├── vector_store.py        #     Chroma 入库 / MD5 去重
@@ -477,13 +484,17 @@ agent-harness/
 │   ├── scenarios/                     #   L3 组合根
 │   │   ├── registry.py
 │   │   ├── coding_demo/
-│   │   │   ├── scenario.py            #     文件 / 命令 / 任务图 / hooks
+│   │   │   ├── scenario.py            #     文件 / 命令 / 任务图 / hooks / subagent
 │   │   │   └── cases.jsonl
 │   │   ├── general/
 │   │   │   ├── scenario.py            #     白板场景：无业务工具
 │   │   │   └── cases.jsonl
 │   │   ├── mcp_demo/
 │   │   │   ├── scenario.py            #     Memory + Fetch MCP
+│   │   │   └── cases.jsonl
+│   │   ├── structured_demo/
+│   │   │   ├── schema.py              #     Pydantic ReportSchema
+│   │   │   ├── scenario.py            #     response_format 结构化输出
 │   │   │   └── cases.jsonl
 │   │   └── robot_vacuum/
 │   │       ├── scenario.py            #     工具 + 提示词 + 中间件 + 配置
@@ -501,7 +512,7 @@ agent-harness/
 │   │   ├── workflow_cli.py
 │   │   ├── streamlit_app.py
 │   │   ├── agent_dashboard.py         # 控制台入口：导航 + 视图分发
-│   │   ├── dashboard/                 # 架构 / 任务 / 测试 / 基准 / 优化 / 目录 / 评测记录视图
+│   │   ├── dashboard/                 # 架构 / 任务 / 测试 / 基准 / 优化 / 目录 / 成本 / 评测记录视图
 │   │   └── examples/demo_agent_interfaces.py
 │   │
 │   ├── quality/                       #   L5 质量层
@@ -510,10 +521,12 @@ agent-harness/
 │   │   ├── datasets.py / metrics.py
 │   │   ├── rag_harness.py
 │   │   ├── agent_eval.py
+│   │   ├── structured_eval.py         #     Pydantic schema 评测
 │   │   ├── rag_eval.py
-│   │   ├── public.py
+│   │   ├── public_sample.py
 │   │   ├── judge.py / rag_judge.py
-│   │   ├── bfcl.py
+│   │   ├── bfcl_simplified.py
+│   │   ├── gate.py                    #     阈值门禁
 │   │   └── failures.py
 │   │
 │   ├── benchmarks/                    #   L5 公开 benchmark 适配层
@@ -527,11 +540,13 @@ agent-harness/
 │   │   ├── cases.py                   #     BFCL / MultiHop 抽样
 │   │   ├── bfcl_agent.py              #     schema → LangChain 工具
 │   │   ├── rag_agent.py               #     MultiHop 检索 Agent
-│   │   └── optimize.py                #     跑 → 归因 → 改 → 复跑
+│   │   ├── optimize.py                #     跑 → 归因 → 改 → 复跑
+│   │   └── trigger_rate.py            #     subagent / 任务工具触发率
 │   │
 │   ├── observability/                 #   trace
 │   │   ├── tracer.py
 │   │   ├── budget.py                  #   单次 run token 预算
+│   │   ├── cost_report.py             #   成本 / 时延聚合
 │   │   └── trace_report.py
 │   ├── llm/factory.py                 #   聊天模型工厂
 │   ├── utils/                         #   配置 / 日志 / 文件 / 路径 / prompt
@@ -560,6 +575,8 @@ agent-harness/
 │
 ├── outputs/                           # 运行产物（gitignore）
 │   ├── agent/  rag/  public/  bfcl/
+│   ├── structured/  experiments/
+│   ├── cost_report.md / gate_report.json
 │   ├── traces/
 │   └── logs/
 │
@@ -571,10 +588,18 @@ agent-harness/
 │
 ├── app_rag.py                         # RAG/对话入口：streamlit run app_rag.py
 ├── app_agent.py                       # Agent 控制台：streamlit run app_agent.py
-├── tests/                             # pytest：runtime / metrics / dashboard smoke
+├── tests/                             # pytest：runtime / metrics / structured / gate / 故障注入
 │   ├── test_runtime_tasks.py
 │   ├── test_runtime_workspace.py
 │   ├── test_metrics.py
+│   ├── test_subagent.py
+│   ├── test_task_tools.py
+│   ├── test_hooks.py
+│   ├── test_structured_eval.py
+│   ├── test_cost_report.py
+│   ├── test_gate.py
+│   ├── test_fault_injection.py
+│   ├── test_trigger_rate.py
 │   └── test_dashboard_smoke.py
 ├── pytest.ini
 ├── test_entry.py                      # 兼容入口：python test_entry.py ...
@@ -647,6 +672,29 @@ agent-harness/
 > 修改配置后重启应用即可生效。提示词按层级拆分：RAG 能力提示词在 `config/rag_prompts.yml`，场景提示词在 `core/scenarios/<name>/config/prompts.yml`。
 
 首次运行只需确保 **DeepSeek API Key 已设置**、本地 Embedding 模型已下载，且 `data/knowledge/` 目录下有知识库文档即可。
+
+### 12. P0：成本 / 结构化 / 门禁 / 触发率
+
+```bash
+# 成本 / 时延：聚合 trace，不调用模型
+python -m core.observability.cost_report
+# → outputs/cost_report.md / .json
+
+# 结构化输出：Pydantic ReportSchema，5 条跨场景用例
+python -m core.quality.runner structured
+# → outputs/structured/
+
+# 评测门禁：读已有报告，按阈值断言；回归时 exit 1
+python -m core.quality.gate --json-out outputs/gate_report.json
+
+# 触发率实验：同一组自然任务，natural / routed 两版 prompt
+python -m core.experiments.trigger_rate
+# → outputs/experiments/
+```
+
+当前结果：成本 / 时延覆盖 3203 条 run（成功率 98.3%，p95 8.54s，约 ¥0.015/run，示例价）；
+结构化输出 5/5、schema 5/5；门禁 6 项全部 PASS；触发率实验 natural / routed 均为 0/10。
+详见 [docs/benchmarks/p0-results.md](./docs/benchmarks/p0-results.md)。
 
 ## 与基础项目的演进关系
 

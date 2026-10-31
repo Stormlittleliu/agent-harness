@@ -39,10 +39,17 @@ def _load_config() -> dict:
 class TraceCallbackHandler(BaseCallbackHandler):
     """把一个 run 的模型/工具事件写成 JSONL。"""
 
-    def __init__(self, trace_id: str, thread_id: str | None = None, budget: RunBudget | None = None):
+    def __init__(
+        self,
+        trace_id: str,
+        thread_id: str | None = None,
+        budget: RunBudget | None = None,
+        scenario: str | None = None,
+    ):
         self.trace_id = trace_id
         self.thread_id = thread_id
         self.budget = budget
+        self.scenario = scenario
         self.started_at = time.time()
         self.model_calls = 0
         self.tool_calls = 0
@@ -66,6 +73,7 @@ class TraceCallbackHandler(BaseCallbackHandler):
         row = {
             "trace_id": self.trace_id,
             "thread_id": self.thread_id,
+            "scenario": self.scenario,
             "event": event,
             "ts": datetime.now().isoformat(timespec="milliseconds"),
             **fields,

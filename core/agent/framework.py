@@ -123,6 +123,7 @@ class FrameworkAgent:
             tools=scenario.tools,
             middleware=middleware,
             checkpointer=self.checkpointer,
+            response_format=scenario.response_format,
         )
 
     @staticmethod
@@ -138,6 +139,7 @@ class FrameworkAgent:
             trace_id=f"run-{uuid.uuid4().hex}",
             thread_id=thread_id,
             budget=budget,
+            scenario=self.scenario.name,
         )
         self.last_trace_id = tracer.trace_id
         return tracer

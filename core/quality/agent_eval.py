@@ -77,7 +77,18 @@ def evaluate_case(agent: FrameworkAgent, case: dict, judge_chain=None) -> dict:
     """跑一条行为用例并打分；评测层与可视化界面共用这一条路径。"""
     final_state = agent.invoke(case["question"])
     messages = final_state["messages"]
-    answer = extract_final_answer(messages)
+    structured = final_state.get("structured_response")
+    if structured is not None:
+        # 结构化场景没有自然语言终答；把 schema 结果序列化后交给同一套关键词评分。
+        # 严格 schema 校验仍由 core.quality.structured_eval 负责。
+        if hasattr(structured, "model_dump"):
+            structured = structured.model_dump()
+        try:
+            answer = json.dumps(structured, ensure_ascii=False, default=str)
+        except TypeError:
+            answer = str(structured)
+    else:
+        answer = extract_final_answer(messages)
     tool_calls = extract_tool_calls(messages)
     tool_names = [item["name"] for item in tool_calls if item.get("name")]
 
@@ -109,6 +120,7 @@ def evaluate_case(agent: FrameworkAgent, case: dict, judge_chain=None) -> dict:
         "passed": passed,
         "judge": judged,
         "judge_used": judged is not None,
+        "structured_used": structured is not None,
         "trace_id": getattr(agent, "last_trace_id", None),
     }
 

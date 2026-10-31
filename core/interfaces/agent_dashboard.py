@@ -19,6 +19,7 @@ from core.interfaces.dashboard.architecture import render_architecture
 from core.interfaces.dashboard.benchmarks import render_benchmarks
 from core.interfaces.dashboard.catalog import render_catalog
 from core.interfaces.dashboard.common import load_agent
+from core.interfaces.dashboard.cost import render_cost
 from core.interfaces.dashboard.history import render_history
 from core.interfaces.dashboard.optimization import render_optimization
 from core.interfaces.dashboard.overview import render_overview_kpis
@@ -33,6 +34,7 @@ SCENARIO_LABELS = {
     "general": "general · 白板",
     "mcp_demo": "mcp_demo · Memory + Fetch",
     "robot_vacuum": "robot_vacuum · 扫地机器人",
+    "structured_demo": "structured_demo · 结构化输出",
 }
 DASHBOARD_PRESETS = {
     "general": {
@@ -43,6 +45,7 @@ DASHBOARD_PRESETS = {
             "benchmarks",
             "optimization",
             "catalog",
+            "cost",
             "history",
         ],
         "examples": [
@@ -59,6 +62,7 @@ DASHBOARD_PRESETS = {
             "benchmarks",
             "optimization",
             "catalog",
+            "cost",
             "history",
         ],
         "examples": [
@@ -75,6 +79,7 @@ DASHBOARD_PRESETS = {
             "benchmarks",
             "optimization",
             "catalog",
+            "cost",
             "history",
         ],
         "examples": [
@@ -92,12 +97,30 @@ DASHBOARD_PRESETS = {
             "benchmarks",
             "optimization",
             "catalog",
+            "cost",
             "history",
         ],
         "examples": [
             "读取 README.md，并告诉我这个工作区叫什么名字。",
             "在工作区运行 echo hello，并告诉我输出。",
             "创建一个任务：检查项目结构。",
+        ],
+    },
+    "structured_demo": {
+        "views": [
+            "architecture",
+            "task",
+            "tests",
+            "benchmarks",
+            "optimization",
+            "catalog",
+            "cost",
+            "history",
+        ],
+        "examples": [
+            "材料：接口联调延后到周五；测试环境不稳定。请生成结构化报告。",
+            "材料：Transformer 由多头注意力和前馈网络组成。请生成结构化报告。",
+            "Material: X1 supports 5000Pa suction and 180 minutes runtime. Please generate a structured report in Chinese.",
         ],
     },
 }
@@ -108,6 +131,7 @@ DEFAULT_VIEWS = [
     "benchmarks",
     "optimization",
     "catalog",
+    "cost",
     "history",
 ]
 VIEW_LABELS = {
@@ -117,6 +141,7 @@ VIEW_LABELS = {
     "benchmarks": "📊 公开基准",
     "optimization": "🔁 优化循环",
     "catalog": "🗂 Benchmark 目录",
+    "cost": "💸 成本 / 时延",
     "history": "📁 评测记录",
     "runtime": "🖥 运行窗口",
 }
@@ -149,6 +174,8 @@ def _render_view(view: str, agent, agent_error: str | None, examples: list[str])
         render_optimization()
     elif view == "catalog":
         render_catalog()
+    elif view == "cost":
+        render_cost()
     elif view == "history":
         render_history()
     elif view in CUSTOM_VIEWS:
@@ -161,7 +188,7 @@ def run() -> None:
     st.set_page_config(page_title="Agent 控制台", page_icon="🛠", layout="wide")
     st.title("🛠 Agent Harness 控制台")
     st.caption(
-        "架构 / 任务执行 / 测试用例 / 公开基准 / 优化循环 / Benchmark 目录 / 评测记录"
+        "架构 / 任务执行 / 测试用例 / 公开基准 / 优化循环 / Benchmark 目录 / 成本时延 / 评测记录"
     )
 
     names = list_scenarios()

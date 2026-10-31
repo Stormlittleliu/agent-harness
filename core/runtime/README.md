@@ -39,6 +39,24 @@ RuntimeConfig(hooks={
 
 Hook 异常只记录日志，不拖垮主流程。
 
+## Subagent
+
+实现放在 `core/agent/subagent.py`，场景通过 `RuntimeConfig.subagent` 配置：
+
+```python
+SubagentConfig(
+    allowed_tools=["read_file", "glob", "run_command"],
+    max_model_calls=12,
+    token_budget=20000,
+    timeout_seconds=120,
+)
+```
+
+- 子 Agent 使用全新 context / 独立 thread，不继承父对话；
+- 工具白名单 + 排除 `subagent` 自身，禁止递归；
+- 有超时、步数、token 预算；
+- 只返回最终摘要，中间过程丢弃。
+
 ## 任务图
 
 - SQLite 单文件，跨进程/重启保留；

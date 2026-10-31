@@ -22,11 +22,17 @@ def _build_robot_vacuum() -> Scenario:
     return build_scenario()
 
 
+def _build_structured_demo() -> Scenario:
+    from core.scenarios.structured_demo.scenario import build_scenario
+    return build_scenario()
+
+
 _BUILDERS = {
     "coding_demo": _build_coding_demo,
     "general": _build_general,
     "mcp_demo": _build_mcp_demo,
     "robot_vacuum": _build_robot_vacuum,
+    "structured_demo": _build_structured_demo,
 }
 
 

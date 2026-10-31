@@ -188,14 +188,34 @@ SQLite 任务图 + blocked_by 依赖 + TaskRunner
 用例：
 
 ```text
-coding-read-001   读 README.md        pass
-coding-run-001    echo hello          pass
-coding-task-001   创建任务             pass
-coding-task-002   列出任务             pass
-4/4 pass
+coding-read-001      读 README.md        pass
+coding-run-001       echo hello          pass
+coding-task-001      创建任务             pass
+coding-task-002      列出任务             pass
+coding-subagent-001  子 Agent 检查文件     pass
+5/5 pass
 ```
 
+Subagent：父 Agent 通过 `subagent` 工具派生单层子 Agent，子 Agent 使用 fresh context 和
+`read_file / glob / run_command` 白名单，只返回摘要。
+
 任务图单元测试也通过：依赖阻塞、完成后解锁、TaskRunner 认领/完成、危险命令拒绝、hooks 拦截。
+
+### 4.2 P0 追加能力（成本 / 结构化 / 门禁 / 触发率）
+
+详见 [p0-results.md](./p0-results.md)。
+
+```text
+成本 / 时延：3203 条 run，成功率 98.3%，p50 2.50s，p95 8.54s，
+            20.62M token，按示例单价估算 ¥47.64（约 ¥0.015/run）
+结构化输出：5/5，schema 合法 5/5，平均 3.0 条证据
+评测门禁：BFCL 90/79、MultiHop 55.56%、coding 100%、structured 100% → PASS
+故障注入：超时 / 权限 / 参数错误 / 空检索 / 拒答，5 条确定性测试
+触发率：自然任务 0/10 使用 subagent 或任务工具；显式路由后仍 0/10
+```
+
+**结论**：结构化输出、成本时延、门禁已经补上；多 Agent / 任务规划仍是
+“机制可用、行为不可靠”，下一步应做 planner/routing，而不是继续堆工具。
 
 ## 5. 前端控制台
 
@@ -208,9 +228,10 @@ python -m streamlit run app_agent.py
 页签：
 
 ```text
-架构 / 任务执行 / 测试用例 / 公开基准 / 优化循环 / Benchmark 目录 / 评测记录
+架构 / 任务执行 / 测试用例 / 公开基准 / 优化循环 / Benchmark 目录 / 成本时延 / 评测记录
 ```
 
+- 成本时延：成功率、p50/p95、token、估算成本、按模型/工具/最近 run 展示；
 - 优化循环：5 轮趋势、pass^k/mean、A/B 对比、失败类型、trace 时间线、搜索/下载；
 - Benchmark 目录：8 个来源、320 条样例、按来源/类别/bucket/任务类型/关键词筛选；
 - 评测记录（新增）：浏览 `outputs/` 下的历史报告，查看 summary、逐条结果、下载。
@@ -222,6 +243,7 @@ python -m streamlit run app_agent.py
 - **P2**：SQLite checkpoint 两轮记忆、trace 时间线 ✅
 - **MCP**：Memory + Fetch（stdio）✅
 - **Runtime**：hooks / SQLite 任务图 / read_file / run_command / 运行窗口 ✅
+- **P0 追加**：成本/时延报告 ✅、结构化输出 5/5 ✅、评测门禁 + 故障注入 ✅、触发率实验 ✅
 - **待做**：后台任务 / 定时调度、rerank、τ² adapter、5 trial + CI、outcome 断言、MCP HTTP/SSE/auth
 
 ## 7. 文件位置
@@ -235,6 +257,7 @@ core/scenarios/mcp_demo/                  # Memory + Fetch 演示场景
 core/interfaces/dashboard/                # 前端视图
 outputs/demo/report.md                    # 5 轮报告
 docs/benchmarks/optimization-loop-3x.md   # 3x/3-trial 复盘
+docs/benchmarks/p0-results.md             # 成本 / 结构化 / 门禁 / 触发率
 docs/benchmarks/current-results.md        # 本文件
 ```
 
@@ -245,4 +268,6 @@ docs/benchmarks/current-results.md        # 本文件
 - τ² 使用官方 harness，测的是模型在 τ² 里的能力，不是我们的 Harness；
 - 没有生产流量、业务 KPI、真实客服数据；
 - 3 trial 仍不足以消除随机性，不做统计显著性声明；
-- RAG 42 条是服装域历史结果，和当前扫地机器人知识库不匹配。
+- RAG 42 条是服装域历史结果，和当前扫地机器人知识库不匹配；
+- 成本是按 `config/observability.yml` 示例单价估算，不是 DeepSeek 账单；
+- 触发率是 10 条小样本行为实验，不是统计显著结论。

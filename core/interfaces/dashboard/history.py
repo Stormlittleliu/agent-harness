@@ -41,6 +41,9 @@ TYPE_LABELS = {
     "bfcl": "BFCL",
     "tau2": "τ²-bench",
     "demo": "优化循环 / 实验",
+    "structured": "结构化输出",
+    "experiments": "行为实验",
+    "cost": "成本 / 时延",
     "trace": "Trace",
 }
 TYPE_ORDER = tuple(TYPE_LABELS)
@@ -57,6 +60,12 @@ FILE_PATTERNS = (
     ("tau2", "tau2", "results.json"),
     ("demo", "demo*", "iteration_*.json"),
     ("demo", "demo*", "report.md"),
+    ("structured", "structured", "structured_test_*.json"),
+    ("structured", "structured", "structured_test_*.md"),
+    ("experiments", "experiments", "trigger_rate_*.json"),
+    ("experiments", "experiments", "trigger_rate_*.md"),
+    ("cost", "", "cost_report.json"),
+    ("cost", "", "cost_report.md"),
     ("trace", "traces", "trace_*.jsonl"),
 )
 

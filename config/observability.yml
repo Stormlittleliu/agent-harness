@@ -4,8 +4,13 @@ trace_dir: outputs/traces
 
 # 可选：按模型配置每百万 token 价格（单位：元）。
 # 不填时只统计 token，不计算 cost；价格请按模型官网更新。
-pricing: {}
-# pricing:
-#   deepseek-chat:
-#     input_per_1m: 2.0
-#     output_per_1m: 8.0
+# 下面是一组示例价，仅用于本地估算，不是账单；DeepSeek 价格会随时间和峰谷变化。
+currency: CNY
+pricing:
+  # deepseek-flash 是当前 API 响应里常见的模型名；与 deepseek-chat 共用示例价。
+  deepseek-flash:
+    input_per_1m: 2.0
+    output_per_1m: 8.0
+  deepseek-chat:
+    input_per_1m: 2.0
+    output_per_1m: 8.0

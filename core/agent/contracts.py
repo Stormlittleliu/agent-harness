@@ -39,6 +39,8 @@ class Scenario:
     tool_timeouts: dict[str, float] = field(default_factory=dict)
     # 场景自己的 LangGraph 工厂：WorkflowRuntime 调用它获取 compiled graph
     workflow_factory: Any = None
+    # 可选：结构化输出 schema（Pydantic 模型或 dict schema）；传给 create_agent
+    response_format: Any = None
     # 可选运行时：hooks / 工作区 / 任务库，由 core.runtime.RuntimeConfig 提供
     runtime: Any = None
 
