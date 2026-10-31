@@ -34,6 +34,7 @@ from core.agent.middleware import TokenBudgetMiddleware, ToolPermissionMiddlewar
 from core.observability.budget import RunBudget
 from core.observability.tracer import TraceCallbackHandler
 from core.agent.contracts import Scenario
+from core.agent.hooks import HookManager, make_hook_middleware
 
 
 def _on_tool_error(exc: Exception, request) -> str:
@@ -55,9 +56,14 @@ class FrameworkAgent:
         self.scenario = scenario
         self.last_thread_id = None
         self.last_trace_id = None
+        self.last_interrupt = None
+        runtime = getattr(scenario, "runtime", None)
+        self.hook_manager = HookManager(getattr(runtime, "hooks", None))
 
         # 权限放在最外层：deny 的工具不会进入 HITL / 超时 / 重试链路
         middleware = [ToolPermissionMiddleware(scenario.tool_policy), *scenario.middleware]
+        if self.hook_manager.has_hooks():
+            middleware.append(make_hook_middleware(self.hook_manager))
 
         # 规划：复杂任务自动维护 todo
         if scenario.enable_todo:
@@ -106,6 +112,7 @@ class FrameworkAgent:
             middleware.append(ModelFallbackMiddleware(scenario.fallback_model))
         middleware.append(ModelRetryMiddleware(max_retries=1))
 
+        self.middleware = middleware
         self.checkpointer = (
             build_checkpointer(scenario.checkpoint_backend, scenario.checkpoint_path)
             if scenario.checkpoint else None
@@ -162,14 +169,19 @@ class FrameworkAgent:
         """
         thread_id = thread_id or f"run-{uuid.uuid4().hex}"
         self.last_thread_id = thread_id
+        rewritten = self.hook_manager.trigger("UserPromptSubmit", query)
+        if isinstance(rewritten, str) and rewritten.strip():
+            query = rewritten
         budget = RunBudget(self.scenario.token_budget)
         tracer = self._start_trace(thread_id, budget)
         try:
-            return self.agent.invoke(
+            result = self.agent.invoke(
                 {"messages": [{"role": "user", "content": query}]},
                 config=self._config(thread_id, tracer),
                 context=self._run_context(budget),
             )
+            self.hook_manager.trigger("Stop", result.get("messages", []))
+            return result
         finally:
             tracer.finalize_if_needed()
 
@@ -183,11 +195,13 @@ class FrameworkAgent:
         budget = RunBudget(self.scenario.token_budget)
         tracer = self._start_trace(thread_id, budget)
         try:
-            return self.agent.invoke(
+            result = self.agent.invoke(
                 Command(resume={"decisions": decisions}),
                 config=self._config(thread_id, tracer),
                 context=self._run_context(budget),
             )
+            self.hook_manager.trigger("Stop", result.get("messages", []))
+            return result
         finally:
             tracer.finalize_if_needed()
 
@@ -196,6 +210,10 @@ class FrameworkAgent:
 
     def execute_stream(self, query: str, thread_id: str = "default"):
         self.last_thread_id = thread_id
+        self.last_interrupt = None
+        rewritten = self.hook_manager.trigger("UserPromptSubmit", query)
+        if isinstance(rewritten, str) and rewritten.strip():
+            query = rewritten
         budget = RunBudget(self.scenario.token_budget)
         tracer = self._start_trace(thread_id, budget)
         input_dict = {
@@ -203,6 +221,8 @@ class FrameworkAgent:
                 {"role": "user", "content": query},
             ]
         }
+        seen_message_ids: set[str] = set()
+        last_messages: list = []
 
         try:
             for chunk in self.agent.stream(
@@ -211,11 +231,27 @@ class FrameworkAgent:
                 stream_mode="values",
                 context=self._run_context(budget),
             ):
-                latest_message = chunk["messages"][-1]
+                # values 模式在中断时会单独给出 __interrupt__，界面需要据此发起审批
+                if "__interrupt__" in chunk:
+                    self.last_interrupt = chunk["__interrupt__"]
+
+                messages = chunk.get("messages") or []
+                if not messages:
+                    continue
+                last_messages = messages
+                latest_message = messages[-1]
 
                 # 只输出模型回复：跳过 HumanMessage、ToolMessage 和只有工具调用的空 AI 消息
                 if not isinstance(latest_message, AIMessage):
                     continue
+
+                # values 模式每步都会重放整个 state，同一条 AI 消息会出现多次，按 id 去重
+                message_id = getattr(latest_message, "id", None)
+                if message_id:
+                    if message_id in seen_message_ids:
+                        continue
+                    seen_message_ids.add(message_id)
+
                 content = latest_message.content
                 if isinstance(content, list):
                     content = "".join(
@@ -226,4 +262,5 @@ class FrameworkAgent:
                 if isinstance(content, str) and content.strip():
                     yield content.strip() + "\n"
         finally:
+            self.hook_manager.trigger("Stop", last_messages)
             tracer.finalize_if_needed()

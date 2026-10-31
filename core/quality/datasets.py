@@ -69,9 +69,9 @@ def split_documents(docs_dir: Path):
     return documents
 
 
-def build_store(collection_name: str, documents):
+def build_store(collection_name: str, documents, embedding_function=None):
     """构建内存 Chroma 集合；不写业务 chroma_db。"""
-    store = Chroma(collection_name=collection_name, embedding_function=embed_model)
+    store = Chroma(collection_name=collection_name, embedding_function=embedding_function or embed_model)
     for start in range(0, len(documents), BATCH_SIZE):
         batch = documents[start:start + BATCH_SIZE]
         for attempt in range(3):

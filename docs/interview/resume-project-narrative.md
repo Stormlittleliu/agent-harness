@@ -81,11 +81,13 @@
 
 ### 最终投递版（版本 A：Agent 开发 / LLM 应用，推荐）
 
-> **Agent Harness（工具调用型 Agent 运行时与评测，客服场景验证）｜Python / LangChain 1.x / LangGraph** | 个人项目
+> **Agent Harness｜工具调用型 Agent 运行时与评测（模拟客服场景）** | 个人项目
+> Python / LangChain 1.x / LangGraph / DeepSeek / 本地 BGE
 >
-> - **Agent Runtime**：基于 LangChain 的 Agent 与中间件机制实现 ReAct Loop、7 个工具注册与调度、参数校验、工具错误回注、最大步数/工具调用上限；用 LangGraph Checkpoint 支持多轮状态与暂停/恢复，流式输出。
-> - **上下文与场景**：以客服任务作为验证场景，接入上下文压缩、token 预算、Todo 规划、PII 脱敏与 HITL 高风险审批；用 LangGraph 工作流编排「检索→回答→拒答校验」和「报告生成」，通过场景注册机制解耦框架与业务；模型支持 DeepSeek / DashScope 切换，Embedding 使用本地 BGE（512 维，CPU）。
-> - **可量化效果**：BFCL v4 抽样 200 条，函数选择 100/100、参数 exact 90/100、无关工具不调用 79/100；τ²-bench retail 20 条抽样 Pass^1 0.95（DB 20/20，非官方 judge）；自建 42 条 RAG 评测集总体 pass 37/42、拒答 10/10；13 条 Agent 回归集 11/13。
+> - **Agent Runtime**：基于 LangChain 实现了通用 ReAct 运行时，用中间件编排权限校验、高风险工具人工审批（HITL）、工具超时/重试/错误回注、最大步数与工具调用上限、上下文压缩、PII 脱敏与单次 run token 预算；用 LangGraph Checkpoint 支持多轮记忆、中断恢复与流式输出。
+> - **场景与工作流**：以扫地机器人客服为模拟场景（自建 mock 工具、10 个模拟用户的使用记录与公开 FAQ 知识库），把 7 个业务工具与本地 RAG（BGE + Chroma + 向量/BM25 混合检索）封装为统一工具接口，用 Scenario 注册机制解耦框架与业务；用 LangGraph 编排「检索→回答→拒答校验」「用户→月份→记录→报告」两条工作流。
+> - **评测体系**：搭建工具层 / 行为层两层评测——工具层直接调用工具测检索与生成（Hit@K/MRR、要点覆盖、引用有效性、拒答），行为层跑完整 Agent 测工具选择、传参与多步执行；统一 runner 产出报告并归档 39 条失败集，可按失败类型定位。
+> - **可量化效果**：BFCL v4 抽样 200 条，函数选择 100/100、参数 exact 90/100、无关工具不调用 79/100；τ²-bench retail 20 条抽样 Pass^1 0.95（DB 20/20，NL judge 用 DeepSeek 替代）；自建 RAG 评测集 42 条 judge 通过 37/42、拒答 10/10；Agent 行为回归 11/13，工具命中 13/13。
 
 ### 版本 A：Agent / Harness 方向（推荐）
 

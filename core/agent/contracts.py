@@ -39,6 +39,8 @@ class Scenario:
     tool_timeouts: dict[str, float] = field(default_factory=dict)
     # 场景自己的 LangGraph 工厂：WorkflowRuntime 调用它获取 compiled graph
     workflow_factory: Any = None
+    # 可选运行时：hooks / 工作区 / 任务库，由 core.runtime.RuntimeConfig 提供
+    runtime: Any = None
 
     def get_tool(self, name: str):
         """按名字取场景注册的工具；能力层评测/调试用。"""

@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from core.quality import agent_eval, bfcl, failures, public, rag_eval, rag_judge  # noqa: E402
+from core.quality import agent_eval, bfcl_simplified as bfcl, failures, public_sample as public, rag_eval, rag_judge  # noqa: E402
 from core.quality.paths import RAG_OUT  # noqa: E402
 
 

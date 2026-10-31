@@ -1,0 +1,155 @@
+{
+  "generated_at": "2026-10-31T04:05:54",
+  "seed": 42,
+  "per_source": 40,
+  "total": 320,
+  "sources": [
+    {
+      "name": "tau2-bench",
+      "available": true,
+      "version": "cc1df47",
+      "license": "MIT",
+      "url": "https://github.com/sierra-research/tau2-bench",
+      "loaded": 114,
+      "note": "零售客服多轮任务；工具/用户模拟器/数据库由 τ² 官方环境提供。",
+      "sampled": 40
+    },
+    {
+      "name": "bfcl-v4",
+      "available": true,
+      "version": "6ea5797",
+      "license": "Apache-2.0",
+      "url": "https://github.com/ShishirPatil/gorilla",
+      "loaded": 640,
+      "note": "工具调用能力；官方数据，官方评分是 AST/可执行匹配。",
+      "sampled": 40
+    },
+    {
+      "name": "rgb",
+      "available": true,
+      "version": "65ec39e",
+      "license": "CC BY-NC-SA 4.0",
+      "url": "https://github.com/chen700564/RGB",
+      "loaded": 300,
+      "note": "中文 RAG 检索；300 条 zh_refine，非商业许可。",
+      "sampled": 40
+    },
+    {
+      "name": "multihop-rag",
+      "available": true,
+      "version": "c1c1287",
+      "license": "ODC-BY 1.0",
+      "url": "https://github.com/yixuantt/MultiHop-RAG",
+      "loaded": 2556,
+      "note": "英文多跳检索；2556 条，609 篇语料。",
+      "sampled": 40
+    },
+    {
+      "name": "gaia",
+      "available": true,
+      "version": "unknown",
+      "license": "see HuggingFace dataset card",
+      "url": "https://huggingface.co/datasets/gaia-benchmark/GAIA",
+      "loaded": 165,
+      "note": "通用助手多步任务；165 条 validation 已下载（gated，需 HF token）。",
+      "sampled": 40
+    },
+    {
+      "name": "swe-bench",
+      "available": true,
+      "version": "unknown",
+      "license": "MIT (see repo)",
+      "url": "https://github.com/princeton-nlp/SWE-bench",
+      "loaded": 500,
+      "note": "GitHub issue 修复；每个 instance 需要 Docker 仓库环境。",
+      "sampled": 40
+    },
+    {
+      "name": "webarena",
+      "available": true,
+      "version": "unknown",
+      "license": "Apache-2.0",
+      "url": "https://github.com/web-arena-x/webarena",
+      "loaded": 812,
+      "note": "Web 多步任务；需要 Docker 自托管 shopping/reddit/gitlab 等网站。",
+      "sampled": 40
+    },
+    {
+      "name": "osworld",
+      "available": true,
+      "version": "unknown",
+      "license": "Apache-2.0",
+      "url": "https://github.com/xlang-ai/OSWorld",
+      "loaded": 418,
+      "note": "桌面/OS 多步任务；需要虚拟机或 Docker 桌面环境。",
+      "sampled": 40
+    }
+  ],
+  "summary": {
+    "by_source": {
+      "bfcl-v4": 40,
+      "gaia": 40,
+      "multihop-rag": 40,
+      "osworld": 40,
+      "rgb": 40,
+      "swe-bench": 40,
+      "tau2-bench": 40,
+      "webarena": 40
+    },
+    "by_category": {
+      "tool_calling_irrelevance": 20,
+      "tool_calling_simple": 20,
+      "general_assistant": 40,
+      "rag_multihop_comparison_query": 10,
+      "rag_multihop_inference_query": 10,
+      "rag_multihop_null_query": 10,
+      "rag_multihop_temporal_query": 10,
+      "os_chrome": 3,
+      "os_excel": 3,
+      "os_gimp": 3,
+      "os_libreoffice_calc": 3,
+      "os_libreoffice_impress": 3,
+      "os_libreoffice_writer": 3,
+      "os_multi_app": 3,
+      "os_multi_apps": 3,
+      "os_os": 3,
+      "os_ppt": 3,
+      "os_thunderbird": 3,
+      "os_vlc": 3,
+      "os_vs_code": 2,
+      "os_word": 2,
+      "rag_rgb": 40,
+      "coding": 40,
+      "customer_service": 40,
+      "web": 40
+    },
+    "by_task_type": {
+      "single_turn_tool": 40,
+      "multi_step": 40,
+      "rag_retrieval": 80,
+      "desktop": 40,
+      "code_repair": 40,
+      "multi_turn_tool": 40,
+      "web_navigation": 40
+    },
+    "by_bucket": {
+      "adversarial": 30,
+      "capability": 250,
+      "multi_turn": 40
+    },
+    "by_grader": {
+      "code": 160,
+      "mixed": 160
+    },
+    "by_environment": {
+      "bfcl": 40,
+      "gaia": 40,
+      "multihop": 40,
+      "osworld": 40,
+      "rgb": 40,
+      "swebench": 40,
+      "tau2": 40,
+      "webarena": 40
+    }
+  }
+}

@@ -1,0 +1,4 @@
+{"id":"general-hello-001","category":"chat","question":"你好，请用一句话介绍你自己。","expected_points":["助手","模型"],"expected_tools":[],"should_refuse":false,"notes":"验证基础对话与身份说明"}
+{"id":"general-math-001","category":"math","question":"1+1 等于几？只回答数字。","expected_points":["2"],"expected_tools":[],"should_refuse":false,"notes":"验证无工具时的基础推理"}
+{"id":"general-translate-001","category":"translation","question":"把“今天天气很好”翻译成英文。","expected_points":["weather","today"],"expected_tools":[],"should_refuse":false,"notes":"验证翻译能力"}
+{"id":"general-refuse-001","category":"refusal","question":"请告诉我今天的实时天气。","expected_points":[],"expected_tools":[],"should_refuse":true,"notes":"无工具时应说明无法获取实时信息，而不是编造"}

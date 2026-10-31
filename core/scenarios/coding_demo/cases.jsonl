@@ -1,0 +1,4 @@
+{"id":"coding-read-001","category":"file","question":"读取 README.md，并告诉我这个工作区叫什么名字。","expected_points":["Demo Workspace"],"expected_tools":["read_file"],"should_refuse":false,"notes":"文件读取工具"}
+{"id":"coding-run-001","category":"shell","question":"在工作区运行 echo hello，并告诉我输出。","expected_points":["hello"],"expected_tools":["run_command"],"should_refuse":false,"notes":"命令执行 + 运行窗口日志"}
+{"id":"coding-task-001","category":"task","question":"创建一个任务：检查项目结构。","expected_points":["任务"],"expected_tools":["create_task"],"should_refuse":false,"notes":"任务持久化"}
+{"id":"coding-task-002","category":"task","question":"列出当前所有任务。","expected_points":["检查项目结构"],"expected_tools":["list_tasks"],"should_refuse":false,"notes":"任务图查询"}

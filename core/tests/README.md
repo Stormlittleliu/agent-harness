@@ -71,6 +71,7 @@ python core/tests/token_budget_demo.py
 
 - `expected_points`：回答中出现的比例 ≥ 50%；
 - `expected_tools`：实际调用的工具必须包含全部期望工具；
+- `expected_tools_any`：命中列表里任意一个即可（允许替代工具，如 memory_read_graph / memory_search_nodes）；
 - `should_refuse=true`：回答必须包含拒答标记；
 - `--judge`：用 LLM 复核语义覆盖，替代关键词判定。
 

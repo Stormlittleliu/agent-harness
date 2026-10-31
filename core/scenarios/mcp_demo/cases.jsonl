@@ -1,0 +1,3 @@
+{"id":"mcp-memory-001","category":"memory","question":"请记住：我喜欢小户型，家里有猫。","expected_points":["记住","小户型"],"expected_tools":["memory_create_entities"],"should_refuse":false,"notes":"写入 Memory MCP"}
+{"id":"mcp-memory-002","category":"memory","question":"根据你记住的偏好，我喜欢什么户型？","expected_points":["小户型"],"expected_tools":[],"expected_tools_any":["memory_read_graph","memory_search_nodes"],"should_refuse":false,"notes":"从 Memory MCP 读取/检索记忆，允许两种工具"}
+{"id":"mcp-fetch-001","category":"fetch","question":"读取 https://example.com 并告诉我页面标题。","expected_points":["Example Domain"],"expected_tools":["fetch_fetch_url"],"should_refuse":false,"notes":"Fetch MCP 读取网页"}

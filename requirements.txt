@@ -21,6 +21,9 @@ langchain-openai==1.7.2
 # sentence-transformers + BGE，小模型 CPU 即可运行
 sentence-transformers==6.2.0
 langchain-huggingface==1.2.3
+# MCP client / adapter（Memory + Fetch 演示）
+mcp==1.30.0
+langchain-mcp-adapters==0.3.2
 # 可选：从 ModelScope 下载模型权重
 modelscope==1.40.2
 

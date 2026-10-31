@@ -46,6 +46,7 @@ def score_case(case, answer, tool_names):
     expected_points = case.get("expected_points", [])
     expected_regex = case.get("expected_regex", [])
     expected_tools = case.get("expected_tools", [])
+    expected_tools_any = case.get("expected_tools_any", [])
     should_refuse = bool(case.get("should_refuse"))
 
     answer_norm = normalize(answer)
@@ -58,6 +59,8 @@ def score_case(case, answer, tool_names):
     else:
         coverage = 1.0
     tools_ok = all(tool in tool_names for tool in expected_tools)
+    if expected_tools_any:
+        tools_ok = tools_ok and any(tool in tool_names for tool in expected_tools_any)
     refused = any(marker in answer for marker in REFUSAL_MARKERS)
 
     if should_refuse:

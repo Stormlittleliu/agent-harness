@@ -4,6 +4,9 @@
 
 **基于 LangChain 1.x + LangGraph 的 Agent Runtime / Harness：工具调用、上下文、权限、记忆与评测，以扫地机器人客服为验证场景**
 
+> 项目边界、能力范围与 AgentGuide 对照：[docs/PROJECT.md](./docs/PROJECT.md)
+> 当前结果总览：[docs/benchmarks/current-results.md](./docs/benchmarks/current-results.md)
+
 [![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://www.python.org/)
 &nbsp;
 [![LangChain](https://img.shields.io/badge/LangChain-1.4.2-green)](https://www.langchain.com/)
@@ -323,11 +326,105 @@ python -c "from core.tools.rag.vector_store import VectorStoreService; VectorSto
 
 ### 6. 启动应用
 
+RAG / 对话入口：
+
 ```bash
-streamlit run app.py
+streamlit run app_rag.py
+```
+
+Agent 可视化控制台（架构 / 任务执行 / 测试用例 / 公开基准 / 优化循环 / Benchmark 目录 / 评测记录）：
+
+```bash
+streamlit run app_agent.py
 ```
 
 浏览器自动打开 http://localhost:8501
+
+左侧“场景 / 前端预设”可以在 `coding_demo`（文件 / 命令 / 任务图 / hooks）、`general`（默认白板）、`mcp_demo`（Memory + Fetch）和 `robot_vacuum`（扫地机器人）之间切换；不同场景可以配置不同的页签与示例任务。“页面”支持总览（保留顶部全部标签）或直接进入单页。总览顶部有一行只读 KPI：最新完成迭代、BFCL / RAG 的 pass^k 与 mean、修复/回归数，以及目录任务数与来源数。控制台通常包含七个页签；`coding_demo` 额外有运行窗口：
+
+- **Agent 架构**：工具、风险等级、中间件执行顺序、LangGraph 工作流图；
+- **任务执行**：输入任务，查看工具调用、模型步数、token、时延与 trace 时间线；
+- **测试用例**：直接运行 `cases.jsonl`，复用 `core.quality.agent_eval` 的评分与判定；支持按通过/失败、判定依据（关键词 / LLM judge）、类别筛选，并可点开单条查看要点命中、工具调用、完整回答与 trace；
+- **公开基准**：读取 BFCL、RGB / MultiHop、τ²-bench 的已有报告，展示汇总指标与逐条明细；
+- **优化循环**：读取 `outputs/demo/iteration_*.json` 与 `report.md`，展示运行状态卡（最新写入、已完成迭代数）、BFCL / RAG 的 pass^k、mean、失败类型分布（按数量降序，BFCL 蓝 / RAG 橙）、同类任务通过率、修复/回归 case 与逐条筛选，并提供迭代走势柱状图、A/B 对比（指标差值、逐条明细与按 `trace_id` 加载的执行轨迹）与报告全文；case 表支持 ID / 问题 / 期望函数搜索，可下载 `report.md` 和搜索筛选后的 case CSV；
+- **Benchmark 目录**：读取 `data/benchmarks/manifest.json` 与 `catalog.jsonl`，展示 8 个来源的可用性 / 许可 / 运行方式，以及 320 条样例任务按来源、类别、bucket、任务类型的筛选；任务表支持 ID / 指令搜索，并可下载搜索筛选结果 CSV；
+- **运行窗口**（`coding_demo`）：任务图看板、任务详情、命令日志，可对 ready 任务执行 Agent；
+- **评测记录**：扫描 `outputs/agent`、`rag`、`public`、`bfcl`、`tau2`、`demo` 与 `traces` 下的既有报告，按类型 / 文件名筛选并按更新时间倒序展示；JSON 显示 summary 指标与 results 逐条结果（通过/失败、类别、来源筛选，最多 200 行），Markdown 直接渲染，trace JSONL 可按 `trace_id` 选择并查看执行时间线；普通大小文件提供原始下载，超大 JSON 只预览 summary，避免把数百 MB 文件读入页面。
+
+数据页签顶部会标注文件更新时间；报告、样例集与 trace 索引按 path + mtime 缓存，表格默认最多展示 200 行（下载 CSV 包含全部筛选结果），缺失或部分缺失时显示可执行的生成命令。评测记录页只读扫描 `outputs/`，不会重新运行评测或触发模型调用；超大 JSON 超过解析上限时退化为 summary 预览。优化循环页面每次加载只检查一次文件状态，不会自动轮询，后台评测写入后可手动刷新页面。
+
+### 7. 统一 benchmark 样例集
+
+```bash
+# 查看适配器与本地可用性
+python -m core.benchmarks.catalog --list
+
+# 每个来源分层抽 12 条，固定 seed
+python -m core.benchmarks.catalog --build --per-source 12 --seed 42
+```
+
+把 τ²-bench、BFCL、RGB、MultiHop-RAG、SWE-bench、WebArena、OSWorld 等公开任务统一成 `BenchTask`，按来源和类别分层抽样，输出：
+
+```text
+data/benchmarks/catalog.jsonl
+data/benchmarks/manifest.json
+data/benchmarks/catalog.md
+```
+
+当前 `--per-source 40` 会生成 **8 个来源 × 40 = 320 条**样例。GAIA 是 gated dataset，已下载 165 条 validation；重新下载需要先设置 `HF_TOKEN` 并接受数据集条款：
+
+```bash
+python -m core.benchmarks.download_gaia --proxy http://127.0.0.1:7897
+```
+
+SWE-bench / WebArena / OSWorld 的数据已本地化，但执行仍分别需要 Docker、自托管网站和 VM。
+
+### 8. 最小优化循环 Demo
+
+```bash
+python -m core.experiments.optimize --iterations 5
+```
+
+用 BFCL 工具调用 + MultiHop-RAG 检索跑一个完整的“跑 → badcase 归因 → 定向改 → 复跑 → 查回归”循环；默认 3 倍样本、每个 case 3 trial，优化方向按 prompt / tool / retrieval / query planning / loop 分类。当前最佳组合是 `bfcl_fixes`：BFCL 60/60（两轮 3-trial 复跑）、RAG 44/45（与 hybrid 一致，0 回归）。报告见 `outputs/demo/report.md`，复盘见 [docs/benchmarks/optimization-loop-3x.md](./docs/benchmarks/optimization-loop-3x.md) 和 [docs/benchmarks/bfcl-fixes.md](./docs/benchmarks/bfcl-fixes.md)。
+
+### 9. MCP 演示（Memory + Fetch）
+
+```bash
+python -m core.quality.runner agent --scenario mcp_demo
+```
+
+- **Memory MCP**：官方 Node server，跨会话保存/检索用户偏好（JSONL 落盘）；
+- **Fetch MCP**：本地 server，读取 allowlist 域名下的网页文本，默认禁止私网，返回内容标记为 untrusted；
+- MCP async 工具通过常驻事件循环包装成同步 LangChain 工具，原有 CLI / Streamlit / 评测链路不用改。
+
+控制台切到 `mcp_demo` 可以看架构、任务执行和 3 条测试用例。详见 [core/mcp/README.md](./core/mcp/README.md)。
+
+### 10. 运行时扩展：hooks / 任务图 / 文件 / 运行窗口
+
+`core/runtime/` 是独立的运行时层，场景通过 `Scenario.runtime` 配置：
+
+- **Hooks**：`UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop` / `TaskStart` / `TaskComplete` / `TaskFail`；
+- **任务图**：SQLite 持久化，`pending / in_progress / completed / failed` + `blocked_by` 依赖；
+- **文件工具**：`read_file` / `glob`；
+- **命令执行**：`run_command`，危险命令拒绝，输出写入 `data/runtime/run_window/`；
+- **运行窗口**：控制台 🖥 页签展示任务图、任务详情、命令日志，并可执行 ready 任务。
+
+示例场景：
+
+```bash
+python -m core.quality.runner agent --scenario coding_demo
+python -m streamlit run app_agent.py   # 场景选 coding_demo
+```
+
+详见 [core/runtime/README.md](./core/runtime/README.md)。
+
+### 11. 测试
+
+```bash
+python -m pytest
+```
+
+覆盖任务图依赖 / 持久化、workspace 读取与危险命令拒绝、metrics 的 `expected_tools_any`、以及控制台 AppTest 启动。
 
 ### 验证运行
 
@@ -346,6 +443,7 @@ agent-harness/
 │   ├── agent/                         #   L1 Harness
 │   │   ├── contracts.py               #     Scenario / Tool / Workflow 契约
 │   │   ├── framework.py               #     ReAct loop + 中间件装配
+│   │   ├── hooks.py                   #     HookManager + Pre/Post tool middleware
 │   │   ├── checkpoint.py              #     memory / sqlite checkpointer
 │   │   ├── workflow.py                #     WorkflowRuntime
 │   │   └── middleware/
@@ -364,8 +462,29 @@ agent-harness/
 │   │       ├── service.py             #     检索 → LLM 总结
 │   │       └── tools.py               #     rag_retrieve / rag_summarize
 │   │
+│   ├── runtime/                       #   运行时：任务图 / 工作区 / runner
+│   │   ├── tasks.py
+│   │   ├── task_tools.py
+│   │   ├── workspace.py
+│   │   ├── runner.py
+│   │   └── config.py
+│   │
+│   ├── mcp/                           #   外部 MCP 接入
+│   │   ├── client.py                  #     async 工具 → 同步 LangChain 工具
+│   │   ├── fetch_server.py            #     本地 Fetch MCP server
+│   │   └── runner.py                  #     常驻事件循环
+│   │
 │   ├── scenarios/                     #   L3 组合根
 │   │   ├── registry.py
+│   │   ├── coding_demo/
+│   │   │   ├── scenario.py            #     文件 / 命令 / 任务图 / hooks
+│   │   │   └── cases.jsonl
+│   │   ├── general/
+│   │   │   ├── scenario.py            #     白板场景：无业务工具
+│   │   │   └── cases.jsonl
+│   │   ├── mcp_demo/
+│   │   │   ├── scenario.py            #     Memory + Fetch MCP
+│   │   │   └── cases.jsonl
 │   │   └── robot_vacuum/
 │   │       ├── scenario.py            #     工具 + 提示词 + 中间件 + 配置
 │   │       ├── graph.py               #     LangGraph：rag_qa / report
@@ -381,6 +500,8 @@ agent-harness/
 │   │   ├── cli.py
 │   │   ├── workflow_cli.py
 │   │   ├── streamlit_app.py
+│   │   ├── agent_dashboard.py         # 控制台入口：导航 + 视图分发
+│   │   ├── dashboard/                 # 架构 / 任务 / 测试 / 基准 / 优化 / 目录 / 评测记录视图
 │   │   └── examples/demo_agent_interfaces.py
 │   │
 │   ├── quality/                       #   L5 质量层
@@ -394,6 +515,19 @@ agent-harness/
 │   │   ├── judge.py / rag_judge.py
 │   │   ├── bfcl.py
 │   │   └── failures.py
+│   │
+│   ├── benchmarks/                    #   L5 公开 benchmark 适配层
+│   │   ├── catalog.py                 #     加载 → 分层抽样 → catalog
+│   │   ├── sampling.py
+│   │   ├── schema.py                  #     统一 BenchTask
+│   │   ├── runner.py                  #     external / native / data_only
+│   │   └── adapters/                  #     τ² / BFCL / RGB / MultiHop / GAIA / SWE-bench ...
+│   │
+│   ├── experiments/                   #   最小 Harness 优化循环
+│   │   ├── cases.py                   #     BFCL / MultiHop 抽样
+│   │   ├── bfcl_agent.py              #     schema → LangChain 工具
+│   │   ├── rag_agent.py               #     MultiHop 检索 Agent
+│   │   └── optimize.py                #     跑 → 归因 → 改 → 复跑
 │   │
 │   ├── observability/                 #   trace
 │   │   ├── tracer.py
@@ -415,10 +549,14 @@ agent-harness/
 │   ├── external/                      #   外部使用记录 CSV
 │   ├── models/                        #   本地 BGE 权重（gitignore）
 │   ├── runtime/                       #   Chroma / md5 / sqlite（gitignore）
-│   └── evals/
-│       ├── datasets/                  #   业务集 + 公开基准抽样
-│       ├── failures/                  #   失败案例归档
-│       └── README.md
+│   ├── evals/
+│   │   ├── datasets/                  #   业务集 + 公开基准抽样
+│   │   ├── failures/                  #   失败案例归档
+│   │   └── README.md
+│   └── benchmarks/                    #   统一 benchmark 样例集
+│       ├── catalog.jsonl
+│       ├── manifest.json
+│       └── catalog.md
 │
 ├── outputs/                           # 运行产物（gitignore）
 │   ├── agent/  rag/  public/  bfcl/
@@ -431,7 +569,14 @@ agent-harness/
 │   ├── benchmarks/
 │   └── assets/
 │
-├── app.py                             # 兼容入口：streamlit run app.py
+├── app_rag.py                         # RAG/对话入口：streamlit run app_rag.py
+├── app_agent.py                       # Agent 控制台：streamlit run app_agent.py
+├── tests/                             # pytest：runtime / metrics / dashboard smoke
+│   ├── test_runtime_tasks.py
+│   ├── test_runtime_workspace.py
+│   ├── test_metrics.py
+│   └── test_dashboard_smoke.py
+├── pytest.ini
 ├── test_entry.py                      # 兼容入口：python test_entry.py ...
 ├── requirements.txt
 └── README.md

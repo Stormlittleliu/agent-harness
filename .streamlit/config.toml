@@ -1,0 +1,9 @@
+[server]
+# 关闭文件监视器。
+# Streamlit 的 LocalSourcesWatcher 会遍历 sys.modules 里每个模块的 __path__，
+# 这会触发 transformers 懒加载模块去 import 可选依赖（如 torchvision），
+# 以及 torch.classes 的 __path__ 异常，导致终端被
+# "Examining the path of ... raised: No module named 'torchvision'" 刷屏。
+# 这些日志不代表运行失败；关闭监视器即可消除。
+# 需要边改代码边自动重载时，可临时改为 "auto"。
+fileWatcherType = "none"

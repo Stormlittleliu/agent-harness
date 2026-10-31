@@ -73,6 +73,73 @@ def extract_tool_calls(messages) -> list[dict]:
     return calls
 
 
+def evaluate_case(agent: FrameworkAgent, case: dict, judge_chain=None) -> dict:
+    """跑一条行为用例并打分；评测层与可视化界面共用这一条路径。"""
+    final_state = agent.invoke(case["question"])
+    messages = final_state["messages"]
+    answer = extract_final_answer(messages)
+    tool_calls = extract_tool_calls(messages)
+    tool_names = [item["name"] for item in tool_calls if item.get("name")]
+
+    deterministic = score_case(case, answer, tool_names)
+    judged = None
+    if judge_chain is not None:
+        judged = judge_answer(
+            judge_chain,
+            case["question"],
+            case.get("expected_points", []),
+            bool(case.get("should_refuse")),
+            tool_names,
+            answer,
+        )
+
+    passed = deterministic["passed"]
+    if judged is not None:
+        passed = judged.get("verdict") == "pass"
+
+    return {
+        **case,
+        "answer": answer,
+        "tool_calls": tool_calls,
+        "tool_names": tool_names,
+        "coverage": deterministic["coverage"],
+        "matched_points": deterministic["matched_points"],
+        "tools_ok": deterministic["tools_ok"],
+        "refused": deterministic["refused"],
+        "passed": passed,
+        "judge": judged,
+        "judge_used": judged is not None,
+        "trace_id": getattr(agent, "last_trace_id", None),
+    }
+
+
+def evaluate_cases(agent: FrameworkAgent, cases: list[dict], judge: bool = False, progress=None) -> list[dict]:
+    """顺序执行用例；progress(index, total, result) 用于 CLI 打印或界面进度条。"""
+    judge_chain = build_judge() if judge else None
+    results = []
+    for index, case in enumerate(cases, 1):
+        result = evaluate_case(agent, case, judge_chain)
+        results.append(result)
+        if progress is not None:
+            progress(index, len(cases), result)
+    return results
+
+
+def summarize_results(scenario_name: str, results: list[dict], judge: bool = False) -> dict:
+    summary = {
+        "scenario": scenario_name,
+        "total": len(results),
+        "passed": sum(1 for row in results if row["passed"]),
+        "by_category": dict(Counter(row["category"] for row in results)),
+        "tool_cases_ok": sum(1 for row in results if row["tools_ok"]),
+        "refusal_correct": sum(1 for row in results if row["should_refuse"] and row["refused"]),
+        "refusal_count": sum(1 for row in results if row["should_refuse"]),
+    }
+    if judge:
+        summary["judge_pass"] = sum(1 for row in results if (row["judge"] or {}).get("verdict") == "pass")
+    return summary
+
+
 def run(scenario_name="robot_vacuum", case_id=None, limit=0, judge=False):
     agent = FrameworkAgent(get_scenario(scenario_name))
     scenario = agent.scenario
@@ -88,60 +155,14 @@ def run(scenario_name="robot_vacuum", case_id=None, limit=0, judge=False):
     if limit:
         cases = cases[:limit]
 
-    judge_chain = build_judge() if judge else None
-    results = []
-
-    for index, case in enumerate(cases, 1):
-        final_state = agent.invoke(case["question"])
-        messages = final_state["messages"]
-        answer = extract_final_answer(messages)
-        tool_calls = extract_tool_calls(messages)
-        tool_names = [item["name"] for item in tool_calls if item.get("name")]
-
-        deterministic = score_case(case, answer, tool_names)
-        judged = None
-        if judge_chain is not None:
-            judged = judge_answer(
-                judge_chain,
-                case["question"],
-                case.get("expected_points", []),
-                bool(case.get("should_refuse")),
-                tool_names,
-                answer,
-            )
-
-        passed = deterministic["passed"]
-        if judged is not None:
-            passed = judged.get("verdict") == "pass"
-
-        results.append({
-            **case,
-            "answer": answer,
-            "tool_calls": tool_calls,
-            "tool_names": tool_names,
-            "coverage": deterministic["coverage"],
-            "matched_points": deterministic["matched_points"],
-            "tools_ok": deterministic["tools_ok"],
-            "refused": deterministic["refused"],
-            "passed": passed,
-            "judge": judged,
-        })
+    def _print_result(index, total, row):
         print(
-            f"[{index}/{len(cases)}] {case['id']} {case['category']} "
-            f"coverage={deterministic['coverage']:.2f} tools={tool_names} pass={passed}"
+            f"[{index}/{total}] {row['id']} {row['category']} "
+            f"coverage={row['coverage']:.2f} tools={row['tool_names']} pass={row['passed']}"
         )
 
-    summary = {
-        "scenario": scenario_name,
-        "total": len(results),
-        "passed": sum(1 for row in results if row["passed"]),
-        "by_category": dict(Counter(row["category"] for row in results)),
-        "tool_cases_ok": sum(1 for row in results if row["tools_ok"]),
-        "refusal_correct": sum(1 for row in results if row["should_refuse"] and row["refused"]),
-        "refusal_count": sum(1 for row in results if row["should_refuse"]),
-    }
-    if judge:
-        summary["judge_pass"] = sum(1 for row in results if (row["judge"] or {}).get("verdict") == "pass")
+    results = evaluate_cases(agent, cases, judge=judge, progress=_print_result)
+    summary = summarize_results(scenario_name, results, judge=judge)
 
     out_dir = AGENT_OUT
     out_dir.mkdir(parents=True, exist_ok=True)
