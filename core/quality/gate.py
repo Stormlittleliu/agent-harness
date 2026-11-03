@@ -33,6 +33,7 @@ DEFAULT_BFCL = ROOT / "outputs" / "bfcl" / "eval_bfcl.json"
 DEFAULT_PUBLIC = ROOT / "outputs" / "public" / "eval_public_results.json"
 DEFAULT_AGENT_GLOB = "outputs/agent/agent_test_coding_demo_*.json"
 DEFAULT_STRUCTURED_GLOB = "outputs/structured/structured_test_structured_demo_*.json"
+DEFAULT_SELFBUILT_GLOB = "outputs/selfbuilt/selfbuilt_*.json"
 
 DEFAULT_THRESHOLDS = {
     "bfcl_exact": 0.90,
@@ -41,6 +42,7 @@ DEFAULT_THRESHOLDS = {
     "agent_pass": 1.0,
     "structured_pass": 0.80,
     "structured_schema": 1.0,
+    "selfbuilt_pass": 0.60,
 }
 
 
@@ -152,12 +154,28 @@ def check_structured(path: Path | None, thresholds: dict) -> list[dict]:
     ]
 
 
+def check_selfbuilt(path: Path | None, thresholds: dict) -> list[dict]:
+    data = load_json(path) if path else None
+    summary = (data or {}).get("summary") if isinstance(data, dict) else None
+    if not isinstance(summary, dict):
+        return [_check("selfbuilt pass", path, None, thresholds["selfbuilt_pass"])]
+    actual = _ratio(summary.get("passed"), summary.get("total"))
+    return [_check("selfbuilt pass", path, actual, thresholds["selfbuilt_pass"])]
+
+
+def latest_selfbuilt() -> Path:
+    """最新自建集报告；没有时返回一个不存在的路径，让 gate 报 missing。"""
+    found = latest(DEFAULT_SELFBUILT_GLOB)
+    return found or ROOT / "outputs" / "selfbuilt" / "selfbuilt_missing.json"
+
+
 def evaluate(
     bfcl_path: Path | None = DEFAULT_BFCL,
     public_path: Path | None = DEFAULT_PUBLIC,
     agent_path: Path | None = None,
     structured_path: Path | None = None,
     thresholds: dict | None = None,
+    selfbuilt_path: Path | None = None,
 ) -> dict:
     thresholds = {**DEFAULT_THRESHOLDS, **(thresholds or {})}
     agent_path = agent_path or latest(DEFAULT_AGENT_GLOB)
@@ -167,6 +185,8 @@ def evaluate(
     checks += check_public(public_path, thresholds)
     checks += check_agent(agent_path, thresholds)
     checks += check_structured(structured_path, thresholds)
+    if selfbuilt_path is not None:
+        checks += check_selfbuilt(selfbuilt_path, thresholds)
     return {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "ok": all(item["ok"] for item in checks),
@@ -192,12 +212,14 @@ def main(argv=None) -> int:
     parser.add_argument("--public", default=str(DEFAULT_PUBLIC))
     parser.add_argument("--agent", help="coding_demo 报告；默认取最新")
     parser.add_argument("--structured", help="structured_demo 报告；默认取最新")
+    parser.add_argument("--selfbuilt", help="自建集报告；默认取最新")
     parser.add_argument("--min-bfcl-exact", type=float, default=DEFAULT_THRESHOLDS["bfcl_exact"])
     parser.add_argument("--min-bfcl-irrelevance", type=float, default=DEFAULT_THRESHOLDS["bfcl_irrelevance"])
     parser.add_argument("--min-rag-hit4", type=float, default=DEFAULT_THRESHOLDS["rag_hit4"])
     parser.add_argument("--min-agent", type=float, default=DEFAULT_THRESHOLDS["agent_pass"])
     parser.add_argument("--min-structured", type=float, default=DEFAULT_THRESHOLDS["structured_pass"])
     parser.add_argument("--min-schema", type=float, default=DEFAULT_THRESHOLDS["structured_schema"])
+    parser.add_argument("--min-selfbuilt", type=float, default=DEFAULT_THRESHOLDS["selfbuilt_pass"])
     parser.add_argument("--json-out", help="可选：把 gate 结果写成 JSON")
     parser.add_argument("--require-all", action="store_true", help="缺失报告也视为失败")
     args = parser.parse_args(argv)
@@ -214,6 +236,7 @@ def main(argv=None) -> int:
         "agent_pass": args.min_agent,
         "structured_pass": args.min_structured,
         "structured_schema": args.min_schema,
+        "selfbuilt_pass": args.min_selfbuilt,
     }
     result = evaluate(
         bfcl_path=_path(args.bfcl),
@@ -221,6 +244,7 @@ def main(argv=None) -> int:
         agent_path=_path(args.agent) if args.agent else None,
         structured_path=_path(args.structured) if args.structured else None,
         thresholds=thresholds,
+        selfbuilt_path=Path(args.selfbuilt) if args.selfbuilt else latest_selfbuilt(),
     )
     if args.require_all:
         for item in result["checks"]:
