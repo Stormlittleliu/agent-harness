@@ -18,6 +18,9 @@ class Scenario:
     system_prompt: str
     tools: list[Any]
     middleware: list[Any] = field(default_factory=list)
+    # 可选：策略覆盖层（core.agent.pipeline.PolicySpec 的 dict 形式）。
+    # 为空时由 pipeline 从下面的字段推导默认策略；spec 场景用它增删/配参。
+    policies: list[Any] | None = None
     context: dict[str, Any] = field(default_factory=dict)
     cases_path: Path | None = None
     # Harness 能力（可选）
@@ -41,6 +44,9 @@ class Scenario:
     workflow_factory: Any = None
     # 可选：结构化输出 schema（Pydantic 模型或 dict schema）；传给 create_agent
     response_format: Any = None
+    # 可选：确定性 planning policy（core.agent.middleware.PlanningPolicy）；
+    # 命中规则时在第一次模型调用前注入工具调用，否则 abstain。
+    planning_policy: Any = None
     # 可选运行时：hooks / 工作区 / 任务库，由 core.runtime.RuntimeConfig 提供
     runtime: Any = None
 

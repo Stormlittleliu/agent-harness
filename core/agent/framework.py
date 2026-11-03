@@ -15,35 +15,15 @@
 import uuid
 
 from langchain.agents import create_agent
-from langchain.agents.middleware import (
-    HumanInTheLoopMiddleware,
-    ModelFallbackMiddleware,
-    ModelRetryMiddleware,
-    PIIMiddleware,
-    SummarizationMiddleware,
-    TodoListMiddleware,
-    ToolCallLimitMiddleware,
-    ToolErrorMiddleware,
-    ToolRetryMiddleware,
-)
 from langchain_core.messages import AIMessage
 from langgraph.types import Command
 
 from core.agent.checkpoint import build_checkpointer
-from core.agent.middleware import TokenBudgetMiddleware, ToolPermissionMiddleware, ToolTimeoutMiddleware
+from core.agent.contracts import Scenario
+from core.agent.hooks import HookManager
+from core.agent.pipeline import build_pipeline
 from core.observability.budget import RunBudget
 from core.observability.tracer import TraceCallbackHandler
-from core.agent.contracts import Scenario
-from core.agent.hooks import HookManager, make_hook_middleware
-
-
-def _on_tool_error(exc: Exception, request) -> str:
-    """把工具执行异常转成中文 error ToolMessage，让 Agent 有机会换一种方式继续。"""
-    tool_name = request.tool_call.get("name", "unknown")
-    return (
-        f"[工具执行异常] 工具 {tool_name} 执行失败（{type(exc).__name__}）。"
-        "请不要重复同样的调用，检查参数或改用其他工具。"
-    )
 
 
 class FrameworkAgent:
@@ -60,59 +40,12 @@ class FrameworkAgent:
         runtime = getattr(scenario, "runtime", None)
         self.hook_manager = HookManager(getattr(runtime, "hooks", None))
 
-        # 权限放在最外层：deny 的工具不会进入 HITL / 超时 / 重试链路
-        middleware = [ToolPermissionMiddleware(scenario.tool_policy), *scenario.middleware]
-        if self.hook_manager.has_hooks():
-            middleware.append(make_hook_middleware(self.hook_manager))
-
-        # 规划：复杂任务自动维护 todo
-        if scenario.enable_todo:
-            middleware.append(TodoListMiddleware())
-
-        # 上下文压缩：历史过长时摘要，避免上下文溢出
-        if scenario.enable_summarization:
-            middleware.append(SummarizationMiddleware(
-                model=scenario.model,
-                trigger=scenario.summarization_trigger,
-                keep=scenario.summarization_keep,
-            ))
-
-        # 敏感信息脱敏（输入侧）
-        for pii_type in scenario.pii_types:
-            middleware.append(PIIMiddleware(
-                pii_type,
-                strategy="redact",
-                apply_to_input=True,
-                apply_to_output=False,
-                apply_to_tool_results=False,
-            ))
-
-        # 高风险工具审批：审批通过才执行
-        if scenario.high_risk_tools:
-            middleware.append(HumanInTheLoopMiddleware(interrupt_on=scenario.high_risk_tools))
-
-        # 工具执行超时：放在 HITL 之后，人工审批时间不计入工具超时
-        middleware.append(ToolTimeoutMiddleware(
-            default_timeout=scenario.tool_timeout_seconds,
-            overrides=scenario.tool_timeouts,
-        ))
-
-        # 错误恢复：ToolError 在外层、ToolRetry 在内层。
-        # 先重试；重试耗尽后抛回 ToolError，再转成中文 error ToolMessage。
-        middleware.append(ToolErrorMiddleware(on_error=_on_tool_error))
-        middleware.append(ToolRetryMiddleware(max_retries=1, on_failure="error"))
-        if scenario.tool_call_limit:
-            middleware.append(ToolCallLimitMiddleware(
-                run_limit=scenario.tool_call_limit,
-                exit_behavior="end",
-            ))
-        if scenario.token_budget:
-            middleware.append(TokenBudgetMiddleware())
-        if scenario.fallback_model is not None:
-            middleware.append(ModelFallbackMiddleware(scenario.fallback_model))
-        middleware.append(ModelRetryMiddleware(max_retries=1))
-
-        self.middleware = middleware
+        # 装配逻辑统一在 core.agent.pipeline：slot 决定顺序，spec 的 policies 只做覆盖。
+        self.middleware = build_pipeline(
+            scenario,
+            self.hook_manager,
+            getattr(scenario, "policies", None),
+        )
         self.checkpointer = (
             build_checkpointer(scenario.checkpoint_backend, scenario.checkpoint_path)
             if scenario.checkpoint else None
@@ -121,7 +54,7 @@ class FrameworkAgent:
             model=scenario.model,
             system_prompt=scenario.system_prompt,
             tools=scenario.tools,
-            middleware=middleware,
+            middleware=self.middleware,
             checkpointer=self.checkpointer,
             response_format=scenario.response_format,
         )
