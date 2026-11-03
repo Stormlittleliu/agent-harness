@@ -1,12 +1,13 @@
 <div align="center">
 
-# Agent Harness · 工具调用型 Agent 运行时
+# Agent Harness · 多场景工具调用 Agent 运行时与评测
 
-**基于 LangChain 1.x + LangGraph 的 Agent Runtime / Harness：工具调用、上下文、权限、记忆与评测，以扫地机器人客服为验证场景**
+**基于 LangChain 1.x + LangGraph 的 Agent Runtime / Harness：工具调用、规划/路由、MCP、上下文、记忆、工作流与 outcome 评测；覆盖办公 / 学习 / 内容 / 跨语言、研究、编码与模拟智能硬件客服**
 
-> 当前版本：**v0.1（2026-10-31 冻结）**。边界见 [docs/PROJECT.md](./docs/PROJECT.md) 第 9 节。
+> 当前版本：**v0.2（2026-11-02 面试增补）**。边界见 [docs/PROJECT.md](./docs/PROJECT.md) 第 9 节。
 > 项目边界、能力范围与 AgentGuide 对照：[docs/PROJECT.md](./docs/PROJECT.md)
 > 当前结果总览：[docs/benchmarks/current-results.md](./docs/benchmarks/current-results.md)
+> 面试主结果页：[docs/interview/jd-results-2026-11-04.md](./docs/interview/jd-results-2026-11-04.md)
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://www.python.org/)
 &nbsp;
@@ -29,10 +30,10 @@
 本项目是基础项目 **KnowledgeBase-RAG-LLM-System** 的 Agent 演进版，定位是一个**带评测的 Agent Harness**：
 
 - **基础项目**负责 RAG 底座：四格式文档解析、按类型切片、MD5 去重、Chroma 持久化、纯向量 / 混合检索对比；
-- **本项目**负责把裸模型包装成可运行、可约束、可评测的 Agent：ReAct 循环、7 个工具注册与调度、参数校验与错误重注入、意图路由、上下文压缩、PII 脱敏、HITL 审批、多轮记忆、步数与工具调用上限；
-- **客服只是验证场景**：框架与业务通过 `Scenario` 注册机制解耦，换业务只需新增场景，不需要改运行时。
+- **本项目**负责把裸模型包装成可运行、可约束、可评测的 Agent：ReAct 循环、8 个场景 / 40+ 工具注册与调度、参数校验与错误重注入、确定性 planning policy、上下文压缩、PII 脱敏、HITL 审批、多轮记忆、步数与工具调用上限；
+- **多场景验证**：办公 / 学习 / 内容 / 跨语言（workspace_assistant）、研究调研（research_assistant）、编码运行时（coding_demo）、模拟智能硬件客服（robot_vacuum）；框架与业务通过 `Scenario` 注册机制解耦，换业务只需新增场景，不需要改运行时。
 
-系统能根据用户意图自动判断任务类型（知识问答 / 报告生成），调用合适的工具和知识库完成推理；同时内置 BFCL / τ²-bench / RAG 评测与失败集，能定位 Agent 在哪一层坏掉。
+系统能根据用户意图自动路由到目标场景，再由场景 Agent 调用工具和知识库完成推理；同时内置行为评测、outcome 断言、BFCL / τ²-bench / RAG 抽样与失败集，能定位 Agent 在哪一层坏掉。
 
 ## 框架与业务场景分离
 
@@ -66,14 +67,82 @@ python test_entry.py workflow --run rag_qa --dry-run
 
 报告输出到 `outputs/agent/`。
 
+## 场景矩阵与总路由
+
+`router` 是一个对话式前台，不直接处理专业任务，只通过四个路由工具分流：
+
+```text
+route_to_workspace   → workspace_assistant   办公 / 学习 / 内容 / 信息管理 / 跨语言
+route_to_coding      → coding_demo           编码 / 文件 / 测试 / 修复
+route_to_robot       → robot_vacuum          扫地/扫拖机器人设备与使用
+route_to_research    → research_assistant    多资料对比 / 研究调研
+```
+
+每个目标场景仍然独立拥有自己的工具、提示词、checkpoint 和 trace；路由只调用目标
+`FrameworkAgent`，不把四个场景的工具合并进一个 Agent。
+
+新增场景：
+
+- `workspace_assistant`：`search_notes / read_note / write_note / remember / recall / translate / summarize`；
+  LangGraph：`document_qa / study_notes / cross_lingual / content_draft`；
+- `research_assistant`：`list_sources / read_source / search_sources / write_report / subagent`；
+  LangGraph：`deep_research`（只读 subagent fan-out → 汇总 → 引用 → 报告）；
+- `router`：四个 `route_to_*` 工具；默认控制台入口。
+
+示例：
+
+```bash
+python -m core.quality.runner agent --scenario router --case router-workspace-001
+python -m core.quality.runner agent --scenario workspace_assistant --case workspace-qa-001
+python -m core.quality.runner agent --scenario research_assistant --case research-compare-001
+python -m core.interfaces.workflow_cli --scenario workspace_assistant --run document_qa --input "Agent 评测应该关注哪些指标？"
+python -m core.interfaces.workflow_cli --scenario workspace_assistant --run study_notes --input "学习计划"
+python -m core.interfaces.workflow_cli --scenario research_assistant --run deep_research --input "对比三份资料"
+```
+
+> 新场景已完成 3-trial 行为回归（workspace 5/5、research 2/3、router 3/4）与 12 条
+> outcome 断言；评测口径见 [docs/benchmarks/current-results.md](./docs/benchmarks/current-results.md)。
+
+## Planning Policy 与 Outcome 评测
+
+**Planning Policy**：`core/agent/middleware/planning.py` 在第一次模型调用前按规则注入
+`route_to_*` / `subagent` / `create_task`；不命中、分数不足或平局时 abstain，交回模型。
+它不是自主 planner，而是可测、可审计的 Harness 决策。
+
+```bash
+python -m core.experiments.planner_eval --trials 1
+python -m core.experiments.trigger_rate --variants natural,routed,policy
+```
+
+结果（12 条路由 / 10 条 coding 委派）：
+
+```text
+router:  baseline 11/12 → policy 12/12；平均模型调用 1.92 → 1.08；1 条 abstain 后模型兜底正确
+coding:  natural 0/10、routed 0/10、policy eligible 3/10 → 3/3 触发，7/10 保持不委派
+```
+
+**Outcome 评测**：`core/quality/outcome_eval.py` 检查运行后的真实环境状态，而不是回答文本。
+
+```bash
+python -m core.quality.runner outcome --all --trials 3
+```
+
+覆盖 12 条断言：workspace 笔记文件 / SQLite 长期偏好、research 报告文件与多源引用、
+coding 脚本 + 运行日志 + 任务图 `completed`、router 的 `target` + `target_trace_id`。
+报告写到 `outputs/outcome/`，每条失败能定位到具体 check。
+
 ## RAG / LLM 评测
 
 `data/evals/` 保存数据集，`core/quality/` 保存评测代码，报告写到 `outputs/`。
 能力层（RAG 检索/生成、RGB/MultiHop）走 `FrameworkAgent.invoke_tool`，
-行为层（13 条用例）走 `FrameworkAgent.invoke`：
+行为层（44 条用例，支持 `--trials` 跑 pass^k）走 `FrameworkAgent.invoke`：
 
 ```bash
 python -m core.quality.runner agent --limit 2          # 行为层
+python -m core.quality.runner agent --scenario workspace_assistant --trials 3
+python -m core.quality.runner agent --scenario research_assistant --trials 3
+python -m core.quality.runner agent --scenario router --trials 3
+python -m core.quality.runner outcome --all --trials 3 # outcome 层
 python -m core.quality.runner rag retrieval --limit 5  # 能力层：检索
 python -m core.quality.runner rag generation --limit 5 # 能力层：生成
 python -m core.quality.runner public --rgb-limit 2 --skip-multihop
@@ -98,7 +167,10 @@ python test_entry.py benchmark public
 | 自建 RAG 业务集 | 42 | 总通过 / 拒答准确 | 37/42 · 10/10 |
 | RGB（抽样） | 20 | Hit@4 / MRR | 16/16 · 0.875 |
 | MultiHop-RAG（全量） | 2255 | Hits@4 | 57.1%（95% CI 55.0–59.1） |
-| Agent 行为回归 | 13 | 通过率 | 11/13（工具类 13/13） |
+| Agent 行为回归（旧） | 13 | 通过率 | 11/13（工具类 13/13，2026-10-29 快照） |
+| 新场景 3-trial（2026-11-02） | workspace 5 / research 3 / router 4 | pass^k / mean | 5/5 · 2/3 · 3/4 |
+| Outcome 用例（13 断言，2026-11-02） | 12 | 文件 / SQLite / 任务图 / 路由 trace | 12/12（3-trial） |
+| Planning Policy（2026-11-02） | 12 路由 | 准确率 / 模型调用 | 12/12 · 1.08（baseline 11/12 · 1.92） |
 
 > BFCL 为 v4 抽样；τ²-bench 的 NL assertion judge 使用 DeepSeek 替代默认 OpenAI judge，
 > 不是官方评分口径。失败案例统一归档在 `data/evals/failures/`。
@@ -331,30 +403,33 @@ python -c "from core.tools.rag.vector_store import VectorStoreService; VectorSto
 RAG / 对话入口：
 
 ```bash
-streamlit run app_rag.py
+python run_dashboard.py --app app_rag.py
 ```
 
-Agent 可视化控制台（架构 / 任务执行 / 测试用例 / 公开基准 / 优化循环 / Benchmark 目录 / 成本时延 / 评测记录）：
+Agent 可视化控制台（架构 / 任务执行 / 测试用例 / 评测 / 优化循环 / Benchmark 目录）：
 
 ```bash
-streamlit run app_agent.py
+python run_dashboard.py
 ```
 
-浏览器自动打开 http://localhost:8501
+启动器会自动从 8501 开始找空闲端口，并在终端打印实际 URL（例如
+`Dashboard: http://localhost:8502`）。也可以指定端口：
 
-左侧“场景 / 前端预设”可以在 `coding_demo`（文件 / 命令 / 任务图 / hooks / subagent）、`general`（默认白板）、`mcp_demo`（Memory + Fetch）、`robot_vacuum`（扫地机器人）和 `structured_demo`（Pydantic 结构化输出）之间切换；不同场景可以配置不同的页签与示例任务。“页面”支持总览（保留顶部全部标签）或直接进入单页。总览顶部有一行只读 KPI：最新完成迭代、BFCL / RAG 的 pass^k 与 mean、修复/回归数，以及目录任务数与来源数。控制台通常包含八个页签；`coding_demo` 额外有运行窗口：
+```bash
+python run_dashboard.py --port 8600
+```
 
-- **Agent 架构**：工具、风险等级、中间件执行顺序、LangGraph 工作流图；
-- **任务执行**：输入任务，查看工具调用、模型步数、token、时延与 trace 时间线；
+页面右上角的“入口模式”可以在 **总路由** 和 **子场景** 之间切换，跟随页面滚动、不固定在侧边栏：总路由默认进入 `router`（办公学习 / 编码 / 智能硬件 / 研究调研自动分流）；子场景可以直接进入 `workspace_assistant`（办公 / 学习 / 内容 / 信息管理 / 跨语言）、`research_assistant`（多资料研究 / 只读 fan-out）、`coding_demo`（读写 / 编辑 / 搜索 / 命令 / Todo / 任务图 / hooks / subagent）、`general`（白板）、`mcp_demo`（Memory + Fetch）、`robot_vacuum`（扫地机器人）和 `structured_demo`（Pydantic 结构化输出）；不同场景可以配置不同的视图与示例任务。“页面”是单视图路由：总览是工作台入口（KPI + 快捷入口 + 能力矩阵），选择某个视图后只渲染当前页，不会一次性加载全部页面。**切换子场景时保留当前页面**；如果新场景不支持该页（例如运行窗口），会显示空状态而不是跳回总览。控制台基础视图为 7 个；`coding_demo` 额外有运行窗口：
+
+- **Agent 架构**：工具、风险等级、中间件执行顺序、LangGraph 工作流图；中间件只展开会改变执行/上下文的效果类，日志类合并为一行；
+- **任务执行**：输入任务，查看工具调用、模型步数、token、时延，以及“用户问题 → 模型/工具 → 最终回答”的可视化调用链；
 - **测试用例**：直接运行 `cases.jsonl`，复用 `core.quality.agent_eval` 的评分与判定；支持按通过/失败、判定依据（关键词 / LLM judge）、类别筛选，并可点开单条查看要点命中、工具调用、完整回答与 trace；`structured_demo` 的严格 schema 评测走 `core.quality.structured_eval`；
-- **公开基准**：读取 BFCL、RGB / MultiHop、τ²-bench 的已有报告，展示汇总指标与逐条明细；
+- **评测**：把场景行为/outcome 报告、成本/时延、公开基准、评测记录合到一个入口；场景报告按当前场景过滤，成本/时延按 trace 的 scenario 过滤，公开基准作为全局/模型级证据单独展示；
 - **优化循环**：读取 `outputs/demo/iteration_*.json` 与 `report.md`，展示运行状态卡（最新写入、已完成迭代数）、BFCL / RAG 的 pass^k、mean、失败类型分布（按数量降序，BFCL 蓝 / RAG 橙）、同类任务通过率、修复/回归 case 与逐条筛选，并提供迭代走势柱状图、A/B 对比（指标差值、逐条明细与按 `trace_id` 加载的执行轨迹）与报告全文；case 表支持 ID / 问题 / 期望函数搜索，可下载 `report.md` 和搜索筛选后的 case CSV；
 - **Benchmark 目录**：读取 `data/benchmarks/manifest.json` 与 `catalog.jsonl`，展示 8 个来源的可用性 / 许可 / 运行方式，以及 320 条样例任务按来源、类别、bucket、任务类型的筛选；任务表支持 ID / 指令搜索，并可下载搜索筛选结果 CSV；
-- **成本 / 时延**：聚合 `outputs/traces/trace_*.jsonl`，展示成功率、p50/p95、token、按模型/工具统计与估算成本；只读 trace，不触发模型调用；
-- **运行窗口**（`coding_demo`）：任务图看板、任务详情、命令日志，可对 ready 任务执行 Agent；
-- **评测记录**：扫描 `outputs/agent`、`rag`、`public`、`bfcl`、`tau2`、`demo`、`structured`、`experiments`、`traces` 与成本报告的既有文件，按类型 / 文件名筛选并按更新时间倒序展示；JSON 显示 summary 指标与 results 逐条结果（通过/失败、类别、来源筛选，最多 200 行），Markdown 直接渲染，trace JSONL 可按 `trace_id` 选择并查看执行时间线；普通大小文件提供原始下载，超大 JSON 只预览 summary，避免把数百 MB 文件读入页面。
+- **运行窗口**（`coding_demo`）：任务图看板、任务详情、命令日志，可对 ready 任务执行 Agent。
 
-数据页签顶部会标注文件更新时间；报告、样例集与 trace 索引按 path + mtime 缓存，表格默认最多展示 200 行（下载 CSV 包含全部筛选结果），缺失或部分缺失时显示可执行的生成命令。评测记录页只读扫描 `outputs/`，不会重新运行评测或触发模型调用；超大 JSON 超过解析上限时退化为 summary 预览。优化循环页面每次加载只检查一次文件状态，不会自动轮询，后台评测写入后可手动刷新页面。
+数据页顶部会标注文件更新时间；报告、样例集与 trace 索引按 path + mtime 缓存，表格默认最多展示 200 行（下载 CSV 包含全部筛选结果），缺失或部分缺失时显示可执行的生成命令。测试用例详情新增“对象链路”：从案例直接定位场景、工具、中间件、评测函数与 trace 的 `module:line`；工具卡可跳转架构页，架构页工具表也可反查相关用例。另有“按对象浏览”，按工具聚合案例与通过率。评测记录页只读扫描 `outputs/`，不会重新运行评测或触发模型调用；超大 JSON 超过解析上限时退化为 summary 预览。优化循环页面每次加载只检查一次文件状态，不会自动轮询，后台评测写入后可手动刷新页面。
 
 ### 7. 统一 benchmark 样例集
 
@@ -402,15 +477,16 @@ python -m core.quality.runner agent --scenario mcp_demo
 
 控制台切到 `mcp_demo` 可以看架构、任务执行和 3 条测试用例。详见 [core/mcp/README.md](./core/mcp/README.md)。
 
-### 10. 运行时扩展：hooks / 任务图 / 文件 / 运行窗口
+### 10. 运行时扩展：hooks / Todo / 任务图 / 文件 / 运行窗口
 
 `core/runtime/` 是独立的运行时层，场景通过 `Scenario.runtime` 配置：
 
 - **Hooks**：`UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Stop` / `TaskStart` / `TaskComplete` / `TaskFail`；
+- **Todo**：`TodoListMiddleware` 自动注入 `write_todos`，多步骤任务先列计划再执行；
 - **任务图**：SQLite 持久化，`pending / in_progress / completed / failed` + `blocked_by` 依赖；
-- **文件工具**：`read_file` / `glob`；
+- **文件工具**：`read_file` / `write_file` / `edit_file` / `glob` / `grep`；写操作限制在工作区内，默认不覆盖已有文件，`edit_file` 要求 `old_text` 唯一；
 - **命令执行**：`run_command`，危险命令拒绝，输出写入 `data/runtime/run_window/`；
-- **运行窗口**：控制台 🖥 页签展示任务图、任务详情、命令日志，并可执行 ready 任务；
+- **运行窗口**：控制台「运行窗口」页展示任务图、任务详情、命令日志，并可执行 ready 任务；
 - **Subagent**：`subagent` 工具派生单层子 Agent，fresh context、工具白名单、超时/预算/步数，只返回摘要。
 
 示例场景：
@@ -428,9 +504,10 @@ python -m streamlit run app_agent.py   # 场景选 coding_demo
 python -m pytest
 ```
 
-当前 **34 passed**。覆盖任务图依赖 / 持久化、workspace 读取与危险命令拒绝、metrics 的
+当前 **76 passed**。覆盖任务图依赖 / 持久化、workspace 读取 / 写入 / 编辑 / grep 与受保护目录拒绝、workspace / research 场景工具、总路由 / 子场景入口、场景 / MCP / LangGraph 边界、planning policy、outcome 断言、trials 聚合、metrics 的
 `expected_tools_any`、subagent 子上下文 / 工具白名单、hook 触发与异常隔离、结构化输出
-schema、成本报告聚合、评测门禁、故障注入（超时 / 权限 / 参数 / 空检索 / 拒答），以及控制台 AppTest 启动。
+schema、成本报告聚合、评测门禁、故障注入（超时 / 权限 / 参数 / 空检索 / 拒答）、
+对象索引（工具 / 中间件源码定位）、完整报告选择，以及控制台 AppTest 启动与逐视图渲染。
 
 ### 验证运行
 
@@ -483,8 +560,22 @@ agent-harness/
 │   │
 │   ├── scenarios/                     #   L3 组合根
 │   │   ├── registry.py
+│   │   ├── router/
+│   │   │   ├── scenario.py            #     总路由：route_to_* 分流到四个场景
+│   │   │   ├── tools.py               #     目标场景 FrameworkAgent 调用
+│   │   │   └── cases.jsonl
+│   │   ├── workspace_assistant/
+│   │   │   ├── scenario.py            #     笔记 / 记忆 / 翻译 / 总结
+│   │   │   ├── tools.py               #     NoteStore / MemoryStore
+│   │   │   ├── graph.py               #     LangGraph：document_qa / study_notes / cross_lingual / content_draft
+│   │   │   └── cases.jsonl
+│   │   ├── research_assistant/
+│   │   │   ├── scenario.py            #     资料检索 / 只读 fan-out / 报告
+│   │   │   ├── tools.py               #     SourceStore
+│   │   │   ├── graph.py               #     LangGraph：deep_research
+│   │   │   └── cases.jsonl
 │   │   ├── coding_demo/
-│   │   │   ├── scenario.py            #     文件 / 命令 / 任务图 / hooks / subagent
+│   │   │   ├── scenario.py            #     读写 / 编辑 / 搜索 / 命令 / Todo / 任务图 / hooks / subagent
 │   │   │   └── cases.jsonl
 │   │   ├── general/
 │   │   │   ├── scenario.py            #     白板场景：无业务工具
@@ -562,6 +653,8 @@ agent-harness/
 ├── data/                              # 数据
 │   ├── knowledge/                     #   知识库文档
 │   ├── external/                      #   外部使用记录 CSV
+│   ├── workspace_assistant/notes/     #   办公 / 学习种子笔记
+│   ├── research_assistant/sources/    #   研究资料
 │   ├── models/                        #   本地 BGE 权重（gitignore）
 │   ├── runtime/                       #   Chroma / md5 / sqlite（gitignore）
 │   ├── evals/
@@ -692,7 +785,9 @@ python -m core.experiments.trigger_rate
 # → outputs/experiments/
 ```
 
-当前结果：成本 / 时延覆盖 3203 条 run（成功率 98.3%，p95 8.54s，约 ¥0.015/run，示例价）；
+当前结果：成本 / 时延历史快照 3203 条 run，成功率 98.3%，p95 8.54s，约 ¥0.015/run
+（示例价）；最新本地聚合 3495 条 run / 96.7% / p95 9.10s，包含故意失败的负向用例与
+实验，不是产品成功率，以 `outputs/cost_report.json` 为准；
 结构化输出 5/5、schema 5/5；门禁 6 项全部 PASS；触发率实验 natural / routed 均为 0/10。
 详见 [docs/benchmarks/p0-results.md](./docs/benchmarks/p0-results.md)。
 
