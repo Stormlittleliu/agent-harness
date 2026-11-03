@@ -1,0 +1,26 @@
+{"id":"sb-rag-001","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"fault","question":"机器人开机没反应怎么办？","expected_sources":["故障排除.txt"]}
+{"id":"sb-rag-002","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"fault","question":"机器人连不上WiFi怎么排查？","expected_sources":["故障排除.txt"]}
+{"id":"sb-rag-003","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"fault","question":"边刷不转是什么原因？","expected_sources":["故障排除.txt"]}
+{"id":"sb-rag-004","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"fault","question":"机器人找不到充电座、回充失败怎么办？","expected_sources":["故障排除.txt"]}
+{"id":"sb-rag-005","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"fault","question":"主刷被异物卡住不转了怎么处理？","expected_sources":["故障排除.txt"]}
+{"id":"sb-rag-006","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"maintenance","question":"滤网多久需要更换？","expected_sources":["维护保养.txt"]}
+{"id":"sb-rag-007","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"maintenance","question":"拖布用完应该怎么清洗和晾干？","expected_sources":["维护保养.txt"]}
+{"id":"sb-rag-008","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"purchase","question":"小户型适合选什么样的扫地机器人？","expected_sources":["选购指南.txt"]}
+{"id":"sb-rag-009","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"purchase","question":"扫地机器人吸力选多大合适？","expected_sources":["选购指南.txt"]}
+{"id":"sb-rag-010","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"purchase","question":"扫地机器人续航一般要多久才够用？","expected_sources":["选购指南.txt"]}
+{"id":"sb-single-001","kind":"single_turn","cell":"单轮×文本","scenario":"robot_vacuum","question":"机器人开机没反应怎么办？","expected_points":["电源适配器"],"expected_tools":["rag_summarize"],"should_refuse":false}
+{"id":"sb-single-002","kind":"single_turn","cell":"单轮×文本","scenario":"robot_vacuum","question":"机器人连不上WiFi怎么办？","expected_points":["2.4G"],"expected_tools":["rag_summarize"],"should_refuse":false}
+{"id":"sb-single-003","kind":"single_turn","cell":"单轮×文本","scenario":"robot_vacuum","question":"你们支持七天无理由退货吗？","expected_points":[],"expected_tools":[],"should_refuse":true}
+{"id":"sb-single-004","kind":"single_turn","cell":"单轮×结构化","scenario":"robot_vacuum","question":"现在几月份？","expected_points":["2025"],"expected_tools":["get_current_month"],"should_refuse":false}
+{"id":"sb-single-005","kind":"single_turn","cell":"单轮×结构化","scenario":"robot_vacuum","question":"深圳天气怎么样？","expected_points":["晴天"],"expected_tools":["get_weather"],"should_refuse":false}
+{"id":"sb-single-006","kind":"single_turn","cell":"单轮×结构化","scenario":"robot_vacuum","question":"我的用户ID是多少？","expected_points":[],"expected_regex":["10(0[1-9]|10)"],"expected_tools":["get_user_id"],"should_refuse":false}
+{"id":"sb-single-007","kind":"single_turn","cell":"单轮×多工具","scenario":"robot_vacuum","question":"我所在城市今天适合用扫地机器人吗？","expected_points":["晴天"],"expected_tools":["get_user_location","get_weather"],"should_refuse":false}
+{"id":"sb-single-008","kind":"single_turn","cell":"单轮×多工具","scenario":"robot_vacuum","question":"查一下用户 1001 这个月的使用记录。","expected_points":["1001"],"expected_tools":["fetch_external_data"],"should_refuse":false}
+{"id":"sb-single-009","kind":"single_turn","cell":"单轮×多工具","scenario":"robot_vacuum","question":"给我生成我的使用报告。","expected_points":["报告"],"expected_tools":["get_user_id","get_current_month","fetch_external_data"],"should_refuse":false}
+{"id":"sb-single-010","kind":"single_turn","cell":"单轮×检索","scenario":"workspace_assistant","question":"根据笔记，Agent 评测应该关注哪些指标？","expected_points":["pass^k"],"expected_tools":["search_notes"],"should_refuse":false}
+{"id":"sb-multi-001","kind":"multi_turn","cell":"多轮×文本","scenario":"robot_vacuum","turns":["扫地机器人回充失败怎么办？","那充电触点具体要怎么清理？"],"expected_points":["充电触点"],"expected_tools":["rag_summarize"],"should_refuse":false}
+{"id":"sb-multi-002","kind":"multi_turn","cell":"多轮×文本","scenario":"robot_vacuum","turns":["滤网多久换一次？","那边刷呢？"],"expected_points":["边刷"],"expected_tools":["rag_summarize"],"should_refuse":false}
+{"id":"sb-multi-003","kind":"multi_turn","cell":"多轮×文本","scenario":"robot_vacuum","turns":["我的机器人连不上 WiFi。","我确认连的是 2.4G 网络，还是连不上。"],"expected_points":["重启"],"expected_tools":["rag_summarize"],"should_refuse":false}
+{"id":"sb-multi-004","kind":"multi_turn","cell":"多轮×报告","scenario":"robot_vacuum","turns":["帮我看看用户 1001 这个月用了多少次。","把这些整理成一份简短的使用报告。"],"expected_points":["报告"],"expected_tools":["fetch_external_data"],"should_refuse":false}
+{"id":"sb-multi-005","kind":"multi_turn","cell":"多轮×文本","scenario":"workspace_assistant","turns":["请记住：我喜欢简洁的回答。","根据笔记，Agent 评测应该关注哪些指标？"],"expected_points":["pass^k"],"expected_tools":["search_notes"],"should_refuse":false}
+{"id":"sb-multi-006","kind":"multi_turn","cell":"多轮×文本","scenario":"workspace_assistant","turns":["把「Agent 评测要看 outcome」写成一条笔记。","再把它读出来给我看看。"],"expected_points":["outcome"],"expected_tools":["write_note"],"should_refuse":false}
