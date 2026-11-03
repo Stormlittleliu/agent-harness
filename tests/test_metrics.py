@@ -22,3 +22,12 @@ def test_refusal_case_passes_on_marker():
         "should_refuse": True,
     }
     assert score_case(case, "没有相关信息，无法回答", [])["passed"] is True
+
+
+def test_refusal_case_accepts_query_not_found():
+    case = {
+        "question": "return policy",
+        "expected_points": [],
+        "should_refuse": True,
+    }
+    assert score_case(case, "抱歉，暂时查询不到相关的退货政策", [])["passed"] is True

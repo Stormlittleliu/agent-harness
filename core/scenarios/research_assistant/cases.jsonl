@@ -1,0 +1,3 @@
+{"id":"research-list-001","category":"info_management","question":"列出当前有哪些研究资料。","expected_points":["source_a"],"expected_tools":["list_sources"],"should_refuse":false,"notes":"资料列表"}
+{"id":"research-compare-001","category":"research","question":"对比三份资料对 Agent 评测的主要观点，并给出来源。","expected_points":["outcome","pass^k"],"expected_tools":[],"expected_tools_any":["subagent","search_sources","read_source"],"should_refuse":false,"notes":"多源对比 + 引用；直接 read_source 也是合法的多源读取方式"}
+{"id":"research-report-001","category":"content","question":"根据三份资料写一份简短的对比报告并保存。","expected_points":["报告"],"expected_tools":["write_report"],"should_refuse":false,"notes":"汇总报告写入报告目录"}

@@ -1,8 +1,9 @@
 # 当前评测结果总览
 
-> 更新时间：2026-10-31
+> 更新时间：2026-11-02（新增 3-trial 行为 / outcome / planning policy；旧公开基准仍为 2026-10-31 快照）
 > 用途：把散落在 `outputs/` 的结果集中到一页，作为面试/复盘口径。
 > 原则：所有公开 benchmark 都是抽样 + 简化/替代评分，不冒充官方榜单。
+> **本页不是唯一口径**：面试主结果页见 `docs/interview/jd-results-2026-11-04.md`；本页旧数字（3203、11/13、RAG 42）保留为历史快照。
 
 ## 1. 统一 Benchmark 样例集
 
@@ -178,7 +179,7 @@ python -m core.quality.runner agent --scenario mcp_demo
 `coding_demo` 场景补了 Harness 缺失的运行时能力：
 
 ```text
-read_file / glob / run_command
+read_file / write_file / edit_file / glob / grep / run_command
 create_task / list_tasks / get_task / claim_task / complete_task / fail_task
 hooks: UserPromptSubmit / PreToolUse / PostToolUse / Stop / Task*
 SQLite 任务图 + blocked_by 依赖 + TaskRunner
@@ -188,16 +189,18 @@ SQLite 任务图 + blocked_by 依赖 + TaskRunner
 用例：
 
 ```text
-coding-read-001      读 README.md        pass
-coding-run-001       echo hello          pass
-coding-task-001      创建任务             pass
-coding-task-002      列出任务             pass
-coding-subagent-001  子 Agent 检查文件     pass
-5/5 pass
+coding-read-001      读 README.md            pass
+coding-run-001       echo hello              pass
+coding-task-001      创建任务                 pass
+coding-task-002      列出任务                 pass
+coding-subagent-001  子 Agent 检查文件         pass
+coding-grep-001      搜索 hello               pass
+coding-write-001     写并验证 99 乘法表        pass
+7/7 pass
 ```
 
 Subagent：父 Agent 通过 `subagent` 工具派生单层子 Agent，子 Agent 使用 fresh context 和
-`read_file / glob / run_command` 白名单，只返回摘要。
+`read_file / glob / grep / run_command` 白名单，只返回摘要。
 
 任务图单元测试也通过：依赖阻塞、完成后解锁、TaskRunner 认领/完成、危险命令拒绝、hooks 拦截。
 
@@ -206,7 +209,7 @@ Subagent：父 Agent 通过 `subagent` 工具派生单层子 Agent，子 Agent �
 详见 [p0-results.md](./p0-results.md)。
 
 ```text
-成本 / 时延：3203 条 run，成功率 98.3%，p50 2.50s，p95 8.54s，
+成本 / 时延（历史快照）：3203 条 run，成功率 98.3%，p50 2.50s，p95 8.54s，
             20.62M token，按示例单价估算 ¥47.64（约 ¥0.015/run）
 结构化输出：5/5，schema 合法 5/5，平均 3.0 条证据
 评测门禁：BFCL 90/79、MultiHop 55.56%、coding 100%、structured 100% → PASS
@@ -217,6 +220,77 @@ Subagent：父 Agent 通过 `subagent` 工具派生单层子 Agent，子 Agent �
 **结论**：结构化输出、成本时延、门禁已经补上；多 Agent / 任务规划仍是
 “机制可用、行为不可靠”，下一步应做 planner/routing，而不是继续堆工具。
 
+### 4.3 新场景 3-trial 行为评测（2026-11-02）
+
+| 场景 | 用例 | trials | pass^k | mean | 失败说明 |
+|:---|:---:|:---:|:---:|:---:|:---|
+| workspace_assistant | 5 | 3 | 5/5 | 1.00 | 无 |
+| research_assistant | 3 | 3 | 2/3 | 0.78 | `research-compare-001`：模型有时直接 `read_source`，未走 subagent / search_sources |
+| router | 4 | 3 | 3/4 | 0.92 | `router-research-001`：路由目标正确，但最终回答未覆盖期望词 |
+| coding_demo | 7 | 1 | 7/7 | 1.00 | 无（本轮 1 trial） |
+
+说明：
+
+- 这是 3-trial 行为回归，不是 5–10 trial 统计结论；失败保留，不掩盖。
+- `research-report-001` 三次都使用 3 个 subagent 并行并写报告；`research-compare-001`
+  三次中有一次走 subagent/search_sources，两次直接读资料，说明“是否会委派”仍是行为层缺口。
+- `router` 行为层 3/4 是最终回答措辞问题；outcome 层路由目标 4/4（见 4.4），这是
+  transcript vs outcome 的典型对照。
+- `coding_demo` 现在有 `read_file / write_file / edit_file / glob / grep / run_command`
+  + Todo + 任务图 + subagent，共 7 条行为用例。
+- `workspace_assistant` 有 4 条 LangGraph 工作流，`research_assistant` 有 1 条
+  `deep_research` 工作流，`router` 是对话式场景级路由，不合并目标场景工具。
+
+### 4.4 Outcome 评测（12 条用例 / 13 个断言，2026-11-02）
+
+断言直接检查运行后的环境状态：文件、SQLite、任务图、路由 trace。
+
+| 场景 | 用例 | 断言类型 | 1-trial | 3-trial pass^k |
+|:---|:---:|:---|:---:|:---:|
+| workspace_assistant | 3 | 文件写入 / SQLite 偏好 / 学习笔记 | 3/3 | 3/3 |
+| research_assistant | 3 | 报告文件 / 多源引用 / deep_research 工作流 | 3/3 | 3/3 |
+| coding_demo | 2 | 脚本 + 运行日志 / 任务图 completed | 2/2 | 2/2 |
+| router | 4 | `target` + `target_trace_id` 存在 | 4/4 | 4/4 |
+| **合计** | **12** |  | **12/12** | **12/12** |
+
+复现：
+
+```bash
+python -m core.quality.runner outcome --all --trials 3
+```
+
+口径：1-trial 只证明断言链路可运行；3-trial pass^k 才是可引用数字。失败会保留具体
+check 原因（文件不存在 / 内容不满足 / SQLite 行不存在 / 任务状态不对 / router target 错）。
+
+### 4.5 Planning Policy A/B（2026-11-02）
+
+12 条带标签的路由 prompt，baseline = 模型自主路由，policy = 确定性注入 `route_to_*`，
+不命中/平局 abstain。
+
+| 变体 | 正确 | 准确率 | abstain | 平均模型调用 | 平均 token | 平均时延 |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|
+| baseline | 11/12 | 91.7% | — | 1.92 | 2221 | 9.6s |
+| policy | 12/12 | 100% | 1/12 | 1.08 | 1567 | 19.9s |
+
+说明：
+
+- baseline 失败的是“请记住：我喜欢简洁的回答…”：模型没有路由，直接回答。
+- policy 唯一 abstain 的是英文 “Summarize the product brief…”：规则不唯一命中，交回模型后
+  仍正确路由到 workspace。这是 abstain 的设计意图，不是失败。
+- 平均时延受目标场景任务长度影响（research 一条 90s+），不能用它证明 policy 更快；
+  可证明的是准确率 +1 且 router 自身平均模型调用 1.92 → 1.08。
+- 12 条小样本行为实验，不是统计显著结论。
+
+触发率实验：
+
+| 变体 | subagent 触发 | task 触发 | eligible | eligible 触发 |
+|:---|:---:|:---:|:---:|:---:|
+| natural | 0/10 | 0/10 | — | — |
+| routed | 0/10 | 0/10 | — | — |
+| policy | 3/10 | 0/10 | 3/10 | 3/3 |
+
+口径：不是 10/10 全委派，而是 3/10 该委派的委派、7/10 不该委派的不委派。
+
 ## 5. 前端控制台
 
 入口：
@@ -225,11 +299,13 @@ Subagent：父 Agent 通过 `subagent` 工具派生单层子 Agent，子 Agent �
 python -m streamlit run app_agent.py
 ```
 
-页签：
+视图（侧边栏单视图渲染；总览为工作台入口）：
 
 ```text
 架构 / 任务执行 / 测试用例 / 公开基准 / 优化循环 / Benchmark 目录 / 成本时延 / 评测记录
 ```
+
+测试用例详情提供“对象链路”：案例 → 场景 / 工具 / 中间件 / 评测函数 / trace，均带 `module:line`；工具卡可跳转架构页，架构页可反查相关用例。
 
 - 成本时延：成功率、p50/p95、token、估算成本、按模型/工具/最近 run 展示；
 - 优化循环：5 轮趋势、pass^k/mean、A/B 对比、失败类型、trace 时间线、搜索/下载；
@@ -244,7 +320,8 @@ python -m streamlit run app_agent.py
 - **MCP**：Memory + Fetch（stdio）✅
 - **Runtime**：hooks / SQLite 任务图 / read_file / run_command / 运行窗口 ✅
 - **P0 追加**：成本/时延报告 ✅、结构化输出 5/5 ✅、评测门禁 + 故障注入 ✅、触发率实验 ✅
-- **待做**：后台任务 / 定时调度、rerank、τ² adapter、5 trial + CI、outcome 断言、MCP HTTP/SSE/auth
+- **2026-11-02 新增**：新场景 3-trial 行为回归 ✅、12 条 outcome 用例 / 13 个断言 ✅、确定性 planning policy（12/12）✅
+- **待做**：后台任务 / 定时调度、rerank、τ² adapter、5–10 trial + CI、MCP HTTP/SSE/auth
 
 ## 7. 文件位置
 

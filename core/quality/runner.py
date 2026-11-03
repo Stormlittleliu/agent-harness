@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from core.quality import agent_eval, bfcl_simplified as bfcl, failures, public_sample as public, rag_eval, rag_judge, structured_eval  # noqa: E402
+from core.quality import agent_eval, bfcl_simplified as bfcl, failures, outcome_eval, public_sample as public, rag_eval, rag_judge, structured_eval  # noqa: E402
 from core.quality.paths import RAG_OUT  # noqa: E402
 
 
@@ -33,7 +33,22 @@ def _agent(args):
     if args.interactive:
         agent_eval.interactive(args.scenario)
         return
-    agent_eval.run(args.scenario, case_id=args.case, limit=args.limit, judge=args.judge)
+    agent_eval.run(
+        args.scenario,
+        case_id=args.case,
+        limit=args.limit,
+        judge=args.judge,
+        trials=args.trials,
+    )
+
+
+def _outcome(args):
+    outcome_eval.run(
+        scenario_name=args.scenario,
+        trials=args.trials,
+        case_id=args.case,
+        all_scenarios=args.all,
+    )
 
 
 def _rag(args):
@@ -107,10 +122,18 @@ def build_parser():
     p_agent.add_argument("--scenario", default="robot_vacuum")
     p_agent.add_argument("--case")
     p_agent.add_argument("--limit", type=int, default=0)
+    p_agent.add_argument("--trials", type=int, default=1, help="每个用例重复次数；pass^k = 全部 trial 通过")
     p_agent.add_argument("--judge", action="store_true")
     p_agent.add_argument("--list", action="store_true")
     p_agent.add_argument("--interactive", action="store_true")
     p_agent.set_defaults(func=_agent)
+
+    p_outcome = sub.add_parser("outcome", help="Outcome 层：文件 / SQLite / 任务图 / 路由 trace 断言")
+    p_outcome.add_argument("--scenario", default="workspace_assistant")
+    p_outcome.add_argument("--all", action="store_true", help="跑全部 outcome 场景")
+    p_outcome.add_argument("--case")
+    p_outcome.add_argument("--trials", type=int, default=3)
+    p_outcome.set_defaults(func=_outcome)
 
     p_rag = sub.add_parser("rag", help="能力层：invoke_tool 跑 RAG 检索/生成")
     rag_sub = p_rag.add_subparsers(dest="rag_task", required=True)

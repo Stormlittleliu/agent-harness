@@ -1,5 +1,9 @@
 # 简历项目叙事（半周版）
 
+> **历史版本（2026-10-31）**：数字和叙事已过时。2026-11-02 起以
+> `docs/interview/interview-pack-2026-11-04.md`（简历文案）和
+> `docs/interview/jd-results-2026-11-04.md`（数字口径）为准。
+
 > **目标**：用 3–4 天，把现有项目整理成一段 **2 分钟能讲清、经得起追问** 的简历叙事。
 > **项目**：Agent Harness（扫地/扫拖机器人客服场景验证）
 > **当前状态**：13 条行为用例 11 通过；RAG 评测集 42 条；DeepSeek `deepseek-chat` + 本地 BGE；HITL / Memory / LangGraph 工作流已跑通。

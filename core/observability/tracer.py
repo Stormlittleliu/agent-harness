@@ -94,7 +94,13 @@ class TraceCallbackHandler(BaseCallbackHandler):
         self._model_start[str(run_id)] = time.time()
         model = self._model_name(serialized, kwargs)
         self._last_model = model
-        self._write("model_start", run_id=str(run_id), model=model, messages=len(messages or []))
+        self._write(
+            "model_start",
+            run_id=str(run_id),
+            parent_run_id=str(parent_run_id) if parent_run_id else None,
+            model=model,
+            messages=len(messages or []),
+        )
 
     def on_llm_end(self, response, *, run_id, parent_run_id=None, **kwargs):
         start = self._model_start.pop(str(run_id), None)
@@ -115,6 +121,7 @@ class TraceCallbackHandler(BaseCallbackHandler):
         self._write(
             "model_end",
             run_id=str(run_id),
+            parent_run_id=str(parent_run_id) if parent_run_id else None,
             model=model,
             latency_ms=latency_ms,
             prompt_tokens=prompt,
@@ -124,8 +131,16 @@ class TraceCallbackHandler(BaseCallbackHandler):
         )
 
     def on_llm_error(self, error, *, run_id, parent_run_id=None, **kwargs):
-        self._model_start.pop(str(run_id), None)
-        self._write("model_error", run_id=str(run_id), error=str(error))
+        start = self._model_start.pop(str(run_id), None)
+        latency_ms = int((time.time() - start) * 1000) if start else None
+        self._write(
+            "model_error",
+            run_id=str(run_id),
+            parent_run_id=str(parent_run_id) if parent_run_id else None,
+            model=self._last_model,
+            latency_ms=latency_ms,
+            error=str(error),
+        )
 
     # ===================== 工具事件 =====================
     def on_tool_start(self, serialized, input_str, *, run_id, parent_run_id=None, **kwargs):
@@ -133,19 +148,40 @@ class TraceCallbackHandler(BaseCallbackHandler):
         name = (serialized or {}).get("name", "unknown")
         self._tool_names[str(run_id)] = name
         self._tool_start[str(run_id)] = time.time()
-        self._write("tool_start", run_id=str(run_id), tool=name, input=input_str)
+        self._write(
+            "tool_start",
+            run_id=str(run_id),
+            parent_run_id=str(parent_run_id) if parent_run_id else None,
+            tool=name,
+            input=input_str,
+        )
 
     def on_tool_end(self, output, *, run_id, parent_run_id=None, **kwargs):
         name = self._tool_names.pop(str(run_id), "unknown")
         start = self._tool_start.pop(str(run_id), None)
         latency_ms = int((time.time() - start) * 1000) if start else None
         status = getattr(output, "status", "success") or "success"
-        self._write("tool_end", run_id=str(run_id), tool=name, latency_ms=latency_ms, status=status)
+        self._write(
+            "tool_end",
+            run_id=str(run_id),
+            parent_run_id=str(parent_run_id) if parent_run_id else None,
+            tool=name,
+            latency_ms=latency_ms,
+            status=status,
+        )
 
     def on_tool_error(self, error, *, run_id, parent_run_id=None, **kwargs):
         name = self._tool_names.pop(str(run_id), "unknown")
-        self._tool_start.pop(str(run_id), None)
-        self._write("tool_error", run_id=str(run_id), tool=name, error=str(error))
+        start = self._tool_start.pop(str(run_id), None)
+        latency_ms = int((time.time() - start) * 1000) if start else None
+        self._write(
+            "tool_error",
+            run_id=str(run_id),
+            parent_run_id=str(parent_run_id) if parent_run_id else None,
+            tool=name,
+            latency_ms=latency_ms,
+            error=str(error),
+        )
 
     # ===================== run 结束 =====================
     def on_chain_end(self, outputs, *, run_id, parent_run_id=None, **kwargs):

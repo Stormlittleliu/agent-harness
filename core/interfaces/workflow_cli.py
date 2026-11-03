@@ -14,10 +14,10 @@ from core.scenarios.registry import get_scenario  # noqa: E402
 
 
 def _print_result(state: dict) -> None:
-    for key in ("answer", "verified", "report"):
+    for key in ("answer", "verified", "report", "notes", "summary", "draft"):
         if state.get(key):
             print(f"\n[{key}]\n{state[key]}")
-    if not any(state.get(key) for key in ("answer", "verified", "report")):
+    if not any(state.get(key) for key in ("answer", "verified", "report", "notes", "summary", "draft")):
         print(json.dumps(state, ensure_ascii=False, indent=2))
 
 

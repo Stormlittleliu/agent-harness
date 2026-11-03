@@ -1,0 +1,5 @@
+{"id":"workspace-qa-001","category":"document_qa","question":"根据笔记，Agent 评测应该关注哪些指标？","expected_points":["pass^k","成本","时延"],"expected_tools":["search_notes"],"should_refuse":false,"notes":"检索笔记并引用来源"}
+{"id":"workspace-cross-001","category":"cross_lingual","question":"Summarize the product brief in Chinese, and tell me which user scenarios it covers.","expected_points":["办公","学习","内容"],"expected_tools":["search_notes"],"should_refuse":false,"notes":"跨语言检索 + 中文回答"}
+{"id":"workspace-memory-001","category":"memory","question":"请记住：我喜欢简洁的回答，并用要点列出。然后告诉我你记住了什么。","expected_points":["简洁"],"expected_tools":["remember"],"should_refuse":false,"notes":"长期偏好写入 + 回读"}
+{"id":"workspace-note-001","category":"content","question":"把“Agent 评测要看 outcome，而不是只看退出码”写成一条笔记。","expected_points":["笔记"],"expected_tools":["write_note"],"should_refuse":false,"notes":"内容创作写入笔记"}
+{"id":"workspace-translate-001","category":"translate","question":"把 'The agent harness provides tools and evaluation' 翻译成中文。","expected_points":["工具","评估"],"expected_tools":["translate"],"should_refuse":false,"notes":"翻译工具；evaluation 译为“评估/评测”均可"}

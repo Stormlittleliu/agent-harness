@@ -1,0 +1,4 @@
+{"id":"router-coding-001","category":"routing","question":"帮我写一个输出 99 乘法表的 Python 脚本并运行验证。","expected_points":["9x9=81"],"expected_tools":["route_to_coding"],"should_refuse":false,"notes":"路由到 coding_demo"}
+{"id":"router-workspace-001","category":"routing","question":"根据笔记帮我整理一份 Agent 评测的学习计划。","expected_points":["评测"],"expected_tools":["route_to_workspace"],"should_refuse":false,"notes":"路由到 workspace_assistant"}
+{"id":"router-robot-001","category":"routing","question":"扫地机器人回充失败怎么办？","expected_points":["回充"],"expected_tools":["route_to_robot"],"should_refuse":false,"notes":"路由到 robot_vacuum"}
+{"id":"router-research-001","category":"routing","question":"对比三份资料，告诉我它们对 Agent 评测的主要差异。","expected_points":["outcome","pass^k"],"expected_tools":["route_to_research"],"should_refuse":false,"notes":"路由到 research_assistant；回答覆盖 outcome / pass^k 两个评测要点即可，来源 id 可能被改写为“资料 A”"}

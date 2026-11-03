@@ -55,6 +55,12 @@ def _load_index(files: tuple[tuple[str, float], ...]) -> dict[str, list[dict]]:
     return index
 
 
+def get_trace_events(trace_id: str | None) -> tuple[list[dict], str | None]:
+    """返回 ``(events, issue)``；issue 为空表示读取成功。"""
+    events, issue = _load_trace(trace_id)
+    return events or [], issue
+
+
 def _load_trace(trace_id: str | None) -> tuple[list[dict] | None, str | None]:
     """返回 ``(events, issue)``；issue 为空表示读取成功。"""
     if not trace_id:

@@ -23,6 +23,16 @@ from core.interfaces.dashboard.common import (
     load_text,
     short_text,
 )
+from core.interfaces.dashboard.layout import (
+    Kpi,
+    compact_table,
+    empty_state,
+    filter_bar,
+    kpi_row,
+    master_detail,
+    page_header,
+    section,
+)
 from core.interfaces.dashboard.traces import _timeline_rows
 
 OUTPUTS = ROOT / "outputs"
@@ -42,6 +52,7 @@ TYPE_LABELS = {
     "tau2": "τ²-bench",
     "demo": "优化循环 / 实验",
     "structured": "结构化输出",
+    "outcome": "Outcome 评测",
     "experiments": "行为实验",
     "cost": "成本 / 时延",
     "trace": "Trace",
@@ -62,8 +73,14 @@ FILE_PATTERNS = (
     ("demo", "demo*", "report.md"),
     ("structured", "structured", "structured_test_*.json"),
     ("structured", "structured", "structured_test_*.md"),
+    ("outcome", "outcome", "outcome_test_*.json"),
+    ("outcome", "outcome", "outcome_test_*.md"),
+    ("outcome", "outcome", "outcome_all_*.json"),
+    ("outcome", "outcome", "outcome_all_*.md"),
     ("experiments", "experiments", "trigger_rate_*.json"),
     ("experiments", "experiments", "trigger_rate_*.md"),
+    ("experiments", "experiments", "planner_eval_*.json"),
+    ("experiments", "experiments", "planner_eval_*.md"),
     ("cost", "", "cost_report.json"),
     ("cost", "", "cost_report.md"),
     ("trace", "traces", "trace_*.jsonl"),
@@ -412,7 +429,7 @@ def _render_summary(summary: dict) -> None:
         return
     if len(rows) > MAX_ROWS:
         st.caption(f"summary 共 {len(rows)} 项；仅展示前 {MAX_ROWS} 项。")
-    st.dataframe(rows[:MAX_ROWS], use_container_width=True, hide_index=True)
+    st.dataframe(rows[:MAX_ROWS], use_container_width=True, hide_index=True, height=240)
 
 
 def _extract_results(data: Any) -> tuple[str | None, list[dict]]:
@@ -558,7 +575,7 @@ def _render_results(rows: list[dict], path_str: str) -> None:
         {key: _result_cell(row.get(key), key) for key in keys}
         for row in filtered[:MAX_ROWS]
     ]
-    st.dataframe(display_rows, use_container_width=True, hide_index=True)
+    st.dataframe(display_rows, use_container_width=True, hide_index=True, height=300)
 
 
 @st.cache_data(show_spinner=False)
@@ -673,7 +690,8 @@ def _render_markdown_file(row: dict) -> None:
     if not text.strip():
         st.info("Markdown 文件为空。")
         return
-    st.markdown(text)
+    with st.container(height=520):
+        st.markdown(text)
     _render_download(path, row["size"], row["mtime"], "下载 Markdown", "text/markdown")
 
 
@@ -748,16 +766,24 @@ def _render_selected(row: dict) -> None:
         st.info(f"暂不支持预览该文件类型：`{path.suffix or '无扩展名'}`。")
 
 
-def render_history() -> None:
-    st.caption(
-        "只读取 outputs 下已有评测记录，不重新运行评测，也不会触发模型调用；"
-        "文件按 path + mtime 缓存，超大 JSON 仅加载 summary。"
-    )
+def render_history(embedded: bool = False, scenario_name: str | None = None) -> None:
+    """评测记录；embedded=True 时嵌入评测页，scenario_name 过滤到该场景报告。"""
     files = _discover_files()
+    if scenario_name:
+        files = [
+            row for row in files
+            if row["kind"] in {"agent", "outcome"} and scenario_name in row["name"]
+        ]
     if not files:
-        st.info(
-            "未找到评测记录。生成报告后可回到此页刷新；"
-            "支持 outputs/agent、rag、public、bfcl、tau2、demo 与 traces。"
+        if not embedded:
+            page_header(
+                "评测记录",
+                "只读取 outputs 下已有评测记录，不重新运行评测，也不会触发模型调用。",
+            )
+        empty_state(
+            f"场景 `{scenario_name}` 还没有行为/outcome 报告。"
+            if scenario_name
+            else "未找到评测记录。生成报告后可回到此页刷新；支持 outputs/agent、rag、public、bfcl、tau2、demo 与 traces。"
         )
         return
 
@@ -766,7 +792,17 @@ def render_history() -> None:
         for kind in TYPE_ORDER
         if any(row["kind"] == kind for row in files)
     ]
-    col_type, col_search = st.columns([1, 2.2])
+    latest = max(files, key=lambda row: row["mtime"])
+    meta = f"{len(files)} 个文件 · 最新 {format_mtime(latest['mtime'])}"
+    if not embedded:
+        page_header(
+            "评测记录",
+            "只读取 outputs 下已有评测记录，不重新运行评测，也不会触发模型调用；超大 JSON 仅加载 summary。",
+            meta=meta,
+        )
+    else:
+        st.caption(meta + (" · 当前场景的 Agent / Outcome 报告" if scenario_name else ""))
+    col_type, col_search = filter_bar((1, 2), gap="small")
     selected_type = col_type.selectbox(
         "类型",
         ["全部"] + present_labels,
@@ -786,43 +822,62 @@ def render_history() -> None:
             continue
         filtered.append(row)
 
-    st.caption(f"共 {len(filtered)} / {len(files)} 个文件；按更新时间倒序。")
+    kpi_row(
+        [
+            Kpi("文件", str(len(filtered))),
+            Kpi("类型", str(len({row["kind"] for row in filtered}))),
+            Kpi("最新更新", format_mtime(max((row["mtime"] for row in filtered), default=None))),
+        ],
+        columns=3,
+    )
     if not filtered:
-        st.info("没有匹配的文件。")
+        empty_state("没有匹配的文件。")
         return
 
-    table_rows = []
-    for row in filtered[:MAX_ROWS]:
-        summary, _error = _summary_meta(row["path_str"], row["mtime"], row["size"])
-        table_rows.append({
-            "类型": row["type_label"],
-            "文件": row["relpath"],
-            "更新时间": format_mtime(row["mtime"]),
-            "大小": _format_size(row["size"]),
-            "摘要": summary,
-        })
-    if len(filtered) > MAX_ROWS:
-        st.caption(f"仅展示前 {MAX_ROWS} 个文件。")
-    st.dataframe(table_rows, use_container_width=True, hide_index=True)
-
-    by_option = {
-        f"{row['type_label']} · {row['relpath']}": row
+    table_rows = [
+        {"类型": row["type_label"], "文件": row["name"]}
         for row in filtered
-    }
-    options = list(by_option)
-    if st.session_state.get("history-file") not in options:
-        st.session_state.pop("history-file", None)
-    selected_option = st.selectbox("选择文件", options, key="history-file")
-    row = by_option[selected_option]
+    ]
+
+    left, right = master_detail(0.32)
+    with left:
+        section("文件列表", "点击一行在右侧预览；按更新时间倒序。")
+        signature = (selected_type, query, len(filtered))
+        if st.session_state.get("history-filter-signature") != signature:
+            st.session_state["history-filter-signature"] = signature
+            st.session_state["history-table-nonce"] = (
+                st.session_state.get("history-table-nonce", 0) + 1
+            )
+        table_key = f"history-file-table-{st.session_state.get('history-table-nonce', 0)}"
+        selected_indices = compact_table(
+            table_rows,
+            height=420,
+            key=table_key,
+            selectable=True,
+            column_order=["类型", "文件"],
+            column_config={
+                "类型": st.column_config.TextColumn(width="small"),
+                "文件": st.column_config.TextColumn(width="large"),
+            },
+        )
+        selected_relpath = st.session_state.get("history-selected-file")
+        if selected_indices and 0 <= selected_indices[0] < len(filtered):
+            selected_relpath = filtered[selected_indices[0]]["relpath"]
+        valid = {row["relpath"] for row in filtered}
+        if selected_relpath not in valid:
+            selected_relpath = filtered[0]["relpath"]
+        st.session_state["history-selected-file"] = selected_relpath
+
+    row = next((item for item in filtered if item["relpath"] == selected_relpath), filtered[0])
     stamp = file_mtime(row["path"]) or row["mtime"]
     try:
         size = row["path"].stat().st_size
     except OSError:
         size = row["size"]
 
-    st.divider()
-    st.subheader(f"{row['type_label']} · {row['name']}")
-    st.caption(
-        f"`{row['relpath']}` ｜ 更新于 {format_mtime(stamp)} ｜ {_format_size(size)}"
-    )
-    _render_selected(row)
+    with right:
+        section(
+            f"{row['type_label']} · {row['name']}",
+            f"`{row['relpath']}` ｜ 更新于 {format_mtime(stamp)} ｜ {_format_size(size)}",
+        )
+        _render_selected(row)

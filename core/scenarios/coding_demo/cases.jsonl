@@ -3,3 +3,5 @@
 {"id":"coding-task-001","category":"task","question":"创建一个任务：检查项目结构。","expected_points":["任务"],"expected_tools":["create_task"],"should_refuse":false,"notes":"任务持久化"}
 {"id":"coding-task-002","category":"task","question":"列出当前所有任务。","expected_points":["检查项目结构"],"expected_tools":["list_tasks"],"should_refuse":false,"notes":"任务图查询"}
 {"id":"coding-subagent-001","category":"subagent","question":"使用 subagent 检查工作区里有哪些文件，并返回文件列表。","expected_points":["README.md","hello.py"],"expected_tools":["subagent"],"should_refuse":false,"notes":"子 Agent 使用全新上下文，只返回摘要"}
+{"id":"coding-grep-001","category":"search","question":"在工作区里搜索 hello 出现在哪些文件和行号，并告诉我。","expected_points":["hello.py"],"expected_tools":["grep"],"should_refuse":false,"notes":"代码搜索工具"}
+{"id":"coding-write-001","category":"write","question":"写一个输出 99 乘法表的 Python 脚本 multiplication_table_tool_demo.py，运行并验证输出。","expected_points":["1x1=1","9x9=81"],"expected_tools":["write_file","run_command"],"should_refuse":false,"notes":"新建文件必须用 write_file；运行后输出不能含字面量 \\t"}

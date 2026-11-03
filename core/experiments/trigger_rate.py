@@ -2,9 +2,10 @@
 """Subagent / 任务工具触发率实验。
 
 问题：机制测试能证明“调用 subagent 会正确派生”，但不能证明“模型会自发调用”。
-本实验用同一组自然任务对比两版 system prompt：
+本实验用同一组自然任务对比三版：
 - natural：只说明文件/命令工具，不提 subagent 和任务图；
-- routed：显式加入“需要隔离上下文时用 subagent / 多步骤用任务图”。
+- routed：显式加入“需要隔离上下文时用 subagent / 多步骤用任务图”；
+- policy：保持 natural prompt，额外挂确定性 PlanningPolicyMiddleware。
 
 输出：每次 run 的工具序列、触发率、回答摘要、trace_id。
 
@@ -26,8 +27,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from core.agent.framework import FrameworkAgent  # noqa: E402
+from core.agent.middleware import classify_intent  # noqa: E402
 from core.quality.agent_eval import extract_final_answer, extract_tool_calls  # noqa: E402
 from core.quality.paths import OUTPUTS_DIR  # noqa: E402
+from core.scenarios.coding_demo.policy import CODING_DELEGATION_POLICY  # noqa: E402
 from core.scenarios.registry import get_scenario  # noqa: E402
 
 try:
@@ -76,6 +79,8 @@ PROMPTS = [
 VARIANTS = {
     "natural": NATURAL_PROMPT,
     "routed": ROUTED_PROMPT,
+    # policy 变体保持 natural prompt，只额外挂确定性 planning policy。
+    "policy": NATURAL_PROMPT,
 }
 
 
@@ -88,17 +93,19 @@ def count_triggers(tool_names: list[str]) -> dict:
     }
 
 
-def run_variant(name: str, prompts: list[str], system_prompt: str) -> list[dict]:
+def run_variant(name: str, prompts: list[str], system_prompt: str, planning_policy=None) -> list[dict]:
     scenario = get_scenario("coding_demo")
     scenario = replace(
         scenario,
         name=f"coding_demo_{name}",
         system_prompt=system_prompt,
         checkpoint=False,
+        planning_policy=planning_policy,
     )
     agent = FrameworkAgent(scenario)
     rows = []
     for index, prompt in enumerate(prompts, 1):
+        eligible = bool(planning_policy and classify_intent(prompt, planning_policy) is not None)
         state = agent.invoke(prompt)
         messages = state.get("messages", [])
         tool_calls = extract_tool_calls(messages)
@@ -108,6 +115,7 @@ def run_variant(name: str, prompts: list[str], system_prompt: str) -> list[dict]
             "variant": name,
             "index": index,
             "prompt": prompt,
+            "eligible": eligible,
             "tool_names": tool_names,
             "subagent_calls": triggered["subagent"],
             "task_calls": triggered["task"],
@@ -116,7 +124,7 @@ def run_variant(name: str, prompts: list[str], system_prompt: str) -> list[dict]
             "trace_id": getattr(agent, "last_trace_id", None),
         })
         print(
-            f"[{name} {index}/{len(prompts)}] tools={tool_names} "
+            f"[{name} {index}/{len(prompts)}] eligible={eligible} tools={tool_names} "
             f"subagent={triggered['subagent']} task={triggered['task']}"
         )
     return rows
@@ -124,6 +132,7 @@ def run_variant(name: str, prompts: list[str], system_prompt: str) -> list[dict]
 
 def summarize(rows: list[dict]) -> dict:
     total = len(rows)
+    eligible = [row for row in rows if row.get("eligible")]
     return {
         "total": total,
         "subagent_runs": sum(1 for row in rows if row["subagent_calls"]),
@@ -132,6 +141,11 @@ def summarize(rows: list[dict]) -> dict:
         "subagent_rate": round(sum(1 for row in rows if row["subagent_calls"]) / total, 4) if total else 0.0,
         "task_rate": round(sum(1 for row in rows if row["task_calls"]) / total, 4) if total else 0.0,
         "avg_tools": round(sum(len(row["tool_names"]) for row in rows) / total, 2) if total else 0.0,
+        "eligible_runs": len(eligible),
+        "eligible_triggered": sum(1 for row in eligible if row["any_trigger"]),
+        "eligible_trigger_rate": round(
+            sum(1 for row in eligible if row["any_trigger"]) / len(eligible), 4
+        ) if eligible else 0.0,
     }
 
 
@@ -140,17 +154,19 @@ def write_markdown(path: Path, summaries: dict, rows: list[dict]) -> None:
         "# Subagent / 任务工具触发率实验",
         "",
         f"> 生成时间：{datetime.now().isoformat(timespec='seconds')}",
-        "> 同一组自然任务，对比 natural / routed 两版 system prompt。",
+        "> 同一组自然任务，对比 natural / routed / policy 三版。",
         "",
         "## 总览",
         "",
-        "| 版本 | Run | subagent 触发 | 任务工具触发 | 任一触发 | 平均工具数 |",
-        "|:---|:---:|:---:|:---:|:---:|:---:|",
+        "| 版本 | Run | subagent 触发 | 任务工具触发 | 任一触发 | eligible | eligible 触发 | 平均工具数 |",
+        "|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|",
     ]
     for name, item in summaries.items():
         lines.append(
             f"| {name} | {item['total']} | {item['subagent_runs']} ({item['subagent_rate']:.0%}) | "
-            f"{item['task_runs']} ({item['task_rate']:.0%}) | {item['any_trigger_runs']} | {item['avg_tools']:.1f} |"
+            f"{item['task_runs']} ({item['task_rate']:.0%}) | {item['any_trigger_runs']} | "
+            f"{item.get('eligible_runs', 0)} | {item.get('eligible_triggered', 0)} "
+            f"({item.get('eligible_trigger_rate', 0):.0%}) | {item['avg_tools']:.1f} |"
         )
 
     for name, item in summaries.items():
@@ -158,8 +174,8 @@ def write_markdown(path: Path, summaries: dict, rows: list[dict]) -> None:
             "",
             f"## {name}",
             "",
-            "| # | 问题 | 工具序列 | subagent | task | 回答摘要 |",
-            "|:---:|:---|:---|:---:|:---:|:---|",
+            "| # | 问题 | eligible | 工具序列 | subagent | task | 回答摘要 |",
+            "|:---:|:---|:---:|:---|:---:|:---:|:---|",
         ]
         for row in rows:
             if row["variant"] != name:
@@ -167,8 +183,8 @@ def write_markdown(path: Path, summaries: dict, rows: list[dict]) -> None:
             answer = str(row["answer"]).replace("\n", " ").replace("|", "\\|")[:80]
             tools = ", ".join(row["tool_names"]) or "（未调用）"
             lines.append(
-                f"| {row['index']} | {row['prompt']} | {tools} | "
-                f"{row['subagent_calls']} | {row['task_calls']} | {answer} |"
+                f"| {row['index']} | {row['prompt']} | {'是' if row.get('eligible') else '否'} | "
+                f"{tools} | {row['subagent_calls']} | {row['task_calls']} | {answer} |"
             )
 
     lines += [
@@ -191,7 +207,8 @@ def run(limit: int = 0, variants: tuple[str, ...] = ("natural", "routed")) -> di
     for name in variants:
         if name not in VARIANTS:
             raise ValueError(f"未知版本：{name}（可用：{', '.join(VARIANTS)}）")
-        rows = run_variant(name, prompts, VARIANTS[name])
+        policy = CODING_DELEGATION_POLICY if name == "policy" else None
+        rows = run_variant(name, prompts, VARIANTS[name], planning_policy=policy)
         all_rows.extend(rows)
         summaries[name] = summarize(rows)
 

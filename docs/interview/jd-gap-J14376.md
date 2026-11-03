@@ -1,5 +1,9 @@
 # JD 差距分析：Agent 研发工程师 J14376
 
+> **历史版本（2026-10-31）**：2026-11-02 起以 `docs/interview/jd-results-2026-11-04.md`
+> 为准；本文件保留当时的 gap 分析。新增的 planning policy / outcome 断言已补上，多模态 /
+> 多 Agent handoff / 生产级 MCP 仍是缺口。
+>
 > 岗位：科大讯飞 · Agent 研发工程师（J14376）· 合肥 · 消费者事业群 · 社会招聘
 > 对照：也适用于 2026 产品 AI Agent JD（办公 / 学习 / 内容创作 / 信息管理 / 跨语言 / 智能硬件）
 > 项目：Agent Harness（单 Agent、工具调用、评测闭环）
@@ -18,7 +22,7 @@
 | 工作流编排 | ✅ | LangGraph：rag_qa / report + 任务图编排 |
 | 多 Agent 协作 | 🟡 | 单层 subagent（fresh context + 白名单 + 摘要）；触发率 0/10；无 handoff |
 | Agent 评测 | ✅ | 两层评测 + 公开 benchmark + 失败集 + 优化循环 + gate |
-| Tracing / 可观测 | ✅ | trace + token 预算 + 8 页签控制台 + 成本/时延页 |
+| Tracing / 可观测 | ✅ | trace + token 预算 + 8 功能视图 + 总览工作台 + 成本/时延页 |
 | 准确性/稳定性 | ✅/🟡 | eval、重试、限额 + gate + 5 类故障注入；未接 CI 平台 |
 | 时延/成本 | ✅ | 3203 run 聚合：p50 2.50s / p95 8.54s，约 ¥0.015/run（示例价） |
 | 多模态/语音/OCR | ❌ | 无 |
@@ -27,7 +31,7 @@
 | 结构化输出 | ✅ | `create_agent(response_format=ReportSchema)`；5/5 schema 合法 |
 | Prompt/Context Engineering | ✅ | 动态 prompt、压缩、token 预算、路由 |
 | Python | ✅ | 项目主语言 |
-| Agent Demo | ✅ | 8 页签控制台 + coding_demo 运行窗口 |
+| Agent Demo | ✅ | 8 功能视图 + 总览工作台 + 案例对象链路 + coding_demo 运行窗口 |
 | 开源/竞赛 | 🟡 | 个人仓库；无竞赛/社区影响力 |
 | 智能硬件 | 🟡 | 扫地机器人是模拟场景，不是真实设备 |
 

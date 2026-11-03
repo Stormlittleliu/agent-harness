@@ -1,0 +1,4 @@
+{"id":"router-outcome-workspace-001","category":"routing","question_template":"根据笔记帮我整理一份 Agent 评测的学习计划。","checks":[{"type":"router_target","target":"workspace_assistant","require_trace":true}],"notes":"检查路由目标与目标 trace"}
+{"id":"router-outcome-research-001","category":"routing","question_template":"对比三份资料，告诉我它们对 Agent 评测的主要差异。","checks":[{"type":"router_target","target":"research_assistant","require_trace":true}],"notes":"检查路由目标与目标 trace"}
+{"id":"router-outcome-coding-001","category":"routing","question_template":"写一个输出 99 乘法表的 Python 脚本并运行验证。","checks":[{"type":"router_target","target":"coding_demo","require_trace":true}],"notes":"检查路由目标与目标 trace"}
+{"id":"router-outcome-robot-001","category":"routing","question_template":"扫地机器人回充失败怎么办？","checks":[{"type":"router_target","target":"robot_vacuum","require_trace":true}],"notes":"检查路由目标与目标 trace"}

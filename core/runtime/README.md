@@ -8,7 +8,7 @@
 core/runtime/
 ├── tasks.py        # SQLite 任务图（状态 / owner / blocked_by）
 ├── task_tools.py   # create/list/get/claim/complete/fail tools
-├── workspace.py    # 安全路径 / read_file / glob / run_command
+├── workspace.py    # 安全路径 / read_file / write_file / edit_file / glob / grep / run_command
 ├── runner.py       # 认领 → 跑 Agent → 完成/失败 → 解锁下游
 └── config.py       # RuntimeConfig，供 Scenario 使用
 ```
@@ -45,7 +45,7 @@ Hook 异常只记录日志，不拖垮主流程。
 
 ```python
 SubagentConfig(
-    allowed_tools=["read_file", "glob", "run_command"],
+    allowed_tools=["read_file", "glob", "grep", "run_command"],
     max_model_calls=12,
     token_budget=20000,
     timeout_seconds=120,
@@ -68,7 +68,10 @@ SubagentConfig(
 ## 工作区与运行窗口
 
 - `read_file`：只读工作区内文件，带行号，最多 200 行；
-- `glob`：工作区内 glob；
+- `write_file`：新建/覆盖工作区内文本文件；默认不覆盖已有文件，覆盖需 `overwrite=true`；
+- `edit_file`：精确替换；`old_text` 必须唯一出现，`replace_all=true` 可替换全部；
+- `glob` / `grep`：按 glob 找文件、按正则搜索文本（返回 `path:line: content`）；
+- 写操作限制在工作区内，并拒绝 `.git` / `.venv` / `__pycache__` 等受保护目录；
 - `run_command`：工作区内执行 shell，危险命令拒绝，输出最多 20k 字符，日志写入 `data/runtime/run_window/`；
 - 控制台的 **🖥 运行窗口** 页签展示任务图、任务详情和命令日志，可对 ready 任务点“执行选中任务”。
 
@@ -77,7 +80,8 @@ SubagentConfig(
 `core/scenarios/coding_demo/`：
 
 ```text
-tools: read_file / glob / run_command + 6 个任务工具
+tools: read_file / write_file / edit_file / glob / grep / run_command + 6 个任务工具 + subagent
+middleware: TodoListMiddleware（自动注入 write_todos）
 hooks: prompt / pre_tool / post_tool / stop / task_*
 workspace: data/runtime/coding_workspace
 task db: data/runtime/tasks/coding_demo.sqlite

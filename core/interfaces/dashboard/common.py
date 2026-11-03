@@ -11,18 +11,102 @@ from typing import Any
 
 import streamlit as st
 
-from core.agent.framework import FrameworkAgent
-from core.scenarios.registry import get_scenario
-
 ROOT = Path(__file__).resolve().parents[3]
 MAX_ROWS = 200
 NOT_AVAILABLE = "—"
+AGENT_OUT = ROOT / "outputs" / "agent"
+OUTCOME_OUT = ROOT / "outputs" / "outcome"
 
 
 @st.cache_resource(show_spinner=False)
-def load_agent(scenario_name: str) -> FrameworkAgent:
-    """按场景缓存 Agent；切换场景时才重新构建。"""
+def load_agent(scenario_name: str):
+    """按场景缓存 Agent；切换场景时才重新构建。
+
+    延迟 import，避免纯数据视图（成本、目录、记录）加载 LangChain 与工具链。
+    """
+    from core.agent.framework import FrameworkAgent
+    from core.scenarios.registry import get_scenario
+
     return FrameworkAgent(get_scenario(scenario_name))
+
+
+@st.cache_data(show_spinner=False)
+def _load_cases_file(path: str, mtime: float) -> list[dict]:
+    _ = mtime
+    from core.quality.agent_eval import load_cases
+
+    return load_cases(Path(path))
+
+
+def load_cases_cached(path: Path | str | None) -> tuple[list[dict] | None, str | None]:
+    """按 path + mtime 缓存 cases.jsonl；返回 ``(cases, error)``。"""
+    if not path:
+        return None, None
+    target = Path(path)
+    stamp = file_mtime(target)
+    if stamp is None:
+        return None, None
+    try:
+        return _load_cases_file(str(target), stamp), None
+    except Exception as exc:  # noqa: BLE001 - 页面兜底
+        return None, f"{type(exc).__name__}: {exc}"
+
+
+def _latest_report(
+    files: list[Path],
+    expected_total: int | None = None,
+) -> tuple[dict | None, Path | None]:
+    """从一组报告文件里选一份：优先用例数匹配，其次最新 / 最完整。"""
+    candidates: list[tuple[int, float, Path, dict]] = []
+    for path in files:
+        data, _error = load_json(path)
+        if not isinstance(data, dict):
+            continue
+        summary = data.get("summary") if isinstance(data.get("summary"), dict) else {}
+        total = summary.get("total")
+        if total is None:
+            results = data.get("results")
+            total = len(results) if isinstance(results, list) else 0
+        try:
+            total = int(total)
+        except (TypeError, ValueError):
+            total = 0
+        candidates.append((total, file_mtime(path) or 0.0, path, data))
+    if not candidates:
+        return None, None
+
+    if expected_total is not None:
+        exact = [item for item in candidates if item[0] == expected_total]
+        if exact:
+            chosen = max(exact, key=lambda item: item[1])
+        else:
+            chosen = max(candidates, key=lambda item: (item[0], item[1]))
+    else:
+        chosen = max(candidates, key=lambda item: item[1])
+    return chosen[3], chosen[2]
+
+
+def latest_agent_report(
+    scenario_name: str,
+    expected_total: int | None = None,
+) -> tuple[dict | None, Path | None]:
+    """读取该场景的行为层报告；没有则返回 (None, None)。
+
+    同一场景可能既有全量报告，也有 `--limit 1` 的冒烟报告。传入
+    `expected_total` 时优先选用例数完全匹配的报告，避免“最近一次”其实是
+    单条 smoke run；没有匹配时退回结果条数最多的报告。
+    """
+    files = [path for path in AGENT_OUT.glob(f"agent_test_{scenario_name}_*.json") if path.is_file()]
+    return _latest_report(files, expected_total)
+
+
+def latest_outcome_report(
+    scenario_name: str,
+    expected_total: int | None = None,
+) -> tuple[dict | None, Path | None]:
+    """读取该场景的 outcome 报告；规则与行为层报告一致。"""
+    files = [path for path in OUTCOME_OUT.glob(f"outcome_test_{scenario_name}_*.json") if path.is_file()]
+    return _latest_report(files, expected_total)
 
 
 def display_path(path: Path) -> str:

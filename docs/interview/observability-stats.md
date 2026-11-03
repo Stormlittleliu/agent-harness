@@ -1,5 +1,8 @@
 # Trace 观测统计（面试用）
 
+> **历史快照（2026-10-28/29，52 runs）**：最新成本/时延以 `outputs/cost_report.json` 为准；
+> 面试主结果页见 `docs/interview/jd-results-2026-11-04.md`。
+>
 > 数据来源：`outputs/traces/trace_20261028.jsonl`、`trace_20261029.jsonl`
 > 样本：52 次 run（开发期混合运行，含回归、演示与预算实验，**不是受控 benchmark**）
 > 模型：DeepSeek `deepseek-chat`；Embedding：本地 BGE

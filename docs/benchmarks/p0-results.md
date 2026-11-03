@@ -1,5 +1,9 @@
 # P0 追加结果：成本 / 结构化输出 / 门禁 / 触发率
 
+> **历史快照（2026-10-31）**：3203 条 run 等数字为当时口径；最新成本以
+> `outputs/cost_report.json` 为准，新场景/outcome/planning 结果见
+> `docs/benchmarks/current-results.md` 第 4.3–4.5 节与 `docs/interview/jd-results-2026-11-04.md`。
+>
 > 生成时间：2026-10-31
 > 目的：把 P0-1 ~ P0-4 的实现与证据集中到一页，作为面试口径和后续回归基线。
 > 原则：所有数字都带口径；成本是按配置单价估算，不是账单；触发率是小样本行为实验。
@@ -140,7 +144,7 @@ python -m core.experiments.trigger_rate
 | natural（不提 subagent/任务） | 10 | 0/10 (0%) | 0/10 (0%) | 0/10 | 3.7 |
 | routed（显式提示可用） | 10 | 0/10 (0%) | 0/10 (0%) | 0/10 | 3.7 |
 
-对照：显式点名用例 `coding-subagent-001` 通过，coding_demo 5/5。
+对照：显式点名用例 `coding-subagent-001` 通过，coding_demo 7/7（新增 grep / write 用例）。
 
 **解释**
 

@@ -20,6 +20,15 @@ from core.interfaces.dashboard.common import (
     rows_to_csv,
     short_text,
 )
+from core.interfaces.dashboard.layout import (
+    Kpi,
+    compact_table,
+    empty_state,
+    kpi_row,
+    page_header,
+    section,
+    source_footer,
+)
 from core.interfaces.dashboard.traces import render_trace_timeline
 
 DEMO_DIR = ROOT / "outputs" / "demo"
@@ -345,7 +354,6 @@ def _ab_delta_rows(a_summary: dict, b_summary: dict) -> list[dict]:
 
 
 def _render_ab_compare(items: list[dict]) -> None:
-    st.subheader("A/B 对比")
     if len(items) < 2:
         st.info("至少需要两个 iteration 文件才能做 A/B 对比。")
         return
@@ -388,6 +396,7 @@ def _render_ab_compare(items: list[dict]) -> None:
         _ab_delta_rows(a_summary, b_summary),
         use_container_width=True,
         hide_index=True,
+        height=220,
     )
     if a.get("trials") is None or b.get("trials") is None:
         st.caption("A 或 B 缺少 trials 字段，mean 可能来自旧格式近似值；差异仅供参考。")
@@ -447,6 +456,8 @@ def _render_ab_compare(items: list[dict]) -> None:
     suffix = f"；仅展示前 {MAX_ROWS} 条" if total > MAX_ROWS else ""
     st.caption(f"逐条明细共 {total} 条{suffix}")
 
+    detail_rows = []
+    by_key = {}
     for ref in detail_refs[:MAX_ROWS]:
         a_row, b_row = a_map[ref], b_map[ref]
         dataset, case_id = ref
@@ -456,25 +467,41 @@ def _render_ab_compare(items: list[dict]) -> None:
             status = "回归"
         else:
             status = "未变化"
-        icon = "✅" if b_row.get("passed") else "❌"
-        with st.expander(f"{icon} {status} · {dataset} · {case_id}"):
-            st.caption(f"A：{_pass_text(a_row)} ｜ B：{_pass_text(b_row)}")
-            col_b, col_a = st.columns(2)
-            with col_b:
-                st.markdown("**B（对比）**")
-                _render_case_side(dataset, b_row)
-            with col_a:
-                st.markdown("**A（基线）**")
-                _render_case_side(dataset, a_row)
-            st.divider()
-            st.markdown("**执行轨迹**")
-            if not a_row.get("trace_id") and not b_row.get("trace_id"):
-                st.caption("A/B 结果都没有 trace_id（旧版结果或未记录 trace）。")
-            else:
-                st.markdown("**B（对比）**")
-                render_trace_timeline(b_row.get("trace_id"))
-                st.markdown("**A（基线）**")
-                render_trace_timeline(a_row.get("trace_id"))
+        label = f"{status} · {dataset} · {case_id}"
+        by_key[label] = ref
+        detail_rows.append({
+            "状态": status,
+            "数据集": dataset,
+            "Case": case_id,
+            "A": _pass_text(a_row),
+            "B": _pass_text(b_row),
+        })
+    compact_table(
+        detail_rows,
+        height=300,
+        key="opt-ab-detail-table",
+        column_order=["状态", "数据集", "Case", "A", "B"],
+    )
+    selected_label = st.selectbox("查看 A/B 明细", list(by_key), key="opt-ab-case")
+    ref = by_key[selected_label]
+    a_row, b_row = a_map[ref], b_map[ref]
+    dataset, _case_id = ref
+    st.caption(f"A：{_pass_text(a_row)} ｜ B：{_pass_text(b_row)}")
+    col_b, col_a = st.columns(2, gap="medium")
+    with col_b:
+        st.markdown("**B（对比）**")
+        _render_case_side(dataset, b_row)
+    with col_a:
+        st.markdown("**A（基线）**")
+        _render_case_side(dataset, a_row)
+    st.markdown("**执行轨迹**")
+    if not a_row.get("trace_id") and not b_row.get("trace_id"):
+        st.caption("A/B 结果都没有 trace_id（旧版结果或未记录 trace）。")
+    else:
+        st.markdown("**B（对比）**")
+        render_trace_timeline(b_row.get("trace_id"))
+        st.markdown("**A（基线）**")
+        render_trace_timeline(a_row.get("trace_id"))
 
 
 def _render_report_download(report_text: str | None) -> None:
@@ -770,10 +797,8 @@ def _render_cases(item: dict, summary: dict) -> None:
         for row in filtered
     ]
     total = len(display_rows)
-    suffix = f"；仅展示前 {MAX_ROWS} 条" if total > MAX_ROWS else ""
-    st.caption(f"筛选后 {total} / {len(rows)} 条{suffix}")
     if not display_rows:
-        st.info("没有符合筛选条件的 case。")
+        empty_state("没有符合筛选条件的 case。")
         return
     st.download_button(
         "下载筛选后 case CSV",
@@ -781,42 +806,41 @@ def _render_cases(item: dict, summary: dict) -> None:
         file_name="optimization_cases_filtered.csv",
         mime="text/csv",
         key="download-opt-cases",
-        help="包含全部搜索 / 筛选结果，不受表格 200 行展示上限影响。",
+        help="包含全部搜索 / 筛选结果，不受表格展示上限影响。",
     )
-    st.dataframe(display_rows[:MAX_ROWS], use_container_width=True, hide_index=True)
+    compact_table(
+        display_rows,
+        height=320,
+        key="opt-case-table",
+        total=total,
+    )
 
 
 def render_optimization() -> None:
     paths = _iteration_paths()
     latest = max((file_mtime(path) for path in paths if file_mtime(path)), default=None)
     report_stamp = file_mtime(REPORT_PATH)
-    if paths:
-        iteration_text = (
-            f"`outputs/demo/iteration_*.json`（{len(paths)} 个，最新 {format_mtime(latest)}）"
-        )
-    else:
-        iteration_text = "`outputs/demo/iteration_*.json`（缺失）"
-    st.caption(
-        "数据来源："
-        + iteration_text
-        + f" ｜ `outputs/demo/report.md`（{format_mtime(report_stamp)}）"
-    )
-
     items, errors = _load_iterations()
+
+    page_header(
+        "优化循环",
+        "跑 → badcase 归因 → 定向改 → 复跑 → 查回归；只读 outputs/demo，不触发模型调用。",
+        meta=f"{len(paths)} 个 iteration · 最新 {format_mtime(latest)}",
+    )
+    source_footer([(REPORT_PATH, "report.md")])
     for name, error in errors:
         st.warning(f"跳过无法解析的 {name}：{error}")
     if paths:
         _render_run_status(paths, items)
+
     if not items:
-        st.info("未找到优化循环结果。先在项目根目录运行：")
-        st.code(GENERATE_CMD, language="bash")
-        st.caption("生成后会写入 `outputs/demo/iteration_*.json` 与 `outputs/demo/report.md`。")
+        empty_state("未找到优化循环结果。先在项目根目录运行：", GENERATE_CMD)
         report_text, report_error = load_text(REPORT_PATH)
         if report_error:
             st.warning(f"读取已有 report.md 失败：{report_error}")
         elif report_text is not None:
             _render_report_download(report_text)
-            with st.expander("查看已有 report.md", expanded=True):
+            with st.expander("查看已有 report.md", expanded=False):
                 st.markdown(report_text)
         return
 
@@ -835,20 +859,23 @@ def render_optimization() -> None:
     item = items[labels.index(selected_label)]
     summary = _summary(item)
 
-    st.markdown(f"#### {_item_label(item)}")
-    st.caption(
+    section(
+        _item_label(item),
         f"方向：{item.get('direction') or '—'} ｜ "
         f"改动：{item.get('change') or '—'} ｜ "
-        f"公开参考：{item.get('knowledge_ref') or '—'}"
+        f"公开参考：{item.get('knowledge_ref') or '—'}",
     )
-
-    cols = st.columns(6)
-    cols[0].metric("BFCL pass^k", f"{summary['bfcl_pass']}/{summary['bfcl_total']}")
-    cols[1].metric("BFCL mean", _pct(summary["bfcl_mean"], 1))
-    cols[2].metric("RAG pass^k", f"{summary['rag_pass']}/{summary['rag_total']}")
-    cols[3].metric("RAG mean", _pct(summary["rag_mean"], 1))
-    cols[4].metric("Trials", str(summary["trials"]))
-    cols[5].metric("修复 / 回归", f"{len(summary['fixed'])} / {len(summary['regressed'])}")
+    kpi_row(
+        [
+            Kpi("BFCL pass^k", f"{summary['bfcl_pass']}/{summary['bfcl_total']}"),
+            Kpi("BFCL mean", _pct(summary["bfcl_mean"], 1)),
+            Kpi("RAG pass^k", f"{summary['rag_pass']}/{summary['rag_total']}"),
+            Kpi("RAG mean", _pct(summary["rag_mean"], 1)),
+        ]
+    )
+    st.caption(
+        f"Trials {summary['trials']} ｜ 修复 {len(summary['fixed'])} ｜ 回归 {len(summary['regressed'])}"
+    )
 
     legacy_items = [entry for entry in items if entry.get("trials") is None]
     if item.get("trials") is None:
@@ -859,78 +886,87 @@ def render_optimization() -> None:
             "其 mean 为近似值；走势图仅包含已完成迭代。"
         )
 
-    st.subheader("迭代总览")
-    st.dataframe(_overview_rows(items), use_container_width=True, hide_index=True)
-    chart_items = completed_items or items
-    st.markdown("**迭代走势**")
-    if len(chart_items) < len(items):
-        st.caption("走势图仅展示已包含 trials 的迭代，避免不同样本量的旧结果混入对比。")
-    _render_overview_chart(chart_items)
-    _render_ab_compare(items)
+    mode = st.radio(
+        "视图",
+        ["走势", "逐条", "报告"],
+        horizontal=True,
+        key="optimization-mode",
+    )
 
-    st.subheader("失败归因")
-    bfcl_failures = summary["bfcl_failures"]
-    rag_failures = summary["rag_failures"]
-    failure_rows = [
-        {"数据集": "BFCL", "失败类型": name, "数量": count}
-        for name, count in sorted(
-            bfcl_failures.items(), key=lambda pair: (-pair[1], pair[0])
-        )
-    ] + [
-        {"数据集": "RAG", "失败类型": name, "数量": count}
-        for name, count in sorted(
-            rag_failures.items(), key=lambda pair: (-pair[1], pair[0])
-        )
-    ]
-    if failure_rows:
-        st.dataframe(failure_rows, use_container_width=True, hide_index=True)
-    st.caption("失败类型分布（按失败数降序；BFCL 蓝 / RAG 橙）")
-    _render_failure_chart(bfcl_failures, rag_failures)
+    if mode == "走势":
+        section("迭代总览")
+        compact_table(_overview_rows(items), height=300, key="opt-overview-table")
 
-    st.markdown("**同类任务通过率**")
-    same_class_rows = []
-    for family, ratio in summary["same_class"].items():
-        passed_count, total_count, rate = parse_ratio(ratio)
-        same_class_rows.append({
-            "类别": family,
-            "通过 / 总数": ratio if total_count else ratio or "—",
-            "通过率": _pct(rate) if rate is not None else "—",
-        })
-    if same_class_rows:
-        st.dataframe(same_class_rows, use_container_width=True, hide_index=True)
+        section("迭代走势", "pass^k 为所有 trial 都通过的 case 占比。")
+        chart_items = completed_items or items
+        if len(chart_items) < len(items):
+            st.caption("走势图仅展示已包含 trials 的迭代，避免不同样本量的旧结果混入对比。")
+        with st.container(border=True):
+            _render_overview_chart(chart_items)
+
+        bfcl_failures = summary["bfcl_failures"]
+        rag_failures = summary["rag_failures"]
+        failure_rows = [
+            {"数据集": "BFCL", "失败类型": name, "数量": count}
+            for name, count in sorted(
+                bfcl_failures.items(), key=lambda pair: (-pair[1], pair[0])
+            )
+        ] + [
+            {"数据集": "RAG", "失败类型": name, "数量": count}
+            for name, count in sorted(
+                rag_failures.items(), key=lambda pair: (-pair[1], pair[0])
+            )
+        ]
+        section("失败归因", "失败类型分布（按失败数降序；BFCL 蓝 / RAG 橙）。")
+        if failure_rows:
+            compact_table(failure_rows, height=220, key="opt-failure-table")
+        else:
+            st.caption("该迭代没有失败归因数据。")
+        with st.container(border=True):
+            _render_failure_chart(bfcl_failures, rag_failures)
+
+        section("同类任务通过率")
+        same_class_rows = []
+        for family, ratio in summary["same_class"].items():
+            passed_count, total_count, rate = parse_ratio(ratio)
+            same_class_rows.append({
+                "类别": family,
+                "通过 / 总数": ratio if total_count else ratio or "—",
+                "通过率": _pct(rate) if rate is not None else "—",
+            })
+        if same_class_rows:
+            compact_table(same_class_rows, height=220, key="opt-same-class-table")
+        else:
+            st.caption("该迭代没有同类任务统计。")
+
+        section("修复与回归")
+        compact_table(
+            [
+                {"类型": "修复 case", "数量": len(summary["fixed"]), "ID": "、".join(summary["fixed"]) or "无"},
+                {"类型": "回归 case", "数量": len(summary["regressed"]), "ID": "、".join(summary["regressed"]) or "无"},
+            ],
+            height=160,
+            key="opt-fixed-table",
+        )
+
+    elif mode == "逐条":
+        section("A/B 对比", "选择两个 iteration，比较 pass^k / mean 与逐条变化。")
+        _render_ab_compare(items)
+        section("逐条 case", "当前 iteration 的 BFCL / RAG 逐条结果。")
+        _render_cases(item, summary)
+
     else:
-        st.info("该迭代没有同类任务统计。")
-
-    st.subheader("修复与回归")
-    col_fixed, col_regressed = st.columns(2)
-    with col_fixed:
-        st.metric("修复 case", len(summary["fixed"]))
-    with col_regressed:
-        st.metric("回归 case", len(summary["regressed"]))
-    with st.expander(
-        "查看 case ID",
-        expanded=bool(summary["fixed"] or summary["regressed"]),
-    ):
-        fixed_text = "、".join(f"`{case_id}`" for case_id in summary["fixed"]) or "无"
-        regressed_text = "、".join(f"`{case_id}`" for case_id in summary["regressed"]) or "无"
-        st.markdown(f"**修复**：{fixed_text}")
-        st.markdown(f"**回归**：{regressed_text}")
-
-    st.subheader("逐条 case")
-    _render_cases(item, summary)
-
-    st.subheader("优化报告")
-    report_text, report_error = load_text(REPORT_PATH)
-    if report_stamp and latest and report_stamp < latest:
-        st.caption("注意：`report.md` 早于最新的 iteration 文件，内容可能尚未同步。")
-    _render_report_download(report_text)
-    with st.expander("查看 report.md", expanded=False):
+        section("优化报告")
+        report_text, report_error = load_text(REPORT_PATH)
+        if report_stamp and latest and report_stamp < latest:
+            st.caption("注意：`report.md` 早于最新的 iteration 文件，内容可能尚未同步。")
+        _render_report_download(report_text)
         if report_error:
             st.error(f"读取 report.md 失败：{report_error}")
         elif report_text is None:
-            st.info("未找到 `outputs/demo/report.md`。生成命令：")
-            st.code(GENERATE_CMD, language="bash")
+            empty_state("未找到 `outputs/demo/report.md`。生成命令：", GENERATE_CMD)
         elif not report_text.strip():
-            st.info("`outputs/demo/report.md` 为空。")
+            st.caption("`outputs/demo/report.md` 为空。")
         else:
-            st.markdown(report_text)
+            with st.container(height=600):
+                st.markdown(report_text)

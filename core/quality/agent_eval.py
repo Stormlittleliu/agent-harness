@@ -125,23 +125,64 @@ def evaluate_case(agent: FrameworkAgent, case: dict, judge_chain=None) -> dict:
     }
 
 
-def evaluate_cases(agent: FrameworkAgent, cases: list[dict], judge: bool = False, progress=None) -> list[dict]:
-    """顺序执行用例；progress(index, total, result) 用于 CLI 打印或界面进度条。"""
+def aggregate_trials(case: dict, rows: list[dict]) -> dict:
+    """把同一 case 的多 trial 结果聚合成 pass^k + mean。
+
+    pass^k = 所有 trial 都通过；mean = 通过 trial 的比例。
+    代表性字段取最后一次 trial，报告里同时保留每 trial 的 trace id。
+    """
+    if not rows:
+        raise ValueError(f"用例 {case.get('id')} 没有 trial 结果")
+    trial_passes = [bool(row.get("passed")) for row in rows]
+    result = dict(rows[-1])
+    result.update({
+        "id": case["id"],
+        "passed": all(trial_passes),
+        "pass_rate": round(sum(trial_passes) / len(trial_passes), 4),
+        "trial_passes": trial_passes,
+        "trial_trace_ids": [row.get("trace_id") for row in rows],
+        "trials": len(trial_passes),
+    })
+    return result
+
+
+def evaluate_cases(
+        agent: FrameworkAgent,
+        cases: list[dict],
+        judge: bool = False,
+        progress=None,
+        trials: int = 1,
+) -> list[dict]:
+    """顺序执行用例；每个 case 跑 trials 次并聚合 pass^k。
+
+    progress(index, total, result) 用于 CLI 打印或界面进度条。
+    trials=1 时与旧行为兼容，只是多出 pass_rate/trial_passes 字段。
+    """
+    trials = max(1, int(trials or 1))
     judge_chain = build_judge() if judge else None
     results = []
     for index, case in enumerate(cases, 1):
-        result = evaluate_case(agent, case, judge_chain)
+        rows = []
+        for trial in range(1, trials + 1):
+            row = evaluate_case(agent, case, judge_chain)
+            row["trial"] = trial
+            rows.append(row)
+        result = aggregate_trials(case, rows)
         results.append(result)
         if progress is not None:
             progress(index, len(cases), result)
     return results
 
 
-def summarize_results(scenario_name: str, results: list[dict], judge: bool = False) -> dict:
+def summarize_results(scenario_name: str, results: list[dict], judge: bool = False, trials: int = 1) -> dict:
     summary = {
         "scenario": scenario_name,
         "total": len(results),
         "passed": sum(1 for row in results if row["passed"]),
+        "trials": max(1, int(trials or 1)),
+        "mean_pass_rate": round(
+            sum(float(row.get("pass_rate", 1.0 if row["passed"] else 0.0)) for row in results) / len(results), 4
+        ) if results else 0.0,
         "by_category": dict(Counter(row["category"] for row in results)),
         "tool_cases_ok": sum(1 for row in results if row["tools_ok"]),
         "refusal_correct": sum(1 for row in results if row["should_refuse"] and row["refused"]),
@@ -152,7 +193,7 @@ def summarize_results(scenario_name: str, results: list[dict], judge: bool = Fal
     return summary
 
 
-def run(scenario_name="robot_vacuum", case_id=None, limit=0, judge=False):
+def run(scenario_name="robot_vacuum", case_id=None, limit=0, judge=False, trials=1):
     agent = FrameworkAgent(get_scenario(scenario_name))
     scenario = agent.scenario
     cases_path = scenario.cases_path
@@ -170,11 +211,12 @@ def run(scenario_name="robot_vacuum", case_id=None, limit=0, judge=False):
     def _print_result(index, total, row):
         print(
             f"[{index}/{total}] {row['id']} {row['category']} "
-            f"coverage={row['coverage']:.2f} tools={row['tool_names']} pass={row['passed']}"
+            f"coverage={row['coverage']:.2f} tools={row['tool_names']} "
+            f"pass^k={row['passed']} mean={row.get('pass_rate', 0):.2f}"
         )
 
-    results = evaluate_cases(agent, cases, judge=judge, progress=_print_result)
-    summary = summarize_results(scenario_name, results, judge=judge)
+    results = evaluate_cases(agent, cases, judge=judge, progress=_print_result, trials=trials)
+    summary = summarize_results(scenario_name, results, judge=judge, trials=trials)
 
     out_dir = AGENT_OUT
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -198,7 +240,9 @@ def write_markdown(path: Path, summary, results, judge):
         "",
         f"- 场景：{summary['scenario']}",
         f"- 用例数：{summary['total']}",
-        f"- 通过：{summary['passed']}/{summary['total']}",
+        f"- 通过（pass^k）：{summary['passed']}/{summary['total']}",
+        f"- trials：{summary.get('trials', 1)}",
+        f"- mean pass rate：{summary.get('mean_pass_rate', 0):.4f}",
         f"- 分类分布：{summary['by_category']}",
         f"- 拒答正确：{summary['refusal_correct']}/{summary['refusal_count']}",
     ]
@@ -206,8 +250,8 @@ def write_markdown(path: Path, summary, results, judge):
         lines.append(f"- LLM judge 通过：{summary.get('judge_pass', 0)}/{summary['total']}")
     lines += [
         "",
-        "| ID | 类别 | 问题 | 覆盖 | 工具 | 拒答 | 通过 | 回答摘要 |",
-        "|:---|:---|:---|:---:|:---|:---:|:---:|:---|",
+        "| ID | 类别 | 问题 | 覆盖 | 工具 | 拒答 | pass^k | mean | 回答摘要 |",
+        "|:---|:---|:---|:---:|:---|:---:|:---:|:---:|:---|",
     ]
     for row in results:
         answer = row["answer"].replace("\n", " ").replace("|", "\\|")
@@ -216,7 +260,8 @@ def write_markdown(path: Path, summary, results, judge):
         tools = ", ".join(row["tool_names"]) or "-"
         lines.append(
             f"| {row['id']} | {row['category']} | {row['question']} | {row['coverage']:.0%} | "
-            f"{tools} | {'是' if row['refused'] else '否'} | {'✅' if row['passed'] else '❌'} | {answer} |"
+            f"{tools} | {'是' if row['refused'] else '否'} | {'✅' if row['passed'] else '❌'} | "
+            f"{row.get('pass_rate', 0):.2f} | {answer} |"
         )
     if judge:
         lines += ["", "## Judge 明细", "", "| ID | 判定 | 覆盖 | 理由 |", "|:---|:---|:---:|:---|"]
