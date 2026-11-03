@@ -93,10 +93,11 @@ def validate_tasks(tasks: list[dict], scenarios: set[str] | None = None) -> list
             has_target = (
                 task.get("expected_points")
                 or task.get("expected_regex")
+                or task.get("expected_tools")
                 or task.get("should_refuse")
             )
             if not has_target:
-                errors.append(f"{label}: 缺少 expected_points / expected_regex / should_refuse")
+                errors.append(f"{label}: 缺少 expected_points / expected_regex / expected_tools / should_refuse")
     return errors
 
 
@@ -217,19 +218,7 @@ def render_markdown(report: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _bound_request_timeout(agent, timeout: float) -> None:
-    """给模型设 HTTP 超时：卡住的请求会自己失败，而不是把整批挂死。"""
-    model = getattr(getattr(agent, "scenario", None), "model", None)
-    if model is None:
-        return
-    try:
-        model.request_timeout = timeout
-    except Exception:  # noqa: BLE001 - 不同模型字段名不同，设不上就退回默认
-        pass
-
-
-def run(scenario: str | None = None, trials: int = 1, limit: int = 0, kind: str | None = None,
-        timeout: float = 180.0) -> dict:
+def run(scenario: str | None = None, trials: int = 1, limit: int = 0, kind: str | None = None) -> dict:
     tasks = load_tasks()
     errors = validate_tasks(tasks)
     if errors:
@@ -251,7 +240,6 @@ def run(scenario: str | None = None, trials: int = 1, limit: int = 0, kind: str 
     results: list[dict] = []
     for name, items in grouped.items():
         agent = FrameworkAgent(get_scenario(name))
-        _bound_request_timeout(agent, timeout)
         for task in items:
             for trial in range(trials):
                 try:
@@ -289,10 +277,9 @@ def main(argv=None) -> None:
     parser.add_argument("--trials", type=int, default=1)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--kind", choices=KINDS, help="只跑某一类任务")
-    parser.add_argument("--timeout", type=float, default=180.0, help="单条任务超时（秒）")
     parser.add_argument("--all", action="store_true", help="跑全部任务（默认）")
     args = parser.parse_args(argv)
-    run(scenario=args.scenario, trials=args.trials, limit=args.limit, kind=args.kind, timeout=args.timeout)
+    run(scenario=args.scenario, trials=args.trials, limit=args.limit, kind=args.kind)
 
 
 if __name__ == "__main__":

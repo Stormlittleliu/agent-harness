@@ -9,7 +9,13 @@ from core.quality.selfbuilt import (
     validate_tasks,
 )
 
-SCENARIOS = {"robot_vacuum", "workspace_assistant"}
+SCENARIOS = {
+    "robot_vacuum",
+    "workspace_assistant",
+    "research_assistant",
+    "coding_demo",
+    "router",
+}
 
 
 def test_task_file_loads_and_is_valid():
