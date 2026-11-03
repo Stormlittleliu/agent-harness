@@ -30,6 +30,8 @@ class ChatModelFactory(BaseModelFactory):
                 base_url=rag_conf.get("chat_base_url", "https://api.deepseek.com"),
                 api_key=api_key,
                 temperature=float(rag_conf.get("chat_temperature", 0)),
+                # 构造时传入：事后赋值不会传导到已建好的 client
+                request_timeout=float(rag_conf.get("request_timeout", 60)),
             )
 
         return ChatTongyi(model=rag_conf["chat_model_name"], temperature=0)

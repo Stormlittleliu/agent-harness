@@ -4,6 +4,8 @@ chat_provider: deepseek
 chat_model_name: deepseek-chat
 chat_base_url: https://api.deepseek.com
 chat_temperature: 0
+# 单次模型请求超时（秒）：批量评测时防止某个请求卡住整批
+request_timeout: 60
 
 # Embedding：local（sentence-transformers + BGE，本地 CPU）| dashscope
 embedding_provider: local
