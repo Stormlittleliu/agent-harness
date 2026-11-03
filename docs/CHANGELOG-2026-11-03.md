@@ -106,7 +106,7 @@
 | 4 | workspace 两条多轮未跑通 | ✅ 已跑通：2/2 |
 | 5 | CRAG LFS / mint-bench outputs | ✅ 已清理：删除 1.58 GB outputs 与 CRAG 骨架（2969 → 1384 MB） |
 
-遗留：自建集只有 1 trial 的基线数字，稳定性还需 `--trials 3` 复跑。
+遗留：自建集全量基线 **22/26（84.6%，1 trial）**——检索 7/10、单轮 9/10、多轮 6/6；`gate` 已含 `selfbuilt pass 84.62% ≥ 60%` 并通过。稳定性仍需 `--trials 3` 复跑。
 
 ---
 
