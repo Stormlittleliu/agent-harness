@@ -1,7 +1,7 @@
 # 2026-11-03 改动归档
 
 > 范围：场景可编排（spec）、场景归属（eject）、中间件流水线、自建评测集、复核（judge + 人工）、控制台。
-> 验证：`pytest -q` → **169 passed**。
+> 验证：`pytest -q` → **174 passed**。
 
 ---
 
@@ -87,7 +87,7 @@
 
 | 项 | 结果 |
 |---|---|
-| 全量测试 | 169 passed |
+| 全量测试 | 174 passed |
 | 8 场景中间件顺序 | 与重构前逐层一致（基线快照对比） |
 | `flow_demo` | 编译通过；真实运行产出带 `[seed/agent_harness_notes]` 引用 |
 | 归属守卫 | bootstrap → 改代码 → `OwnershipError` → 还原 → 恢复通过 |
@@ -96,13 +96,17 @@
 
 ---
 
-## 4. 已知问题（未完成）
+## 4. 遗留问题处理（2026-11-03 晚）
 
-1. **自建集 9 条与既有 robot cases 同题**——抽样方式导致，待按「分层 + 排除既有」重抽；
-2. **workspace 两条多轮未跑通**——模型请求卡死，非任务问题；
-3. **`request_timeout` 不生效**——`ChatOpenAI` 构造后赋值不会传导到 client，需在 `core/llm/factory.py` 构造时传；
-4. **CRAG 数据未拉全**（Git LFS），mint-bench 的 1.58 GB `data/outputs/` 未清理；
-5. **自建集未接入 gate**——目前只有报告，没有阈值门禁。
+| # | 问题 | 状态 |
+|---|---|---|
+| 1 | `request_timeout` 不生效 | ✅ 已修：`core/llm/factory.py` 构造时传，`config/rag.yml` 新增 `request_timeout: 60` |
+| 2 | 自建集 9 条与既有 cases 同题 | ✅ 已重抽：行为层无同题；仅 2 条检索跨层复用（见 NOTES.md） |
+| 3 | 自建集未接 gate | ✅ 已接：`selfbuilt pass ≥ 0.60`，报告缺失时 gate 报 missing |
+| 4 | workspace 两条多轮未跑通 | ✅ 已跑通：2/2 |
+| 5 | CRAG LFS / mint-bench outputs | ✅ 已清理：删除 1.58 GB outputs 与 CRAG 骨架（2969 → 1384 MB） |
+
+遗留：自建集只有 1 trial 的基线数字，稳定性还需 `--trials 3` 复跑。
 
 ---
 
@@ -112,7 +116,7 @@
 conda activate langchain
 
 # 测试
-python -m pytest -q                      # 169 passed
+python -m pytest -q                      # 174 passed
 
 # 场景归属
 python -m core.scenarios.eject flow_demo --status
