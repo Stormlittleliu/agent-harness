@@ -33,7 +33,7 @@ DEFAULT_BFCL = ROOT / "outputs" / "bfcl" / "eval_bfcl.json"
 DEFAULT_PUBLIC = ROOT / "outputs" / "public" / "eval_public_results.json"
 DEFAULT_AGENT_GLOB = "outputs/agent/agent_test_coding_demo_*.json"
 DEFAULT_STRUCTURED_GLOB = "outputs/structured/structured_test_structured_demo_*.json"
-DEFAULT_SELFBUILT_GLOB = "outputs/selfbuilt/selfbuilt_*.json"
+DEFAULT_SELFBUILT = ROOT / "outputs" / "selfbuilt" / "selfbuilt_latest.json"
 
 DEFAULT_THRESHOLDS = {
     "bfcl_exact": 0.90,
@@ -164,9 +164,10 @@ def check_selfbuilt(path: Path | None, thresholds: dict) -> list[dict]:
 
 
 def latest_selfbuilt() -> Path:
-    """最新自建集报告；没有时返回一个不存在的路径，让 gate 报 missing。"""
-    found = latest(DEFAULT_SELFBUILT_GLOB)
-    return found or ROOT / "outputs" / "selfbuilt" / "selfbuilt_missing.json"
+    """全量自建集报告（只由不带过滤条件的运行写入）；缺失时返回不存在的路径。"""
+    if DEFAULT_SELFBUILT.is_file():
+        return DEFAULT_SELFBUILT
+    return ROOT / "outputs" / "selfbuilt" / "selfbuilt_missing.json"
 
 
 def evaluate(

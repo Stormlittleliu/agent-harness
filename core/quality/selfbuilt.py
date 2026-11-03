@@ -264,6 +264,11 @@ def run(scenario: str | None = None, trials: int = 1, limit: int = 0, kind: str 
     json_path = OUT_DIR / f"selfbuilt_{stamp}.json"
     md_path = OUT_DIR / f"selfbuilt_{stamp}.md"
     json_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    if not scenario and not kind and not limit:
+        # 只有全量运行才更新门禁基准，避免子集跑分被当成整体指标。
+        (OUT_DIR / "selfbuilt_latest.json").write_text(
+            json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
     markdown = render_markdown(report)
     md_path.write_text(markdown, encoding="utf-8")
     print(markdown)
