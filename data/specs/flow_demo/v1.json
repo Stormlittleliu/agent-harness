@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "name": "flow_demo",
+  "description": "由 spec 构建的演示场景：检索 → 生成 → 引用校验",
+  "tools": ["search_notes"],
+  "system_prompt": "你是办公助手。回答必须用 [笔记id] 标注引用；资料不足就明确说无法确定。",
+  "harness": {
+    "enable_todo": false,
+    "enable_summarization": true,
+    "tool_call_limit": 8,
+    "token_budget": 20000
+  },
+  "workflows": {
+    "qa": {
+      "nodes": [
+        {
+          "id": "search",
+          "fn": "retrieve",
+          "args": {
+            "tool": "search_notes",
+            "limit": 5
+          }
+        },
+        {
+          "id": "answer",
+          "fn": "llm_answer"
+        },
+        {
+          "id": "verify",
+          "fn": "require_citation"
+        }
+      ],
+      "edges": [
+        ["__start__", "search"],
+        ["search", "answer"],
+        ["answer", "verify"],
+        ["verify", "__end__"]
+      ]
+    }
+  }
+}

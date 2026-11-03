@@ -1,0 +1,1 @@
+{"id":"flow-demo-qa-001","category":"spec_workflow","question":"根据笔记，Agent 评测应该关注哪些指标？","expected_points":["评测"],"expected_tools":["search_notes"],"should_refuse":false,"notes":"spec 场景：检索 → 生成 → 引用校验；改流程不改代码"}
