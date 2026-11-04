@@ -13,6 +13,7 @@
 """
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -212,6 +213,188 @@ def _invoke_tool(scenario: Any, name: str, args: dict[str, Any]) -> str:
         "type": "tool_call",
     })
     return _content(result)
+
+
+# ---------------------------------------------------------------- 参数插值
+#
+# 节点之间靠 state 传值。让 spec 里能写 "{input}" / "{scratch.user_id}"，就不用为
+# 每个"第 N 步要带出第 N-1 步结果"的场景各写一个块。
+
+PLACEHOLDER = re.compile(r"\{([a-zA-Z_][\w.]*)\}")
+
+
+def _lookup(state: dict[str, Any], key: str) -> str:
+    if key.startswith("scratch."):
+        value = (state.get("scratch") or {}).get(key.split(".", 1)[1])
+    else:
+        value = state.get(key)
+    return "" if value is None else str(value)
+
+
+def render_template(text: Any, state: dict[str, Any]) -> str:
+    """把 ``{key}`` / ``{scratch.key}`` 换成 state 里的值；未知 key 变空串。"""
+    return PLACEHOLDER.sub(lambda match: _lookup(state, match.group(1)), str(text or ""))
+
+
+def _save(result: dict[str, Any], state: dict[str, Any], save_to: str, text: str) -> dict[str, Any]:
+    """按 ``save_to`` 把文本写回 state（answer / tool_result / scratch.<key>）。"""
+    target = (save_to or "answer").strip()
+    if target.startswith("scratch."):
+        return {"scratch": _merge_scratch(state, **{target.split(".", 1)[1]: text})}
+    if target in {"answer", "tool_result"}:
+        return {target: text}
+    return {"scratch": _merge_scratch(state, error=f"save_to 不合法：{save_to}")}
+
+
+@register_node(
+    "call_tool",
+    label="调用工具",
+    desc="按参数 JSON 调用一个工具，结果写回 answer / tool_result / scratch.<key>；返回值里带 docs 时会顺手存成材料",
+    params=(
+        ParamSpec("tool", "str", required=True, help="工具名，必须在场景工具白名单里"),
+        ParamSpec(
+            "args",
+            "str",
+            default="{}",
+            help='参数 JSON；可用 {input} / {answer} / {tool_result} / {scratch.key} 插值',
+        ),
+        ParamSpec(
+            "save_to",
+            "str",
+            default="answer",
+            help="answer / tool_result / scratch.<key>",
+        ),
+    ),
+)
+def call_tool(
+    state: dict[str, Any],
+    scenario: Any = None,
+    tool: str = "",
+    args: str = "{}",
+    save_to: str = "answer",
+    **_,
+) -> dict[str, Any]:
+    """调一个工具，把结果按 ``save_to`` 写回。参数支持从 state 插值。"""
+    if scenario is None:
+        return {"scratch": _merge_scratch(state, error="call_tool 缺少场景")}
+    try:
+        payload = json.loads(render_template(args or "{}", state) or "{}")
+    except json.JSONDecodeError as exc:
+        return {"scratch": _merge_scratch(state, error=f"call_tool 参数不是合法 JSON：{exc}")}
+    if not isinstance(payload, dict):
+        return {"scratch": _merge_scratch(state, error="call_tool 参数必须是 JSON 对象")}
+    try:
+        result = scenario.get_tool(tool).invoke({
+            "name": tool,
+            "args": payload,
+            "id": f"spec-{tool}",
+            "type": "tool_call",
+        })
+    except Exception as exc:  # noqa: BLE001 - 节点失败回注，不打断整张图
+        return {"scratch": _merge_scratch(state, error=f"工具 {tool} 失败：{exc}")}
+
+    updates = _save({}, state, save_to, _content(result).strip())
+    artifact = getattr(result, "artifact", None)
+    docs = artifact.get("docs") if isinstance(artifact, dict) else None
+    if docs and save_to != "tool_result":
+        material = "\n\n".join(str(item.get("content", "")) for item in docs if isinstance(item, dict))
+        if material.strip():
+            updates["tool_result"] = material
+    return updates
+
+
+@register_node(
+    "fan_out",
+    label="并发子任务",
+    desc="把一段「每行一个子问题」的文本拆开，并发交给 subagent，结果合并成材料",
+    params=(
+        ParamSpec("subagent", "str", default="subagent", help="子 Agent 工具名"),
+        ParamSpec("queries_from", "str", default="scratch.queries", help="子问题列表所在的 state key，按行拆分"),
+        ParamSpec("save_to", "str", default="scratch.findings", help="合并结果写回的 key"),
+        ParamSpec(
+            "template",
+            "str",
+            default="",
+            help="每个子任务的指令模板，{query} 会替换成子问题；留空用默认指令",
+        ),
+        ParamSpec("max_workers", "int", default=3, minimum=1, maximum=8, help="并发数"),
+    ),
+)
+def fan_out(
+    state: dict[str, Any],
+    scenario: Any = None,
+    subagent: str = "subagent",
+    queries_from: str = "scratch.queries",
+    save_to: str = "scratch.findings",
+    template: str = "",
+    max_workers: int = 3,
+    **_,
+) -> dict[str, Any]:
+    """并发跑 subagent：每个子问题一次，结果按"子问题 / 结论"拼接。"""
+    from concurrent.futures import ThreadPoolExecutor
+
+    if scenario is None:
+        return {"scratch": _merge_scratch(state, error="fan_out 缺少场景")}
+    raw = _lookup(state, queries_from)
+    queries = [line.strip(" -•\t") for line in raw.splitlines() if line.strip(" -•\t")]
+    if not queries:
+        return {"scratch": _merge_scratch(state, error="fan_out 没有子问题")}
+    try:
+        tool = scenario.get_tool(subagent)
+    except KeyError:
+        return {"scratch": _merge_scratch(state, error=f"没有子 Agent 工具：{subagent}")}
+
+    instruction = template or "阅读研究资料并回答这个子问题：{query}。只返回结论和引用的资料 id。"
+
+    def _run(query: str) -> str:
+        try:
+            result = tool.invoke({
+                "name": subagent,
+                "args": {"description": instruction.replace("{query}", query)},
+                "id": f"spec-fan-{abs(hash(query))}",
+                "type": "tool_call",
+            })
+            return _content(result).strip()
+        except Exception as exc:  # noqa: BLE001 - 单个子任务失败不影响整体
+            return f"子 Agent 失败：{type(exc).__name__}: {exc}"
+
+    with ThreadPoolExecutor(max_workers=max(1, min(int(max_workers), len(queries)))) as pool:
+        results = list(pool.map(_run, queries))
+    findings = "\n\n".join(
+        f"子问题：{query}\n结论：{answer}" for query, answer in zip(queries, results)
+    )
+    return _save({}, state, save_to, findings)
+
+
+@register_node(
+    "llm_text",
+    label="模型生成",
+    desc="把 prompt 渲染后交给模型，结果写回 answer / scratch.<key>（适合核查、报告这类固定话术）",
+    params=(
+        ParamSpec("prompt", "str", required=True, help="指令；可用 {input} / {answer} / {tool_result} / {scratch.key} 插值"),
+        ParamSpec("save_to", "str", default="answer", help="answer / tool_result / scratch.<key>"),
+    ),
+)
+def llm_text(
+    state: dict[str, Any],
+    scenario: Any = None,
+    prompt: str = "",
+    save_to: str = "answer",
+    **_,
+) -> dict[str, Any]:
+    """渲染 prompt → 调模型 → 按 ``save_to`` 写回。"""
+    model = getattr(scenario, "model", None)
+    if model is None:
+        return {"scratch": _merge_scratch(state, error="场景没有可用模型")}
+    messages = [
+        ("system", getattr(scenario, "system_prompt", "") or "你是一个严谨的助手。"),
+        ("human", render_template(prompt, state)),
+    ]
+    try:
+        reply = model.invoke(messages)
+    except Exception as exc:  # noqa: BLE001
+        return {"scratch": _merge_scratch(state, error=f"模型调用失败：{exc}")}
+    return _save({}, state, save_to, _content(reply).strip())
 
 
 # ---------------------------------------------------------------- 块

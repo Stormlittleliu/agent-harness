@@ -35,13 +35,13 @@ def test_flow_demo_is_spec_owned_and_editable():
 
 
 def test_code_scenario_is_marked_readonly():
-    """没被 spec 接管的场景仍然标 code（robot_vacuum 还没仿造）。"""
-    item = library.entry("robot_vacuum")
-    assert item is not None
-    assert item.from_spec is False
-    assert item.editable is False
-    assert item.cases > 0
+    """还没被 spec 接管的场景仍然标 code。"""
+    pending = [item for item in library.entries() if not item.from_spec]
+    for item in pending:
+        assert item.editable is False, item
+        assert item.badge == "code"
 
+    # coding_demo 已经接管，但运行时能力标记必须保留
     coding = library.entry("coding_demo")
     assert coding is not None and coding.supports_runtime is True
     assert coding.cases > 0

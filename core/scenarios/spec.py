@@ -239,8 +239,14 @@ def build_from_spec(
     checkpoint_path: str = "data/runtime/spec_checkpoints.sqlite",
     runtime: Any = None,
     response_format: Any = None,
+    defaults: dict[str, Any] | None = None,
 ) -> Any:
-    """用 spec 组装一个 ``Scenario``；工具按 ``spec.tools`` 白名单过滤。"""
+    """用 spec 组装一个 ``Scenario``；工具按 ``spec.tools`` 白名单过滤。
+
+    ``defaults`` 是代码层给的覆盖层（tool_policy / high_risk_tools / pii_types /
+    context / timeouts / middleware / checkpoint…）。spec 控制结构，defaults 控制
+    实现细节；两者冲突时以 spec 为准（结构必须由数据决定）。
+    """
     from core.agent.contracts import Scenario
 
     errors = validate_spec(spec)
@@ -260,28 +266,32 @@ def build_from_spec(
         raise SpecError(errors)
 
     harness = spec.harness
-    return Scenario(
-        name=spec.name,
-        description=spec.description,
-        model=model,
-        system_prompt=spec.system_prompt,
-        tools=selected,
-        kind=spec.kind,
-        middleware=[],
-        policies=[policy.model_dump() for policy in spec.policies] if spec.policies is not None else None,
-        context={},
-        cases_path=cases_path,
-        enable_todo=harness.enable_todo,
-        enable_summarization=harness.enable_summarization,
-        tool_call_limit=harness.tool_call_limit,
-        token_budget=harness.token_budget,
-        checkpoint=True,
-        checkpoint_backend=checkpoint_backend,
-        checkpoint_path=checkpoint_path,
-        workflow_factory=(lambda scenario: build_workflows(spec, scenario)) if spec.workflows else None,
-        runtime=runtime,
-        response_format=response_format,
-    )
+    options: dict[str, Any] = dict(defaults or {})
+    options.update({
+        "name": spec.name,
+        "description": spec.description,
+        "model": model,
+        "system_prompt": spec.system_prompt,
+        "tools": selected,
+        "kind": spec.kind,
+        "policies": [policy.model_dump() for policy in spec.policies]
+        if spec.policies is not None
+        else None,
+        "cases_path": cases_path,
+        "enable_todo": harness.enable_todo,
+        "enable_summarization": harness.enable_summarization,
+        "tool_call_limit": harness.tool_call_limit,
+        "token_budget": harness.token_budget,
+        "checkpoint": True,
+        "workflow_factory": (
+            (lambda scenario: build_workflows(spec, scenario)) if spec.workflows else None
+        ),
+        "runtime": runtime,
+        "response_format": response_format,
+    })
+    options.setdefault("checkpoint_backend", checkpoint_backend)
+    options.setdefault("checkpoint_path", checkpoint_path)
+    return Scenario(**options)
 
 
 def resolve_cases_path(spec: ScenarioSpec, root: Path | str = SPEC_ROOT) -> Path | None:

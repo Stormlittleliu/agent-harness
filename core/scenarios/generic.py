@@ -86,4 +86,5 @@ def build_generic_spec_scenario(
         checkpoint_path=f"data/runtime/spec_{name}_checkpoints.sqlite",
         runtime=box.runtime,
         response_format=resolve_schema(spec.response_format),
+        defaults=box.defaults,
     )

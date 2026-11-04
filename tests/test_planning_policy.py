@@ -8,7 +8,10 @@ from core.agent.middleware.planning import (
     PlanningRule,
     classify_intent,
 )
-from core.scenarios.router.scenario import ROUTER_POLICY
+from core.scenarios.router import routes as route_table
+
+# 路由规则现在由 data/routes/router.json 生成，不再写死在 scenario.py 里。
+ROUTER_POLICY = route_table.build_policy()
 
 
 def _state(text: str):
@@ -18,7 +21,9 @@ def _state(text: str):
 def test_router_scenario_wires_planning_policy():
     from core.scenarios.registry import get_scenario
 
-    assert get_scenario("router").planning_policy is ROUTER_POLICY
+    policy = get_scenario("router").planning_policy
+    assert policy is not None
+    assert [rule.tool for rule in policy.rules] == [rule.tool for rule in ROUTER_POLICY.rules]
 
 
 def test_router_policy_classifies_four_intents():

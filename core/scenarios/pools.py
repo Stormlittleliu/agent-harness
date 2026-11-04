@@ -43,11 +43,18 @@ RESEARCH_LOG_DIR = Path(get_abs_path("data/runtime/research_assistant/run_window
 
 @dataclass(frozen=True)
 class Toolbox:
-    """一个场景的工具集合，外加它需要的运行时（工作区 / 任务库 / subagent）。"""
+    """一个场景的工具集合，外加它需要的运行时与"代码层默认值"。
+
+    ``defaults`` 是 ``Scenario`` 字段的覆盖层（tool_policy / high_risk_tools /
+    pii_types / context / timeouts / checkpoint…）。它们属于"实现"，不该写进 spec；
+    spec 只描述结构（提示词 / 工具白名单 / 拓扑 / harness 开关）。
+    """
 
     name: str
     tools: tuple = ()
     runtime: Any = None
+    middleware: tuple = ()
+    defaults: dict = field(default_factory=dict)
     notes: tuple[str, ...] = field(default_factory=tuple)
 
 
@@ -63,7 +70,35 @@ def _office() -> Toolbox:
 
 
 def _workspace_assistant() -> Toolbox:
-    return Toolbox("workspace_assistant", _notes_tools(WORKSPACE_SEED, WORKSPACE_USER, WORKSPACE_DB))
+    from core.agent.middleware import log_before_model, monitor_tool
+
+    return Toolbox(
+        "workspace_assistant",
+        _notes_tools(WORKSPACE_SEED, WORKSPACE_USER, WORKSPACE_DB),
+        middleware=(monitor_tool, log_before_model),
+        defaults={
+            "middleware": [monitor_tool, log_before_model],
+            "pii_types": ["email", "credit_card", "ip"],
+            "tool_policy": {
+                "default": "allow",
+                "risk_levels": {
+                    "list_notes": "low",
+                    "read_note": "low",
+                    "search_notes": "low",
+                    "write_note": "medium",
+                    "remember": "medium",
+                    "recall": "low",
+                    "list_memory": "low",
+                    "translate": "low",
+                    "summarize": "low",
+                },
+            },
+            "tool_timeout_seconds": 30,
+            "tool_timeouts": {"translate": 60, "summarize": 60},
+            "checkpoint_backend": "sqlite",
+            "checkpoint_path": "data/runtime/workspace_assistant_checkpoints.sqlite",
+        },
+    )
 
 
 def _general() -> Toolbox:
@@ -111,6 +146,17 @@ def _coding_demo() -> Toolbox:
 
 
 def _robot_vacuum() -> Toolbox:
+    from core.agent.middleware import (
+        LimitStepsMiddleware,
+        ValidateToolArgsMiddleware,
+        log_before_model,
+        monitor_tool,
+    )
+    from core.scenarios.robot_vacuum.middleware import (
+        IntentRouterMiddleware,
+        ReportPromptSwitchMiddleware,
+    )
+    from core.scenarios.robot_vacuum.validators import VALIDATORS
     from core.tools.business.tools import (
         configure_business_tools,
         fetch_external_data,
@@ -123,8 +169,12 @@ def _robot_vacuum() -> Toolbox:
     from core.tools.rag.tools import build_rag_tools
     from core.utils.config_handler import load_agent_config
 
-    config = load_agent_config(get_abs_path("core/scenarios/robot_vacuum/config/agent.yml"))
+    agent_yml = get_abs_path("core/scenarios/robot_vacuum/config/agent.yml")
+    prompts_yml = get_abs_path("core/scenarios/robot_vacuum/config/prompts.yml")
+    config = load_agent_config(agent_yml)
     configure_business_tools(config.get("external_data_path"))
+    policy = config.get("tool_policy", {}) or {}
+    approval = policy.get("require_approval") or ["reset_device"]
     rag_summarize, _ = build_rag_tools()
     tools = (
         rag_summarize,
@@ -135,7 +185,27 @@ def _robot_vacuum() -> Toolbox:
         fetch_external_data,
         reset_device,
     )
-    return Toolbox("robot_vacuum", tools)
+    middleware = (
+        monitor_tool,
+        ValidateToolArgsMiddleware(VALIDATORS),
+        IntentRouterMiddleware((config.get("intent", {}) or {}).get("report_keywords", [])),
+        log_before_model,
+        LimitStepsMiddleware(int(config.get("max_model_calls", 5))),
+        ReportPromptSwitchMiddleware(prompts_yml),
+    )
+    defaults = {
+        "middleware": list(middleware),
+        # 中间件之间通过 context 共享 intent；空字典会被 LangGraph 丢弃。
+        "context": {"intent": None},
+        "high_risk_tools": {name: True for name in approval},
+        "pii_types": ["email", "credit_card", "ip"],
+        "tool_policy": policy,
+        "tool_timeout_seconds": float(config.get("tool_timeout_seconds", 30)),
+        "tool_timeouts": config.get("tool_timeouts", {}) or {},
+        "checkpoint_backend": config.get("checkpoint_backend", "memory"),
+        "checkpoint_path": config.get("checkpoint_path", "data/runtime/agent_checkpoints.sqlite"),
+    }
+    return Toolbox("robot_vacuum", tools, middleware=middleware, defaults=defaults)
 
 
 def _research_assistant() -> Toolbox:
@@ -160,8 +230,30 @@ def _research_assistant() -> Toolbox:
         subagent=subagent,
     )
     subagent_tool = build_subagent_tool(chat_model, base, subagent, parent_runtime=runtime)
+    from core.agent.middleware import log_before_model, monitor_tool
+
     return Toolbox(
-        "research_assistant", tuple(base) + (subagent_tool,), runtime=runtime
+        "research_assistant",
+        tuple(base) + (subagent_tool,),
+        runtime=runtime,
+        middleware=(monitor_tool, log_before_model),
+        defaults={
+            "middleware": [monitor_tool, log_before_model],
+            "tool_policy": {
+                "default": "allow",
+                "risk_levels": {
+                    "list_sources": "low",
+                    "read_source": "low",
+                    "search_sources": "low",
+                    "write_report": "medium",
+                    "subagent": "medium",
+                },
+            },
+            "tool_timeout_seconds": 60,
+            "tool_timeouts": {"subagent": 180, "write_report": 60},
+            "checkpoint_backend": "sqlite",
+            "checkpoint_path": "data/runtime/research_assistant_checkpoints.sqlite",
+        },
     )
 
 
@@ -172,9 +264,24 @@ def _mcp_demo() -> Toolbox:
 
 
 def _router() -> Toolbox:
-    from core.scenarios.router.tools import build_route_tools
+    from core.agent.middleware import log_before_model, monitor_tool
+    from core.scenarios.router import routes as route_table
 
-    return Toolbox("router", tuple(build_route_tools()))
+    table = route_table.load_routes("router")
+    defaults = {
+        "middleware": [monitor_tool, log_before_model],
+        "tool_policy": {"default": "allow", "risk_levels": route_table.risk_levels(table)},
+        "tool_timeout_seconds": 180,
+        "tool_timeouts": route_table.timeouts(table),
+        "planning_policy": route_table.build_policy(table),
+        "checkpoint_backend": "sqlite",
+        "checkpoint_path": "data/runtime/spec_router_checkpoints.sqlite",
+    }
+    return Toolbox(
+        "router",
+        tuple(route_table.build_route_tools(table)),
+        defaults=defaults,
+    )
 
 
 _BUILDERS = {

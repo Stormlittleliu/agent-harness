@@ -1,0 +1,95 @@
+{
+  "routes": [
+    {
+      "target": "workspace_assistant",
+      "tool": "route_to_workspace",
+      "label": "办公 / 学习 / 内容",
+      "description": "整理学习笔记、总结文档、翻译、保存笔记。",
+      "strong": [
+        "笔记",
+        "翻译",
+        "办公",
+        "学习",
+        "内容",
+        "记住",
+        "偏好",
+        "待办"
+      ],
+      "keywords": [
+        "总结",
+        "摘要",
+        "跨语言",
+        "信息管理"
+      ],
+      "risk": "low",
+      "timeout": 120
+    },
+    {
+      "target": "coding_demo",
+      "tool": "route_to_coding",
+      "label": "编码 / 文件 / 测试",
+      "description": "写脚本、改代码、跑测试、修复报错。",
+      "strong": [
+        "脚本",
+        "代码",
+        "编程",
+        "python",
+        "乘法表",
+        "报错",
+        "调试"
+      ],
+      "keywords": [
+        "运行",
+        "测试",
+        "修复",
+        "文件读写"
+      ],
+      "risk": "medium",
+      "timeout": 180
+    },
+    {
+      "target": "robot_vacuum",
+      "tool": "route_to_robot",
+      "label": "扫地机器人",
+      "description": "设备使用、故障排查、使用报告。",
+      "strong": [
+        "扫地",
+        "扫拖",
+        "回充",
+        "吸力",
+        "滤网",
+        "基站",
+        "固件",
+        "机器人"
+      ],
+      "keywords": [
+        "清洁",
+        "设备",
+        "故障"
+      ],
+      "risk": "medium",
+      "timeout": 180
+    },
+    {
+      "target": "research_assistant",
+      "tool": "route_to_research",
+      "label": "研究调研",
+      "description": "多资料对比、多源汇总、研究综述。",
+      "strong": [
+        "资料",
+        "文献",
+        "调研",
+        "综述",
+        "多源"
+      ],
+      "keywords": [
+        "对比",
+        "研究",
+        "来源",
+        "差异"
+      ],
+      "risk": "medium",
+      "timeout": 240
+    }
+  ]
+}
