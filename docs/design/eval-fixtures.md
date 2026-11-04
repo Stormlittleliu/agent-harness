@@ -91,9 +91,18 @@ permission：
 - approve ✅：HITL 中断 → 批准 → `reset_device` 执行；
 - reject ✅：HITL 中断 → 拒绝 → stub 无调用记录，回答说明未执行。
 
-扩到 3 条 BFCL 任务 × 4 变体（12 条）：**10/12**。失败的 2 条都是 `missing`：
-没有工具时模型直接心算，不提“工具不可用”。这不是 fixture 坏了，是它抓到了
-一个稳定的行为缺陷——缺工具时倾向于编答案，而不是说明能力边界。
+扩到 10 条 BFCL simple 任务 × 4 变体（40 条）：**32/40**。
+
+| variant | 通过 |
+|---|---:|
+| clean | 10/10 |
+| distractor | 10/10 |
+| failure | 10/10 |
+| missing | 2/10 |
+
+失败的 8 条全是 `missing`：没有工具时模型直接心算，不提“工具不可用”。
+这不是 fixture 坏了，是它抓到了一个稳定的行为缺陷——缺工具时倾向于编答案，
+而不是说明能力边界。clean/distractor/failure 全过，说明这个差异不是 prompt 噪声。
 
 这两个结果说明变体不是“换个 prompt 重跑”，而是真的改变了工具集和断言。
 

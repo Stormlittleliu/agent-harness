@@ -148,8 +148,11 @@ def _args_match(expected: Any, actual: Any) -> bool:
         return all(key in actual and _args_match(value, actual[key]) for key, value in expected.items())
     if isinstance(expected, list):
         # BFCL 的 ground truth 常把单值写成 [10]；实际调用可能是 10，也可能真是列表。
+        # 数组参数还会出现 [[3,2,-4]]（一个数组）对 [3,2,-4]（扁平数组）。
         if not isinstance(actual, list):
             return any(_args_match(item, actual) for item in expected)
+        if len(expected) == 1 and _args_match(expected[0], actual):
+            return True
         if len(expected) != len(actual):
             return False
         return all(any(_args_match(item, candidate) for candidate in actual) for item in expected)
@@ -491,12 +494,68 @@ def _print_fixture(fixture: TaskFixture) -> None:
     print(f"  expected: {json.dumps(fixture.expected, ensure_ascii=False)[:240]}")
 
 
+def summarize(results: list[dict[str, Any]]) -> dict[str, Any]:
+    by_variant: dict[str, dict[str, int]] = {}
+    for row in results:
+        variant = str(row.get("variant") or "unknown")
+        stat = by_variant.setdefault(variant, {"passed": 0, "total": 0})
+        stat["total"] += 1
+        stat["passed"] += int(bool(row.get("passed")))
+    failures = [
+        {
+            "id": row.get("id"),
+            "variant": row.get("variant"),
+            "status": row.get("status"),
+            "missing_calls": row.get("missing_calls") or [],
+            "forbidden_calls": row.get("forbidden_calls") or [],
+            "answer": str(row.get("answer") or "")[:160],
+        }
+        for row in results
+        if not row.get("passed")
+    ]
+    return {
+        "total": len(results),
+        "passed": sum(1 for row in results if row.get("passed")),
+        "by_variant": by_variant,
+        "failures": failures,
+    }
+
+
+def render_markdown(summary: dict[str, Any], family: str) -> str:
+    lines = [
+        "# 任务级夹具矩阵",
+        "",
+        f"- family：`{family}`",
+        f"- 总通过：{summary['passed']}/{summary['total']}",
+        "",
+        "| variant | 通过 | 总数 |",
+        "|---|---:|---:|",
+    ]
+    for variant, stat in sorted(summary["by_variant"].items()):
+        lines.append(f"| {variant} | {stat['passed']} | {stat['total']} |")
+    lines += ["", "## 失败", ""]
+    if not summary["failures"]:
+        lines.append("（无）")
+    else:
+        lines += ["| id | variant | status | 缺调用 | 误调用 | 回答摘要 |", "|---|---|---|---|---|---|"]
+        for item in summary["failures"]:
+            answer = item["answer"].replace("|", "\\|")
+            lines.append(
+                f"| {item['id']} | {item['variant']} | {item['status']} | "
+                f"{', '.join(str(x) for x in item['missing_calls']) or '—'} | "
+                f"{', '.join(str(x) for x in item['forbidden_calls']) or '—'} | "
+                f"{answer} |"
+            )
+    return "\n".join(lines) + "\n"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="任务级评测夹具")
     parser.add_argument("--family", default="bfcl", choices=["bfcl", "permission", "all"])
     parser.add_argument("--limit", type=int, default=5)
     parser.add_argument("--distractors", type=int, default=3)
     parser.add_argument("--variants", default="", help="逗号分隔；空表示全部")
+    parser.add_argument("--case", default="", help="按 id 子串过滤，便于复跑单条")
     parser.add_argument("--dry-run", action="store_true", help="只打印夹具，不调模型")
     parser.add_argument("--out", default=str(OUT_DIR))
     args = parser.parse_args(argv)
@@ -505,6 +564,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.variants:
         wanted = {item.strip() for item in args.variants.split(",") if item.strip()}
         fixtures = [fixture for fixture in fixtures if fixture.variant in wanted]
+    if args.case:
+        fixtures = [fixture for fixture in fixtures if args.case in fixture.id]
     print(f"family={args.family} fixtures={len(fixtures)}")
     for fixture in fixtures:
         _print_fixture(fixture)
@@ -515,12 +576,18 @@ def main(argv: list[str] | None = None) -> int:
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     results = [run_fixture(fixture) for fixture in fixtures]
+    summary = summarize(results)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = out_dir / f"fixtures_{args.family}_{stamp}.json"
     path.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
-    passed = sum(1 for row in results if row.get("passed"))
-    print(f"\npassed {passed}/{len(results)}")
+    md_path = out_dir / f"fixtures_{args.family}_{stamp}.md"
+    md_path.write_text(render_markdown(summary, args.family), encoding="utf-8")
+
+    print(f"\npassed {summary['passed']}/{summary['total']}")
+    for variant, stat in sorted(summary["by_variant"].items()):
+        print(f"  {variant}: {stat['passed']}/{stat['total']}")
     print(f"report: {path}")
+    print(f"summary: {md_path}")
     return 0
 
 

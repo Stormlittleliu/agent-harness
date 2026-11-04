@@ -138,8 +138,8 @@ if judged is not None:
 ## 本次已落地（2026-11-04）
 
 - `core/quality/fixtures.py` + `docs/design/eval-fixtures.md`；
-- BFCL POC：3 条任务 × 4 变体 = 12 条，10/12；失败集中在 `missing`
-  （无工具时模型直接心算，不说明“工具不可用”）——这是要抓的幻觉；
+- BFCL POC：10 条任务 × 4 变体 = 40 条，32/40；clean/distractor/failure 均 10/10，
+  失败集中在 `missing` 2/10（无工具时模型直接心算，不说明“工具不可用”）——这是要抓的幻觉；
 - permission：approve ✅、reject ✅（真实 HITL 中断 + resume）；
 - 测试：381 passed。
 

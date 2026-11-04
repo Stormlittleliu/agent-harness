@@ -7,7 +7,9 @@ from core.quality.fixtures import (
     _normalize_schema,
     build_bfcl_fixtures,
     build_permission_fixtures,
+    render_markdown,
     score_fixture,
+    summarize,
 )
 
 
@@ -54,6 +56,7 @@ def test_args_match_accepts_bfcl_single_value_lists():
     assert _args_match({"base": [10]}, {"base": 10})
     assert _args_match({"base": [10]}, {"base": [10]})
     assert not _args_match({"base": [10]}, {"base": 11})
+    assert _args_match({"polynomial": [[3.0, 2.0, -4.0]]}, {"polynomial": [3, 2, -4]})
 
 
 def test_normalize_schema_handles_bfcl_dict_type():
@@ -114,3 +117,17 @@ def test_permission_fixtures_use_hitl():
         status="approved",
     )
     assert result["passed"]
+
+
+def test_summarize_groups_by_variant_and_renders_failures():
+    rows = [
+        {"id": "a", "variant": "clean", "passed": True, "status": "ok"},
+        {"id": "b", "variant": "missing", "passed": False, "status": "ok", "answer": "25"},
+    ]
+    summary = summarize(rows)
+    assert summary["passed"] == 1
+    assert summary["by_variant"]["clean"] == {"passed": 1, "total": 1}
+    assert summary["by_variant"]["missing"] == {"passed": 0, "total": 1}
+    markdown = render_markdown(summary, "bfcl")
+    assert "| missing | 0 | 1 |" in markdown
+    assert "b" in markdown
