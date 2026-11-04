@@ -56,6 +56,26 @@ div[data-testid="stDataFrame"] {
     line-height: 1.5;
 }
 .ah-card-title { font-weight: 600; }
+.ah-chain-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .18rem .12rem;
+    margin: .15rem 0 .1rem;
+}
+.ah-chain {
+    border: 1px solid rgba(128,128,128,.32);
+    border-radius: 999px;
+    padding: .13rem .5rem;
+    font-size: .78rem;
+    line-height: 1.5;
+    background: rgba(128,128,128,.05);
+    cursor: help;
+    white-space: nowrap;
+}
+.ah-chain b { color: #4C7DF0; font-weight: 600; margin-right: .12rem; }
+.ah-chain:hover { border-color: #4C7DF0; background: #EEF4FF; }
+.ah-arrow { color: rgba(128,128,128,.75); font-size: .72rem; margin: 0 .1rem; }
 .stGraphVizChart { min-height: 120px; }
 .stGraphVizChart svg { width: 100% !important; height: auto !important; min-height: 120px; }
 #MainMenu { visibility: hidden; }
@@ -186,6 +206,28 @@ def empty_state(message: str, command: str | None = None) -> None:
     st.info(message)
     if command:
         st.code(command, language="bash")
+
+
+def graph_dot(graph) -> str:
+    """把 LangGraph 的边转成 Graphviz DOT，Streamlit 可直接渲染。"""
+    labels = {"__start__": "START", "__end__": "END"}
+    lines = [
+        "digraph G {",
+        "rankdir=LR;",
+        'node [shape=box, style="rounded,filled", fillcolor="#EEF4FF", fontsize=11];',
+    ]
+    nodes: set[str] = set()
+    for edge in graph.edges:
+        source = labels.get(edge.source, edge.source)
+        target = labels.get(edge.target, edge.target)
+        nodes.update({source, target})
+        style = " [style=dashed]" if getattr(edge, "conditional", False) else ""
+        lines.append(f'  "{source}" -> "{target}"{style};')
+    for node in nodes:
+        if node in {"START", "END"}:
+            lines.append(f'  "{node}" [shape=oval, fillcolor="#E8F5E9"];')
+    lines.append("}")
+    return "\n".join(lines)
 
 
 def source_footer(entries: Sequence[tuple[Path, str]]) -> None:

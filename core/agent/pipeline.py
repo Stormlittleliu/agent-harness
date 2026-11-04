@@ -65,6 +65,123 @@ INVARIANTS: tuple[tuple[str, str, str], ...] = (
 )
 
 
+# 分层的顺序就是"从外到内"的直觉顺序；UI 按这个顺序分组，不按 slot 排。
+LAYERS: dict[str, int] = {
+    "守卫层": 0,
+    "上下文层": 1,
+    "自定义": 2,
+    "可靠性层": 3,
+    "成本层": 4,
+}
+
+
+@dataclass(frozen=True)
+class PolicyDoc:
+    """给人和 UI 看的策略说明；与实现写在同一个文件，避免文档漂移。"""
+
+    key: str
+    label: str
+    desc: str
+    layer: str
+
+
+POLICY_DOCS: dict[str, PolicyDoc] = {
+    doc.key: doc
+    for doc in (
+        PolicyDoc(
+            "permission",
+            "工具权限",
+            "按 allow / deny / 风险等级拦截工具调用；被拒绝的工具不会进入后面的链路",
+            "守卫层",
+        ),
+        PolicyDoc(
+            "hitl",
+            "人工审批",
+            "高风险工具调用前暂停，等人工批准或拒绝；人思考的时间不算工具耗时",
+            "守卫层",
+        ),
+        PolicyDoc(
+            "hooks",
+            "生命周期钩子",
+            "把场景注册的钩子接进 run：用户提示改写、停止回调等",
+            "上下文层",
+        ),
+        PolicyDoc(
+            "planning",
+            "规划策略",
+            "先按规则决定要不要委派或换工具，再进入常规流程",
+            "上下文层",
+        ),
+        PolicyDoc(
+            "todo",
+            "任务清单",
+            "复杂任务自动维护 write_todos，长任务有可检查的中间状态",
+            "上下文层",
+        ),
+        PolicyDoc(
+            "summarization",
+            "上下文压缩",
+            "历史超过阈值先摘要再送模型，避免上下文无限增长",
+            "上下文层",
+        ),
+        PolicyDoc(
+            "pii",
+            "敏感信息脱敏",
+            "输入里的敏感信息在送模型前替换成占位符",
+            "上下文层",
+        ),
+        PolicyDoc(
+            "timeout",
+            "工具超时",
+            "按工具配置执行时限，超时中断并回注错误，不让一个工具拖死整个 run",
+            "可靠性层",
+        ),
+        PolicyDoc(
+            "error",
+            "异常回注",
+            "工具异常转成中文 ToolMessage，让模型换一种方式继续",
+            "可靠性层",
+        ),
+        PolicyDoc(
+            "retry",
+            "工具重试",
+            "工具失败后重试一次，仍失败再交给 error 层转成消息",
+            "可靠性层",
+        ),
+        PolicyDoc(
+            "limit",
+            "调用上限",
+            "单次 run 的工具调用次数上限，防止无限循环",
+            "可靠性层",
+        ),
+        PolicyDoc(
+            "fallback",
+            "模型回退",
+            "主模型失败时切到备用模型",
+            "可靠性层",
+        ),
+        PolicyDoc(
+            "model_retry",
+            "模型重试",
+            "模型调用失败后重试一次",
+            "可靠性层",
+        ),
+        PolicyDoc(
+            "budget",
+            "Token 预算",
+            "累计 token 超预算时在下一次模型调用前截断，包含工具内部的模型调用",
+            "成本层",
+        ),
+        PolicyDoc(
+            "custom",
+            "场景自定义",
+            "场景自己注册的中间件，按声明顺序插在权限层之后",
+            "自定义",
+        ),
+    )
+}
+
+
 class PipelineError(ValueError):
     """策略配置不合法。"""
 
@@ -353,3 +470,39 @@ def describe_pipeline(
 ) -> list[str]:
     """返回装配后的策略名（由外到内），用于测试、UI 与排查。"""
     return [entry.name for entry in _entries(scenario, hook_manager, overrides)]
+
+
+def describe_chain(
+    scenario: Any,
+    hook_manager: Any = None,
+    overrides: list[Any] | None = None,
+) -> list[dict[str, Any]]:
+    """返回装配后的策略明细（由外到内）：中文名、说明、分层、slot。
+
+    与 ``build_pipeline`` 共用同一套 ``_entries``，所以下标与真正的中间件
+    列表一一对应；UI 用它给每个实例配上中文说明和悬停提示。
+    """
+    chain: list[dict[str, Any]] = []
+    for order, entry in enumerate(_entries(scenario, hook_manager, overrides), 1):
+        doc = POLICY_DOCS.get(entry.policy)
+        label = doc.label if doc else entry.name
+        desc = doc.desc if doc else ""
+        layer = doc.layer if doc else "自定义"
+        if entry.policy == "pii":
+            pii_type = entry.name.split(":", 1)[-1]
+            label = f"敏感信息脱敏 · {pii_type}"
+            desc = f"输入里的 {pii_type} 在送模型前替换成占位符"
+        if entry.policy == "custom":
+            # 自定义中间件的说明由它自己的模块提供（UI 按类名查），这里只给分层。
+            label = entry.name.split(":", 1)[-1]
+            desc = ""
+        chain.append({
+            "order": order,
+            "name": entry.name,
+            "policy": entry.policy,
+            "slot": entry.slot,
+            "label": label,
+            "desc": desc,
+            "layer": layer,
+        })
+    return chain

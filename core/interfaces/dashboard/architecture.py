@@ -6,16 +6,19 @@
 """
 from __future__ import annotations
 
+import html
 import json
 from pathlib import Path
 
 import streamlit as st
 
 from core.agent.framework import FrameworkAgent
+from core.agent.pipeline import describe_chain
 from core.interfaces.dashboard.common import load_agent, load_cases_cached
 from core.interfaces.dashboard.layout import (
     Kpi,
     compact_table,
+    graph_dot,
     kpi_row,
     master_detail,
     navigate,
@@ -142,49 +145,116 @@ def _middleware_config(mw) -> dict:
     return {"配置": MIDDLEWARE_DESC.get(cls, "见源码")}
 
 
-def _render_middleware_chain(agent, index, query: str) -> None:
-    """有效中间件按类展开；日志类只占一行。"""
-    section("中间件链", "只展开会改变执行/上下文的中间件；日志类合并为一行。")
-    groups: dict[str, list[tuple[int, object, object]]] = {}
-    logging_entries: list[tuple[int, str, object]] = []
-    for order, mw in enumerate(agent.middleware, 1):
+def _fallback_chain(middleware: list) -> list[dict]:
+    """``describe_chain`` 与实例数对不上时，退回按类名描述，保证页面不空。"""
+    chain: list[dict] = []
+    for order, mw in enumerate(middleware, 1):
         cls = type(mw).__name__
-        ref = index.find("middleware", cls)
-        if cls in LOGGING_MIDDLEWARE:
-            logging_entries.append((order, cls, ref))
-            continue
-        groups.setdefault(cls, []).append((order, mw, ref))
+        chain.append({
+            "order": order,
+            "name": cls,
+            "policy": cls,
+            "slot": None,
+            "label": cls,
+            "desc": MIDDLEWARE_DESC.get(cls, ""),
+            "layer": "自定义",
+        })
+    return chain
 
-    if logging_entries:
-        names = "、".join(sorted({cls for _, cls, _ in logging_entries}))
-        st.caption(f"日志类（只记录，不改变执行）：{names}。")
 
-    rendered = 0
-    for cls, items in groups.items():
-        desc = MIDDLEWARE_DESC.get(cls, "")
-        source = _short_location(items[0][2])
-        configs = {
-            f"#{order}": _middleware_config(mw)
-            for order, mw, _ in items
-        }
-        haystack = (
-            f"{cls} {desc} {source} "
-            f"{json.dumps(configs, ensure_ascii=False, default=str)}"
-        ).casefold()
+def _chain_items(agent) -> list[dict]:
+    """取中间件链的中文明细；失败时退回类名列表，不让架构页崩掉。"""
+    try:
+        chain = describe_chain(agent.scenario, agent.hook_manager)
+    except Exception:  # noqa: BLE001 - 结构说明是辅助信息，失败要降级
+        chain = []
+    if len(chain) != len(getattr(agent, "middleware", []) or []):
+        return _fallback_chain(list(getattr(agent, "middleware", []) or []))
+    return chain
+
+
+def _chip_html(item: dict, source: str) -> str:
+    """一个策略胶囊：悬停显示中文说明、类名、slot 与来源。"""
+    desc = item["desc"] or MIDDLEWARE_DESC.get(item["name"].split(":", 1)[-1], "")
+    tooltip = "\n".join(
+        part for part in (
+            f"{item['order']:02d}. {item['label']}",
+            desc,
+            f"实现：{item['name']}  ·  分层：{item['layer']}"
+            + (f"  ·  slot={item['slot']}" if item["slot"] is not None else ""),
+            f"来源：{source}" if source and source != "—" else "",
+        )
+        if part
+    )
+    return (
+        f'<span class="ah-chain" title="{html.escape(tooltip, quote=True)}">'
+        f'<b>{item["order"]:02d}</b> {html.escape(item["label"])}</span>'
+    )
+
+
+def _render_chain_html(chain: list[dict], index, query: str) -> int:
+    """按“从外到内”渲染一行胶囊；返回渲染条数。"""
+    chips: list[str] = []
+    for item in chain:
+        source = _short_location(index.find("middleware", item["name"].split(":", 1)[-1]))
+        haystack = f"{item['label']} {item['name']} {item['desc']} {item['layer']} {source}".casefold()
         if query and query not in haystack:
             continue
-        rendered += 1
-        title = f"{items[0][0]:02d}. {cls}"
+        chips.append(_chip_html(item, source))
+    if not chips:
+        return 0
+    st.markdown(
+        '<div class="ah-chain-wrap">'
+        + '<span class="ah-arrow">→</span>'.join(chips)
+        + "</div>",
+        unsafe_allow_html=True,
+    )
+    st.caption("从左到右由外到内：越靠左越先看到请求，越靠右越接近模型与工具。鼠标悬停每条看它的职责与来源。")
+    return len(chips)
+
+
+def _render_middleware_chain(agent, index, query: str) -> None:
+    """有效中间件按类展开；日志类只占一行。"""
+    section(
+        "中间件链",
+        "顺序由外到内，悬停看中文说明；展开可见配置。日志类只记录，不改变执行。",
+    )
+    chain = _chain_items(agent)
+    logging_entries = [
+        item for item in chain
+        if type(agent.middleware[item["order"] - 1]).__name__ in LOGGING_MIDDLEWARE
+    ]
+    visible = [item for item in chain if item not in logging_entries]
+
+    rendered_chips = _render_chain_html(visible, index, query)
+    if not rendered_chips and not logging_entries:
+        st.caption("当前场景没有会改变执行的中间件。")
+
+    if logging_entries:
+        names = "、".join(sorted({item["label"] for item in logging_entries}))
+        st.caption(f"日志类（只记录，不改变执行）：{names}。")
+
+    groups: dict[str, list[dict]] = {}
+    for item in visible:
+        groups.setdefault(item["name"].split(":", 1)[-1], []).append(item)
+
+    for cls, items in groups.items():
+        desc = items[0]["desc"] or MIDDLEWARE_DESC.get(cls, "")
+        source = _short_location(index.find("middleware", cls))
+        configs = {
+            f"#{item['order']}": _middleware_config(agent.middleware[item["order"] - 1])
+            for item in items
+        }
+        title = f"{items[0]['order']:02d}. {items[0]['label']}（{cls}）"
         if len(items) > 1:
             title += f" ×{len(items)}"
         with st.expander(f"{title} · {desc}", expanded=bool(query)):
-            st.caption(f"来源：`{source}`")
+            st.caption(f"分层：{items[0]['layer']} ｜ 来源：`{source}`")
             st.code(
                 json.dumps(configs, ensure_ascii=False, indent=2, default=str),
                 language="json",
             )
-    if rendered == 0 and not logging_entries:
-        st.caption("当前场景没有会改变执行的中间件。")
+
 
 
 @st.cache_resource(show_spinner=False)
@@ -193,28 +263,6 @@ def _graphs(scenario_name: str) -> dict:
     if not scenario.workflow_factory:
         return {}
     return scenario.workflow_factory(scenario)
-
-
-def _to_dot(graph) -> str:
-    """把 LangGraph 的边转成 Graphviz DOT，Streamlit 可直接渲染。"""
-    labels = {"__start__": "START", "__end__": "END"}
-    lines = [
-        "digraph G {",
-        "rankdir=LR;",
-        'node [shape=box, style="rounded,filled", fillcolor="#EEF4FF", fontsize=11];',
-    ]
-    nodes = set()
-    for edge in graph.edges:
-        source = labels.get(edge.source, edge.source)
-        target = labels.get(edge.target, edge.target)
-        nodes.update({source, target})
-        style = " [style=dashed]" if getattr(edge, "conditional", False) else ""
-        lines.append(f'  "{source}" -> "{target}"{style};')
-    for node in nodes:
-        if node in {"START", "END"}:
-            lines.append(f'  "{node}" [shape=oval, fillcolor="#E8F5E9"];')
-    lines.append("}")
-    return "\n".join(lines)
 
 
 def _short_location(ref) -> str:
@@ -337,7 +385,7 @@ def render_architecture(agent: FrameworkAgent) -> None:
         for name, compiled in graphs.items():
             st.markdown(f"**{name}**")
             with st.container(border=True):
-                st.graphviz_chart(_to_dot(compiled.get_graph()), use_container_width=True)
+                st.graphviz_chart(graph_dot(compiled.get_graph()), use_container_width=True)
             graph = compiled.get_graph()
             edge_rows = [
                 {"从": edge.source, "到": edge.target}
