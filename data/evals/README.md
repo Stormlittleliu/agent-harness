@@ -10,10 +10,14 @@ data/evals/
 │   │   ├── eval_set.jsonl      # 20 条原始
 │   │   ├── eval_set_hard.jsonl # 22 条困难/多跳/冲突
 │   │   └── eval_set_all.jsonl  # 42 条合并
-│   └── public/                 # 公开 benchmark 抽样
-│       ├── rag_rgb_sample.jsonl
-│       ├── rag_multihop_sample.jsonl
-│       └── multihop_corpus.json
+│   ├── public/                 # 公开 benchmark 抽样
+│   │   ├── rag_rgb_sample.jsonl
+│   │   ├── rag_multihop_sample.jsonl
+│   │   └── multihop_corpus.json
+│   └── stratified/             # 每类 5 条的平衡抽样（原始样本不随仓库分发）
+│       ├── selections.jsonl    # 逐条出处：源文件 / hash / 行号 / id
+│       ├── selections.md
+│       └── manifest.json
 └── failures/                   # 失败集（RAG / Agent / BFCL / τ²）
 ```
 
@@ -81,9 +85,18 @@ python test_entry.py bfcl --simple 2 --irrelevance 2
 - 业务集：按 `KnowledgeBase-RAG-LLM-System` 的服装客服文档构造，自有数据。
 - RGB：<https://github.com/chen700564/RGB>，**CC BY-NC-SA 4.0**（仅限非商业使用）。
 - MultiHop-RAG：<https://github.com/yixuantt/MultiHop-RAG>，**ODC-BY 1.0**。
-- BFCL：<https://github.com/ShishirPatil/gorilla>，**Apache-2.0**；使用 simple_python + irrelevance 抽样，简化评分。
+- BFCL：<https://github.com/ShishirPatil/gorilla>，**Apache-2.0**；原抽样为 simple_python + irrelevance，简化评分。
+- τ²-bench：<https://github.com/sierra-research/tau2-bench>，**MIT**。
 
 公开 benchmark 为抽样评测，不是官方完整榜单成绩。
+
+`stratified/` 的原始样本由本地 benchmark 源生成，**不随仓库分发**（RGB 是
+CC BY-NC-SA，不能直接复制进 MIT 仓库）。仓库只保留 `selections.jsonl` /
+`selections.md` / `manifest.json` 作为出处记录；重新生成命令：
+
+```powershell
+python -m core.quality.stratified --per-category 5 --seed 42
+```
 
 ## Failure Set
 

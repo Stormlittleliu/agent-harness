@@ -1,0 +1,154 @@
+{
+  "generated_at": "2026-11-04T22:21:25",
+  "seed": 42,
+  "per_category": 5,
+  "note": "平衡抽样，不是官方 benchmark 成绩；类别/源规模见 sets。",
+  "selection_record": {
+    "jsonl": "selections.jsonl",
+    "markdown": "selections.md",
+    "count": 165
+  },
+  "sets": {
+    "bfcl": {
+      "file": "bfcl_5per_category.jsonl",
+      "source": "E:/CODE/benchmarks/BFCL/berkeley-function-call-leaderboard/bfcl_eval/data",
+      "counts": {
+        "irrelevance": 5,
+        "live_irrelevance": 5,
+        "live_multiple": 5,
+        "live_parallel": 5,
+        "live_parallel_multiple": 5,
+        "live_relevance": 5,
+        "live_simple": 5,
+        "memory": 5,
+        "multi_turn_base": 5,
+        "multi_turn_long_context": 5,
+        "multi_turn_miss_func": 5,
+        "multi_turn_miss_param": 5,
+        "multiple": 5,
+        "parallel": 5,
+        "parallel_multiple": 5,
+        "simple_java": 5,
+        "simple_javascript": 5,
+        "simple_python": 5,
+        "web_search": 5
+      },
+      "source_sizes": {
+        "irrelevance": 240,
+        "live_irrelevance": 884,
+        "live_multiple": 1053,
+        "live_parallel": 16,
+        "live_parallel_multiple": 24,
+        "live_relevance": 16,
+        "live_simple": 258,
+        "memory": 155,
+        "multi_turn_base": 200,
+        "multi_turn_long_context": 200,
+        "multi_turn_miss_func": 200,
+        "multi_turn_miss_param": 200,
+        "multiple": 200,
+        "parallel": 200,
+        "parallel_multiple": 200,
+        "simple_java": 100,
+        "simple_javascript": 50,
+        "simple_python": 400,
+        "web_search": 100
+      },
+      "source_sha256": {
+        "BFCL_v4_irrelevance.json": "9c1fa6596922c78b",
+        "BFCL_v4_live_irrelevance.json": "c8bda00ddfd9469d",
+        "BFCL_v4_live_multiple.json": "95fe6f0cc1a35552",
+        "BFCL_v4_live_parallel.json": "510a136279a56ba3",
+        "BFCL_v4_live_parallel_multiple.json": "7ed6b16c7ec606f4",
+        "BFCL_v4_live_relevance.json": "771a5859bc941815",
+        "BFCL_v4_live_simple.json": "53516cb38b3df0ce",
+        "BFCL_v4_memory.json": "67867501782b23ca",
+        "BFCL_v4_multi_turn_base.json": "3c93cd2bd81713c9",
+        "BFCL_v4_multi_turn_long_context.json": "7c0d670a9c82ff0b",
+        "BFCL_v4_multi_turn_miss_func.json": "cca0c5cdc4bc98a8",
+        "BFCL_v4_multi_turn_miss_param.json": "3229cb62aa34b3d2",
+        "BFCL_v4_multiple.json": "e37760f8c7bfa648",
+        "BFCL_v4_parallel.json": "00cb9cafda417a49",
+        "BFCL_v4_parallel_multiple.json": "a979e3d4dc5758eb",
+        "BFCL_v4_simple_java.json": "f53aeea681f3f461",
+        "BFCL_v4_simple_javascript.json": "ae92b22349d50b4c",
+        "BFCL_v4_simple_python.json": "6cb4c932a8db34e2",
+        "BFCL_v4_web_search.json": "831f4f0fe48e89ba"
+      },
+      "skipped": {
+        "format_sensitivity": "没有 question 字段（索引文件）"
+      }
+    },
+    "rgb": {
+      "file": "rgb_5per_category.jsonl",
+      "source": "E:/CODE/benchmarks/RGB/data",
+      "counts": {
+        "zh_normal": 5,
+        "en_normal": 5,
+        "zh_integration": 5,
+        "en_integration": 5,
+        "zh_counterfactual": 5,
+        "en_counterfactual": 5
+      },
+      "source_sizes": {
+        "zh_normal": 300,
+        "en_normal": 300,
+        "zh_integration": 100,
+        "en_integration": 100,
+        "zh_counterfactual": 100,
+        "en_counterfactual": 100
+      },
+      "source_sha256": {
+        "zh_refine.json": "6691483d440c931e",
+        "en_refine.json": "ad6468eb2d14496a",
+        "zh_int.json": "c86958433b63b8ca",
+        "en_int.json": "797a6fc39a75d0cf",
+        "zh_fact.json": "a9f37ea41f534fbb",
+        "en_fact.json": "27b5a3ae2d3cd0c5"
+      },
+      "note": "RGB 的 rejection 不是独立源文件，未伪造该类别；只在 refine/int/fact 三类抽样。"
+    },
+    "tau2": {
+      "file": "tau2_5per_domain.jsonl",
+      "source": "E:/CODE/benchmarks/tau2-bench/data/tau2/domains",
+      "counts": {
+        "airline": 5,
+        "banking_knowledge": 5,
+        "retail": 5,
+        "telecom": 5
+      },
+      "source_sizes": {
+        "airline": 50,
+        "banking_knowledge": 97,
+        "retail": 114,
+        "telecom": 2285
+      },
+      "source_sha256": {
+        "airline/tasks.json": "34dfcf0622792d0d",
+        "banking_knowledge/tasks.json": "8a0111798693163b",
+        "retail/tasks.json": "f44563d8f36362e2",
+        "telecom/tasks.json": "20793073500dba57"
+      }
+    },
+    "multihop": {
+      "file": "multihop_5per_type.jsonl",
+      "source": "E:/CODE/benchmarks/MultiHop-RAG/data/MultiHopRAG.json",
+      "counts": {
+        "comparison_query": 5,
+        "inference_query": 5,
+        "null_query": 5,
+        "temporal_query": 5
+      },
+      "source_sizes": {
+        "comparison_query": 856,
+        "inference_query": 816,
+        "null_query": 301,
+        "temporal_query": 583
+      },
+      "source_sha256": {
+        "MultiHopRAG.json": "03cfb4926461f868"
+      },
+      "note": "null_query 也保留；全量评测另有 outputs/public/multihop_full.json。"
+    }
+  }
+}
