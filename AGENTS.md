@@ -54,7 +54,8 @@ python -m core.scenarios.eject <name> --status
 - `core/agent/pipeline.py` — 中间件策略编排（slot + 顺序不变量 + `policies` 覆盖）；**策略的中文名 / 说明 / 分层写在 `POLICY_DOCS`**，UI 直接读它，别在别处再抄一份；
 - `core/quality/selfbuilt.py` — 自建跨分类任务集评测（检索 / 单轮 / 多轮），任务在 `data/evals/datasets/selfbuilt/tasks.jsonl`；
 - `core/scenarios/spec.py` — spec schema、校验、编译、版本化读写；
-- `core/scenarios/spec_nodes.py` — 块库、`ParamSpec` 参数契约、块的中文名与说明（`label` / `desc`）；
+- `core/scenarios/spec_nodes.py` — 块库、`ParamSpec` 参数契约、`PortSpec` 输入/输出端口、块的中文名与说明（`label` / `desc`）；
+- [docs/design/node-ports.md](docs/design/node-ports.md) — 参数层与端口层为什么分开、动态端口怎么解析、静态数据流校验的边界；
 - `core/prompts/` — 系统提示词分块：块读写（`data/specs/<name>/prompt.yml`）、按真实状态拼接、缓存；
 - [docs/design/prompt-blocks.md](docs/design/prompt-blocks.md) — 为什么拆块、怎么拼、界面怎么改；
 - `core/scenarios/spec_edit.py` — 编辑器背后的纯逻辑（草稿 ↔ spec、加删节点、校验、存版本）；

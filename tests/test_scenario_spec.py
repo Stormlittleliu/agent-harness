@@ -22,9 +22,12 @@ from core.scenarios.spec import (
     validate_spec,
 )
 from core.scenarios.spec_nodes import (
+    NODE_INPUTS,
+    NODE_OUTPUTS,
     NODE_PARAMS,
     NODE_REGISTRY,
     block_params,
+    block_ports,
     react_loop,
     registered_nodes,
     require_citation,
@@ -99,9 +102,13 @@ def test_six_blocks_are_registered_with_params():
     expected = {"retrieve", "llm_answer", "require_citation", "summarize", "write_report", "react_loop"}
     assert expected <= set(registered_nodes())
     assert set(NODE_PARAMS) == set(NODE_REGISTRY)
+    assert set(NODE_INPUTS) == set(NODE_REGISTRY)
+    assert set(NODE_OUTPUTS) == set(NODE_REGISTRY)
     for name in NODE_REGISTRY:
         assert callable(NODE_REGISTRY[name])
         assert block_params(name), f"{name} 没有声明参数契约"
+        ports = block_ports(name, {})
+        assert ports.inputs or ports.outputs, f"{name} 没有声明输入/输出端口"
 
 
 # ---------------------------------------------------------------- 校验

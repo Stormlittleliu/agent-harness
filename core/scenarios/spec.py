@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 from functools import partial
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, Callable, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -28,7 +28,14 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from core.agent.pipeline import available_policies
 from core.prompts.blocks import PromptBook, validate_book
 from core.prompts.assemble import context_from_scenario, get_assembled
-from core.scenarios.spec_nodes import NODE_REGISTRY, validate_args, validate_tool_refs
+from core.scenarios.spec_nodes import (
+    NODE_REGISTRY,
+    ResolvedPorts,
+    block_ports,
+    types_compatible,
+    validate_args,
+    validate_tool_refs,
+)
 
 SPEC_VERSION = 1
 SPEC_ROOT = Path("data/specs")
@@ -151,6 +158,70 @@ def _walk(seed: str, adjacency: dict[str, set[str]]) -> set[str]:
     return seen
 
 
+def validate_port_flow(
+    prefix: str,
+    nodes: list[NodeSpec],
+    edges: list[Any],
+    *,
+    resolve: Callable[[str, dict[str, Any]], ResolvedPorts] = block_ports,
+    seed: dict[str, str] | None = None,
+) -> list[str]:
+    """按节点端口做数据流校验：下游要的输入，上游到底产出了没有、类型对不对。
+
+    这是**静态**检查：只看声明和拓扑，不执行节点。做法是从 START 的种子
+    （``input:text``）出发，求每个节点"执行前 state 里有哪些槽位"的不动点；
+    循环图也能收敛——上一轮写的状态本来就会带进下一轮。
+
+    只校验 ``required=True`` 的输入；可选输入缺了不算错，因为模板占位符
+    缺失时会被替换成空串，这是块的既有语义。
+    """
+    if not nodes:
+        return []
+    seed_types = dict(seed or {"input": "text"})
+    by_id = {node.id: node for node in nodes}
+    predecessors: dict[str, list[str]] = {node.id: [] for node in nodes}
+    for edge in edges:
+        source, target, _ = split_edge(edge)
+        if source in by_id and target in by_id:
+            predecessors[target].append(source)
+
+    # 单调数据流：before = 种子 + 所有前驱的 after；after = before + 本节点输出。
+    after: dict[str, dict[str, str]] = {node.id: {} for node in nodes}
+    for _ in range(len(nodes) + 2):
+        changed = False
+        for node in nodes:
+            before = dict(seed_types)
+            for source in predecessors.get(node.id, ()):
+                before.update(after[source])
+            result = dict(before)
+            for port in resolve(node.fn, node.args).outputs:
+                result[port.name] = port.type
+            if result != after[node.id]:
+                after[node.id] = result
+                changed = True
+        if not changed:
+            break
+
+    errors: list[str] = []
+    for node in nodes:
+        before = dict(seed_types)
+        for source in predecessors.get(node.id, ()):
+            before.update(after[source])
+        for port in resolve(node.fn, node.args).inputs:
+            if port.name in before:
+                if not types_compatible(before[port.name], port.type):
+                    errors.append(
+                        f"{prefix}.{node.id}：输入 {port.name} 需要 {port.type}，"
+                        f"上游给的是 {before[port.name]}"
+                    )
+            elif port.required:
+                errors.append(
+                    f"{prefix}.{node.id}：缺少输入 {port.name}"
+                    f"（{node.fn} 需要，上游节点没有产出）"
+                )
+    return errors
+
+
 def _validate_workflow(name: str, workflow: WorkflowSpec, tool_names: set[str] | None = None) -> list[str]:
     errors: list[str] = []
     prefix = f"workflow[{name}]"
@@ -215,6 +286,7 @@ def _validate_workflow(name: str, workflow: WorkflowSpec, tool_names: set[str] |
     for node_id in node_ids:
         if node_id not in finishing:
             errors.append(f"{prefix}.{node_id} 走不到 END")
+    errors.extend(validate_port_flow(prefix, workflow.nodes, workflow.edges))
     return errors
 
 

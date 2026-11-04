@@ -6,6 +6,8 @@
 - 节点只有一个通用 state：``input / tool_result / answer / scratch``；
 - 节点只能引用这里注册过的块，spec 里不允许内联代码；
 - 每个块用 ``ParamSpec`` 声明自己能接什么参数，编辑器据此渲染表单、编译器据此校验；
+- 每个块用 ``PortSpec`` 声明自己读/写哪些 state 槽位（输入/输出端口），
+  编译器据此做数据流校验；参数层（params）和端口层（ports）是两件事；
 - 节点失败时把原因写进 ``scratch.error``，不抛异常打断整张图。
 
 节点签名统一为 ``fn(state, scenario=None, **args) -> dict``，
@@ -25,6 +27,8 @@ CITATION_PATTERN = r"\[[^\]]+\]"
 NodeFn = Callable[..., dict[str, Any]]
 NODE_REGISTRY: dict[str, NodeFn] = {}
 NODE_PARAMS: dict[str, tuple["ParamSpec", ...]] = {}
+NODE_INPUTS: dict[str, tuple["PortSpec", ...]] = {}
+NODE_OUTPUTS: dict[str, tuple["PortSpec", ...]] = {}
 NODE_LABELS: dict[str, str] = {}
 NODE_DESCS: dict[str, str] = {}
 
@@ -43,20 +47,88 @@ class ParamSpec:
     help: str = ""
 
 
+# 端口类型只描述"这个 state 槽位里装的是哪类值"。它比 Python 类型粗，
+# 因为节点之间传的是文本、JSON 这类业务语义，不是任意对象。
+PORT_TYPES = frozenset({"text", "number", "boolean", "json", "any"})
+TYPE_ALIASES = {
+    "str": "text",
+    "string": "text",
+    "int": "number",
+    "float": "number",
+    "bool": "boolean",
+    "dict": "json",
+    "object": "json",
+    "*": "any",
+}
+
+
+def _canonical_type(value: str) -> str:
+    key = str(value or "").strip().lower()
+    if key in PORT_TYPES:
+        return key
+    return TYPE_ALIASES.get(key, "")
+
+
+@dataclass(frozen=True)
+class PortSpec:
+    """块的一个输入/输出端口：读或写 state 的哪个槽位、期望什么类型。
+
+    ``params`` 回答"这个块能配什么"，``ports`` 回答"这个块吃/吐什么"。
+    两者分开，是因为 ``save_to`` / ``queries_from`` 这类参数会让端口随配置变化。
+    """
+
+    name: str  # input / tool_result / answer / scratch.<key>
+    type: str = "text"
+    required: bool = False
+    default: Any = None
+    help: str = ""
+
+    def __post_init__(self) -> None:
+        canonical = _canonical_type(self.type)
+        if not canonical:
+            raise ValueError(f"未知端口类型：{self.type}")
+        object.__setattr__(self, "type", canonical)
+
+
+@dataclass(frozen=True)
+class ResolvedPorts:
+    """某个节点（块 + 实际参数）的具体端口。"""
+
+    inputs: tuple[PortSpec, ...] = ()
+    outputs: tuple[PortSpec, ...] = ()
+
+
+def types_compatible(source_type: str, target_type: str) -> bool:
+    """上游输出类型能否喂给下游输入类型。
+
+    ``any`` 双向兼容；其余要求规范化后相同。类型不匹配返回 False，
+    不抛异常——校验器要把"哪条边不兼容"当成可展示的错误。
+    """
+    source = _canonical_type(source_type)
+    target = _canonical_type(target_type)
+    if not source or not target:
+        return False
+    return source == "any" or target == "any" or source == target
+
+
 def register_node(
     name: str,
     params: tuple[ParamSpec, ...] | list[ParamSpec] = (),
     *,
+    inputs: tuple[PortSpec, ...] | list[PortSpec] = (),
+    outputs: tuple[PortSpec, ...] | list[PortSpec] = (),
     label: str = "",
     desc: str = "",
 ) -> Callable[[NodeFn], NodeFn]:
-    """把函数登记为 spec 可引用的块，并附上中文名、说明与参数契约。"""
+    """把函数登记为 spec 可引用的块，并附上中文名、说明、参数与端口契约。"""
 
     def _wrap(fn: NodeFn) -> NodeFn:
         if name in NODE_REGISTRY:
             raise ValueError(f"块重复注册：{name}")
         NODE_REGISTRY[name] = fn
         NODE_PARAMS[name] = tuple(params)
+        NODE_INPUTS[name] = tuple(inputs)
+        NODE_OUTPUTS[name] = tuple(outputs)
         NODE_LABELS[name] = label or name
         first_doc_line = (fn.__doc__ or "").strip().splitlines()[0] if (fn.__doc__ or "").strip() else ""
         NODE_DESCS[name] = desc or first_doc_line
@@ -79,6 +151,16 @@ def block_desc(name: str) -> str:
     return NODE_DESCS.get(name, "")
 
 
+def _port_dict(port: PortSpec) -> dict[str, Any]:
+    return {
+        "name": port.name,
+        "type": port.type,
+        "required": port.required,
+        "default": port.default,
+        "help": port.help,
+    }
+
+
 def block_catalog() -> list[dict[str, Any]]:
     """块清单，供编辑器渲染下拉框与说明。"""
     return [
@@ -87,14 +169,139 @@ def block_catalog() -> list[dict[str, Any]]:
             "label": block_label(name),
             "desc": block_desc(name),
             "params": [param.name for param in block_params(name)],
+            "inputs": [_port_dict(port) for port in block_inputs(name)],
+            "outputs": [_port_dict(port) for port in block_outputs(name)],
         }
         for name in registered_nodes()
     ]
 
 
-
 def block_params(name: str) -> tuple[ParamSpec, ...]:
     return NODE_PARAMS.get(name, ())
+
+
+def block_inputs(name: str) -> tuple[PortSpec, ...]:
+    """块的静态输入端口；随参数变化的端口由 ``block_ports`` 解析。"""
+    return NODE_INPUTS.get(name, ())
+
+
+def block_outputs(name: str) -> tuple[PortSpec, ...]:
+    """块的静态输出端口；随参数变化的端口由 ``block_ports`` 解析。"""
+    return NODE_OUTPUTS.get(name, ())
+
+
+def _param_default(fn: str, name: str) -> Any:
+    for param in block_params(fn):
+        if param.name == name:
+            return param.default
+    return None
+
+
+def _arg_or_default(fn: str, args: dict[str, Any], name: str, fallback: Any = None) -> Any:
+    value = args.get(name)
+    if value not in (None, ""):
+        return value
+    default = _param_default(fn, name)
+    return fallback if default is None else default
+
+
+def _is_save_target(name: str) -> bool:
+    """``_save`` 只接受 answer / tool_result / scratch.<key>。"""
+    text = str(name or "")
+    return text in {"answer", "tool_result"} or (
+        text.startswith("scratch.") and bool(text.split(".", 1)[1])
+    )
+
+
+def _is_state_slot(name: str) -> bool:
+    """可以出现在端口上的 state 槽位（含只读的 input）。"""
+    return str(name or "") == "input" or _is_save_target(name)
+
+
+def _template_inputs(*texts: Any) -> list[PortSpec]:
+    """从 ``{input}`` / ``{scratch.key}`` 占位符里提取输入端口。
+
+    占位符缺失时 ``render_template`` 会替换成空串，所以这些端口是"可选"的：
+    校验器不该因为模板里写了一个可空字段就报错。
+    """
+    found: list[PortSpec] = []
+    seen: set[str] = set()
+    for text in texts:
+        for match in PLACEHOLDER.finditer(str(text or "")):
+            key = match.group(1)
+            if key in seen or not _is_state_slot(key):
+                continue
+            seen.add(key)
+            found.append(PortSpec(key, "text", required=False, help="模板占位符"))
+    return found
+
+
+_SAVE_DEFAULTS = {
+    "call_tool": "answer",
+    "constant": "answer",
+    "llm_text": "answer",
+    "fan_out": "scratch.findings",
+}
+
+
+def block_ports(fn: str, args: dict[str, Any] | None = None) -> ResolvedPorts:
+    """把块声明 + 实际参数解析成具体端口。
+
+    动态端口来源：
+
+    - ``save_to``（call_tool / constant / llm_text / fan_out）：写到哪个槽位；
+    - ``queries_from``（fan_out）/ ``field``（branch）/ ``query_key``（retrieve）：
+      从哪个槽位读；
+    - 文本参数里的 ``{...}`` 占位符：模型生成 / 固定文本 / 工具参数实际读了什么。
+    """
+    args = dict(args or {})
+    inputs = list(block_inputs(fn))
+    outputs = list(block_outputs(fn))
+
+    def add_input(port: PortSpec) -> None:
+        if port.name and all(item.name != port.name for item in inputs):
+            inputs.append(port)
+
+    def add_output(port: PortSpec) -> None:
+        if port.name and all(item.name != port.name for item in outputs):
+            outputs.append(port)
+
+    if fn in _SAVE_DEFAULTS:
+        target = str(
+            _arg_or_default(fn, args, "save_to", _SAVE_DEFAULTS[fn]) or _SAVE_DEFAULTS[fn]
+        ).strip()
+        if _is_save_target(target):
+            add_output(PortSpec(target, "text", required=True, help="save_to 的目标槽位"))
+        if fn == "call_tool" and target != "tool_result":
+            add_output(
+                PortSpec("tool_result", "text", required=False, help="工具带 docs 时的材料")
+            )
+
+    if fn == "fan_out":
+        source = str(_arg_or_default(fn, args, "queries_from", "scratch.queries") or "")
+        if _is_state_slot(source):
+            add_input(PortSpec(source, "text", required=True, help="子问题列表"))
+
+    if fn == "branch":
+        field = str(_arg_or_default(fn, args, "field", "tool_result") or "")
+        if _is_state_slot(field):
+            add_input(PortSpec(field, "text", required=True, help="被检查的字段"))
+
+    if fn == "retrieve":
+        key = str(_arg_or_default(fn, args, "query_key", "input") or "")
+        if _is_state_slot(key):
+            add_input(PortSpec(key, "text", required=True, help="问题字段"))
+
+    templates: dict[str, list[Any]] = {
+        "call_tool": [args.get("args", "{}")],
+        "llm_text": [args.get("prompt", "")],
+        "constant": [args.get("text", "")],
+        "fan_out": [args.get("template", "")],
+    }
+    for port in _template_inputs(*templates.get(fn, [])):
+        add_input(port)
+
+    return ResolvedPorts(tuple(inputs), tuple(outputs))
 
 
 # ---------------------------------------------------------------- 参数校验
@@ -383,6 +590,7 @@ def fan_out(
         ParamSpec("hit", "str", default="hit", help="命中时写入的 route 值（对应条件边标签）"),
         ParamSpec("miss", "str", default="miss", help="未命中时写入的 route 值"),
     ),
+    outputs=(PortSpec("scratch.route", "text", required=True, help="条件边读取的路由值"),),
 )
 def branch(
     state: dict[str, Any],
@@ -467,6 +675,7 @@ def llm_text(
         ParamSpec("limit", "int", default=5, minimum=1, maximum=20, help="返回条数"),
         ParamSpec("query_key", "str", default="input", help="从 state 的哪个键取问题"),
     ),
+    outputs=(PortSpec("tool_result", "text", required=True, help="检索材料"),),
 )
 def retrieve(
     state: dict[str, Any],
@@ -498,6 +707,11 @@ def retrieve(
     params=(
         ParamSpec("prompt", "str", default="", help="回答指令；留空用默认指令"),
     ),
+    inputs=(
+        PortSpec("input", "text", required=True, help="用户问题"),
+        PortSpec("tool_result", "text", required=False, help="检索材料，可为空"),
+    ),
+    outputs=(PortSpec("answer", "text", required=True, help="最终回答"),),
 )
 def llm_answer(
     state: dict[str, Any],
@@ -530,6 +744,8 @@ def llm_answer(
     params=(
         ParamSpec("pattern", "str", default=CITATION_PATTERN, help="引用正则，默认匹配 [id]"),
     ),
+    inputs=(PortSpec("answer", "text", required=True, help="待校验的回答"),),
+    outputs=(PortSpec("scratch.error", "text", required=False, help="校验失败原因"),),
 )
 def require_citation(
     state: dict[str, Any],
@@ -551,6 +767,8 @@ def require_citation(
     params=(
         ParamSpec("max_chars", "int", default=1200, minimum=100, maximum=8000, help="截断长度"),
     ),
+    inputs=(PortSpec("tool_result", "text", required=True, help="原始材料"),),
+    outputs=(PortSpec("tool_result", "text", required=True, help="截断后的材料"),),
 )
 def summarize(
     state: dict[str, Any],
@@ -572,6 +790,8 @@ def summarize(
     params=(
         ParamSpec("path", "str", default="report.md", help="相对 data/runtime/spec_reports 的路径"),
     ),
+    inputs=(PortSpec("answer", "text", required=True, help="要落盘的正文"),),
+    outputs=(PortSpec("scratch.written", "text", required=False, help="实际写入路径"),),
 )
 def write_report(
     state: dict[str, Any],
@@ -605,6 +825,8 @@ def write_report(
             help="结束条件",
         ),
     ),
+    inputs=(PortSpec("input", "text", required=True, help="用户问题"),),
+    outputs=(PortSpec("answer", "text", required=True, help="循环结束时的回答"),),
 )
 def react_loop(
     state: dict[str, Any],
