@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Agent 控制台视图模块。
+"""控制台的具体视图。
 
-`core.interfaces.agent_dashboard.run` 只负责页面骨架与导航，
-具体视图按主题拆分在本包内，避免单文件继续膨胀。
+页面骨架、路由与产品分发在 ``core.interfaces.console``；
+本包只放"一个页面 / 一个页签怎么画"，按主题拆分，避免单文件继续膨胀。
 """

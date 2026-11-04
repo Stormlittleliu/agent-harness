@@ -1,0 +1,8 @@
+enabled: true
+title: 编码工作区
+tagline: 读写文件、跑命令、查任务；改文件前先问一句
+starters:
+- 读取 README.md，并告诉我这个工作区叫什么名字。
+- 在工作区运行 echo hello，并告诉我输出。
+order: 40
+published_hash: fc240206d8081b17

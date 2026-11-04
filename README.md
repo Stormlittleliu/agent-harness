@@ -87,7 +87,7 @@ route_to_research    → research_assistant    多资料对比 / 研究调研
   LangGraph：`document_qa / study_notes / cross_lingual / content_draft`；
 - `research_assistant`：`list_sources / read_source / search_sources / write_report / subagent`；
   LangGraph：`deep_research`（只读 subagent fan-out → 汇总 → 引用 → 报告）；
-- `router`：四个 `route_to_*` 工具；默认控制台入口。
+- `router`：四个 `route_to_*` 工具；对话端默认的“综合助手”入口。
 
 示例：
 
@@ -406,7 +406,7 @@ RAG / 对话入口：
 python run_dashboard.py --app app_rag.py
 ```
 
-Agent 可视化控制台（架构 / 任务执行 / 测试用例 / 评测 / 优化循环 / Benchmark 目录）：
+Agent 控制台（对话 / 构建 / 质量三个产品）：
 
 ```bash
 python run_dashboard.py
@@ -419,16 +419,27 @@ python run_dashboard.py
 python run_dashboard.py --port 8600
 ```
 
-页面右上角的“入口模式”可以在 **总路由** 和 **子场景** 之间切换，跟随页面滚动、不固定在侧边栏：总路由默认进入 `router`（办公学习 / 编码 / 智能硬件 / 研究调研自动分流）；子场景可以直接进入 `workspace_assistant`（办公 / 学习 / 内容 / 信息管理 / 跨语言）、`research_assistant`（多资料研究 / 只读 fan-out）、`coding_demo`（读写 / 编辑 / 搜索 / 命令 / Todo / 任务图 / hooks / subagent）、`general`（白板）、`mcp_demo`（Memory + Fetch）、`robot_vacuum`（扫地机器人）和 `structured_demo`（Pydantic 结构化输出）；不同场景可以配置不同的视图与示例任务。“页面”是单视图路由：总览是工作台入口（KPI + 快捷入口 + 能力矩阵），选择某个视图后只渲染当前页，不会一次性加载全部页面。**切换子场景时保留当前页面**；如果新场景不支持该页（例如运行窗口），会显示空状态而不是跳回总览。控制台基础视图为 8 个；`coding_demo` 额外有运行窗口：
+控制台按“工作对象”分成三个产品，URL 分开、状态各自隔离：
 
-- **Agent 架构**：工具、风险等级、中间件链、LangGraph 工作流图；中间件链是一排中文胶囊（由外到内），**鼠标悬停**看每条策略的职责、分层（守卫 / 上下文 / 可靠性 / 成本）、slot 与源码位置；日志类合并成一行，展开可见配置；
-- **场景编辑**：受约束的低代码编辑器，把 `data/specs/<name>/` 变成可跑的场景——**可视化画布**里从块库拖块、连线、移动节点（点连线删除，校验错误会把节点标红），下面的面板改节点 id 与参数（参数按 `ParamSpec` 自动渲染，复合块如 `react_loop` 的内部参数也在同一张表单里），也可切成表单模式逐节点展开；改基本信息 / 工具白名单 / harness 开关，**保存前先编译预览**，存成新版本 spec；支持载入历史版本、下载草稿 JSON 与单向 `eject`。在控制台里新建的场景不用写代码就能出现在子场景列表里（工具来自通用工具池）。画布是单文件原生 JS，无 npm、无外部 CDN；
-- **任务执行**：输入任务，查看工具调用、模型步数、token、时延，以及“用户问题 → 模型/工具 → 最终回答”的可视化调用链；**每个模型 / 工具节点都标注它属于哪个工作流节点**（如“复核 · verify”），悬停看该节点在做什么；
-- **测试用例**：直接运行 `cases.jsonl`，复用 `core.quality.agent_eval` 的评分与判定；支持按通过/失败、判定依据（关键词 / LLM judge）、类别筛选，并可点开单条查看要点命中、工具调用、完整回答与 trace；`structured_demo` 的严格 schema 评测走 `core.quality.structured_eval`；
-- **评测**：把场景行为/outcome 报告、成本/时延、公开基准、评测记录合到一个入口；场景报告按当前场景过滤，成本/时延按 trace 的 scenario 过滤，公开基准作为全局/模型级证据单独展示；
-- **复核**：LLM judge + 人工标注一屏完成（`pass` / `fail` / `unsure` + 问题类型 + 自由备注），读写 `outputs/selfbuilt/review_*.jsonl`，不触发模型调用；
-- **优化循环**：读取 `outputs/demo/iteration_*.json` 与 `report.md`，展示运行状态卡（最新写入、已完成迭代数）、BFCL / RAG 的 pass^k、mean、失败类型分布（按数量降序，BFCL 蓝 / RAG 橙）、同类任务通过率、修复/回归 case 与逐条筛选，并提供迭代走势柱状图、A/B 对比（指标差值、逐条明细与按 `trace_id` 加载的执行轨迹）与报告全文；case 表支持 ID / 问题 / 期望函数搜索，可下载 `report.md` 和搜索筛选后的 case CSV；
-- **Benchmark 目录**：读取 `data/benchmarks/manifest.json` 与 `catalog.jsonl`，展示 8 个来源的可用性 / 许可 / 运行方式，以及 320 条样例任务按来源、类别、bucket、任务类型的筛选；任务表支持 ID / 指令搜索，并可下载搜索筛选结果 CSV；
+| 入口 | 工作对象 | 说明 |
+|---|---|---|
+| `/?app=chat` | 一次会话 | 只列**已发布**的场景；多轮对话，每轮可展开“这次怎么答的”（调用链 + 节点说明 + trace） |
+| `/?app=build` | 一个场景 | 场景库 → 场景详情：概览 / 结构（画布、表单）/ 工具与策略 / 发布；`coding_demo` 多一个运行窗口 |
+| `/?app=quality` | 一次运行 | 评测 / 复核 / 优化 / 自检 / 数据集 / 基准 / 成本 / 记录（数据集的结构化改造还没做） |
+
+场景不再是全局侧边栏：对话页只在自己的入口里切换（每个入口一条独立会话线程），
+构建页由路由携带场景（`?app=build&scenario=router`），质量页的场景选择只影响评测对象。
+所以换场景不会再把编辑器草稿、评测筛选、表格选择一起清掉。
+
+**发布是显式动作**：在「构建 → 发布」里先静态校验（spec 能编译、工具在工具箱里、
+提示词块齐全、节点都有中文说明），通过才写 `data/specs/<name>/entry.yml`；
+改完结构没重新发布，入口仍按上次发布的状态，构建页会标“有未发布改动”。
+
+- **结构**：受约束的低代码编辑器，把 `data/specs/<name>/` 变成可跑的场景——**可视化画布**里从块库拖块、连线、移动节点（点连线删除，校验错误会把节点标红），下面的面板改节点 id 与参数（参数按 `ParamSpec` 自动渲染，复合块如 `react_loop` 的内部参数也在同一张表单里），也可切成表单模式逐节点展开；改基本信息 / 工具白名单 / harness 开关，**保存前先编译预览**，存成新版本 spec；支持载入历史版本、下载草稿 JSON 与单向 `eject`。画布是单文件原生 JS，无 npm、无外部 CDN；
+- **工具与策略**：工具、风险等级、中间件链、LangGraph 工作流图；中间件链是一排中文胶囊（由外到内），**鼠标悬停**看每条策略的职责、分层（守卫 / 上下文 / 可靠性 / 成本）、slot 与源码位置；日志类合并成一行，展开可见配置；
+- **发布**：入口标题 / 一句话介绍 / 开场白 / 排序 + 校验 + 撤回；“开始对话”就是这条入口；
+- **对话**：多轮会话（checkpointer 记忆），每轮回答下可展开调用链与逐条 trace；高风险工具被 HITL 拦下时，直接在同一处批准 / 拒绝；
+- **质量页**：测试用例直接跑 `cases.jsonl` 并复用 `core.quality.agent_eval` 的评分（按通过/失败、判定依据、类别筛选，可点开看命中要点、工具调用、回答与 trace）；评测页合并场景行为/outcome 报告、成本/时延、公开基准与评测记录；复核页做 LLM judge + 人工标注；优化循环读 `outputs/demo/`；Benchmark 目录读 `data/benchmarks/`；
 - **运行窗口**（`coding_demo`）：任务图看板、任务详情、命令日志，可对 ready 任务执行 Agent。
 
 数据页顶部会标注文件更新时间；报告、样例集与 trace 索引按 path + mtime 缓存，表格默认最多展示 200 行（下载 CSV 包含全部筛选结果），缺失或部分缺失时显示可执行的生成命令。测试用例详情新增“对象链路”：从案例直接定位场景、工具、中间件、评测函数与 trace 的 `module:line`；工具卡可跳转架构页，架构页工具表也可反查相关用例。另有“按对象浏览”，按工具聚合案例与通过率。评测记录页只读扫描 `outputs/`，不会重新运行评测或触发模型调用；超大 JSON 超过解析上限时退化为 summary 预览。优化循环页面每次加载只检查一次文件状态，不会自动轮询，后台评测写入后可手动刷新页面。
@@ -495,7 +506,7 @@ python -m core.quality.runner agent --scenario mcp_demo
 
 ```bash
 python -m core.quality.runner agent --scenario coding_demo
-python -m streamlit run app_agent.py   # 场景选 coding_demo
+python -m streamlit run app_agent.py   # 打开构建页选 coding_demo
 ```
 
 详见 [core/runtime/README.md](./core/runtime/README.md)。
@@ -506,12 +517,13 @@ python -m streamlit run app_agent.py   # 场景选 coding_demo
 python -m pytest
 ```
 
-当前 **268 passed**。覆盖任务图依赖 / 持久化、workspace 读取 / 写入 / 编辑 / grep 与受保护目录拒绝、workspace / research 场景工具、总路由 / 子场景入口、场景 / MCP / LangGraph 边界、planning policy、outcome 断言、trials 聚合、metrics 的
+当前 **282 passed**。覆盖任务图依赖 / 持久化、workspace 读取 / 写入 / 编辑 / grep 与受保护目录拒绝、workspace / research 场景工具、总路由 / 子场景入口、场景 / MCP / LangGraph 边界、planning policy、outcome 断言、trials 聚合、metrics 的
 `expected_tools_any`、subagent 子上下文 / 工具白名单、hook 触发与异常隔离、结构化输出
 schema、成本报告聚合、评测门禁、故障注入（超时 / 权限 / 参数 / 空检索 / 拒答）、
 对象索引（工具 / 中间件源码定位）、完整报告选择、中间件中文说明与顺序不变量、
 spec 场景的编译 / 归属守卫 / 草稿编辑与版本化、trace 的 LangGraph 节点归因、
-节点说明覆盖率（每个工作流节点都必须有中文说明），以及控制台 AppTest 启动与逐视图渲染。
+节点说明覆盖率（每个工作流节点都必须有中文说明）、控制台路由与三个产品的渲染、
+对话入口的发布 / 撤回 / 结构漂移，以及控制台 AppTest 启动与逐页签渲染。
 
 ### 验证运行
 
@@ -606,8 +618,9 @@ agent-harness/
 │   │   ├── cli.py
 │   │   ├── workflow_cli.py
 │   │   ├── streamlit_app.py
-│   │   ├── agent_dashboard.py         # 控制台入口：导航 + 视图分发
-│   │   ├── dashboard/                 # 架构 / 任务 / 测试 / 基准 / 优化 / 目录 / 成本 / 评测记录视图
+│   │   ├── console/                   # 控制台：对话 / 构建 / 质量（shell + routes + 三个产品）
+│   │   ├── agent_dashboard.py         # 兼容入口：转发到 console.run
+│   │   ├── dashboard/                 # 视图实现：架构 / 编辑器 / 评测 / 复核 / 优化 / 目录 / 成本 / 记录
 │   │   └── examples/demo_agent_interfaces.py
 │   │
 │   ├── quality/                       #   L5 质量层

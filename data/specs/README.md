@@ -1,8 +1,9 @@
 # data/specs：场景的"数据层"
 
 一个目录 = 一个场景。`active.json` 指向当前版本，`state.json` 记归属（`owner` 只能是
-`spec` 或 `code`），`prompt.yml` 是这个场景的系统提示词分块（见 docs/design/prompt-blocks.md）。**只要这个目录里有 `active.json`，同名场景就由 spec 构建**；
-删掉目录即回退到 `core/scenarios/<name>/` 的代码实现。
+`spec` 或 `code`），`prompt.yml` 是这个场景的系统提示词分块（见 docs/design/prompt-blocks.md），
+`entry.yml` 是对话入口的发布状态（见下面"对话入口"）。**只要这个目录里有 `active.json`，
+同名场景就由 spec 构建**；删掉目录即回退到 `core/scenarios/<name>/` 的代码实现。
 
 ## 接管现状（2026-11-04）
 
@@ -40,8 +41,21 @@
   有时 12/13，失败那次是模型少调了一个工具）。代码版同样有这个问题，属于模型随机性，
   不是接管引入的回归。
 
+## 对话入口（entry.yml）
+
+`entry.yml` 决定"用户能不能在对话端看到这个场景"，和归属是两件事：
+
+- 只有 `enabled: true` 且通过静态校验（spec 能编译、工具在工具箱里、提示词块齐全、
+  节点都有中文说明）才会出现在 `/?app=chat`；
+- 发布在控制台「构建 → 发布」里做，校验不过不写盘；撤回只关入口，产品信息保留；
+- `published_hash` 是发布时的结构指纹；改完结构没重新发布，构建页会标"有未发布改动"，
+  入口仍按上次发布的状态。
+
+当前已发布（首批 4 个）：`router`（综合助手）、`workspace_assistant`、`robot_vacuum`、
+`coding_demo`。其余场景可以先在构建页里编辑、试跑，确认后再发布。
+
 ## 改场景的正确姿势
 
-- 想改结构 / 提示词 / 工具白名单 / 预算：改这里的 `vN.json`（控制台「场景编辑」就是干这个的）；
+- 想改结构 / 提示词 / 工具白名单 / 预算：改这里的 `vN.json`（控制台「构建 → 结构」就是干这个的）；
 - 想改"这个场景还能做什么"（新工具、新中间件、特殊运行时）：改代码，然后
   `python -m core.scenarios.eject <name> --reason "..."` 把它永久转成 code-owned。

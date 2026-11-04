@@ -580,74 +580,86 @@ def _render_readonly(name: str, draft: dict) -> None:
     st.json(draft, expanded=False)
 
 
-def render_editor(current: str | None = None) -> None:
-    page_header(
-        "场景编辑",
-        "受约束的低代码：节点只能引用已注册的块，参数按块契约校验，保存即新版本 spec。",
-        meta="保存前会编译；校验不过不写盘。",
-    )
+def render_editor(current: str | None = None, *, embedded: bool = False) -> None:
+    """``embedded=True``：场景由路由固定，只渲染这个场景的结构编辑（构建页用）。
+
+    旧控制台是"场景选择器 + 编辑页"两层都在这一页里；现在场景由路由携带，
+    嵌进场景详情后就不该再出现第二个选择器——那正是之前换场景清一堆状态的来源。
+    """
+    if not embedded:
+        page_header(
+            "场景编辑",
+            "受约束的低代码：节点只能引用已注册的块，参数按块契约校验，保存即新版本 spec。",
+            meta="保存前会编译；校验不过不写盘。",
+        )
 
     rows = _status_rows()
-    if rows:
-        section("spec 场景", "归属由 `data/specs/<name>/state.json` 决定；eject 是单向门。")
-        compact_table(
-            rows,
-            height=170,
-            key="editor-status",
-            column_order=["场景", "归属", "可编辑", "版本数", "当前版本", "下一步"],
-        )
+    if embedded:
+        choice = current or ""
+        if not choice or not (SPEC_ROOT / choice).is_dir():
+            empty_state("这个场景还没有 spec 目录。")
+            return
     else:
-        empty_state("还没有任何 spec 场景；先在下面新建一个。")
+        if rows:
+            section("spec 场景", "归属由 `data/specs/<name>/state.json` 决定；eject 是单向门。")
+            compact_table(
+                rows,
+                height=170,
+                key="editor-status",
+                column_order=["场景", "归属", "可编辑", "版本数", "当前版本", "下一步"],
+            )
+        else:
+            empty_state("还没有任何 spec 场景；先在下面新建一个。")
 
-    left, right = st.columns([1.2, 1], vertical_alignment="bottom")
-    existing = [row["场景"] for row in rows] or spec_scenario_names()
-    # 新建场景后要把下拉框切过去；widget 创建后不能直接改它的 state，这里排队到下一次 run。
-    pending_select = st.session_state.pop("editor-pending-select", None)
-    if pending_select and pending_select in existing:
-        st.session_state["editor-scenario"] = pending_select
-    # 默认落在"侧边栏当前选中的场景"上：场景库选中谁，这里就编辑谁。
-    if "editor-scenario" not in st.session_state and current in existing:
-        st.session_state["editor-scenario"] = current
-    choice = left.selectbox(
-        "编辑场景",
-        existing,
-        key="editor-scenario",
-        help="只列出 data/specs 下已有 spec 的场景。",
-    ) if existing else ""
-    with right:
-        with st.form("editor-create", clear_on_submit=True):
-            new_name = st.text_input("新建场景名", placeholder="note_qa", help=NAME_HINT)
-            if st.form_submit_button("创建并保存 v1"):
-                name = (new_name or "").strip()
-                if not name.replace("_", "").isalnum() or name != name.lower():
-                    st.error(f"名字不合法：{NAME_HINT}")
-                elif name in spec_scenario_names() or (SPEC_ROOT / name).exists():
-                    st.error(f"场景已存在：{name}")
-                else:
-                    # 默认用检索工具：模板里的 retrieve 块会带 query/limit 调它。
-                    pool = spec_tool_names()
-                    default_tool = "search_notes" if "search_notes" in pool else (pool[0] if pool else None)
-                    try:
-                        path = spec_edit.save_draft(
-                            spec_edit.new_draft(
-                                name, tools=[default_tool] if default_tool else []
-                            ),
-                            tool_names=set(pool),
-                        )
-                    except SpecError as exc:
-                        st.error("；".join(exc.errors))
+        left, right = st.columns([1.2, 1], vertical_alignment="bottom")
+        existing = [row["场景"] for row in rows] or spec_scenario_names()
+        # 新建场景后要把下拉框切过去；widget 创建后不能直接改它的 state，这里排队到下一次 run。
+        pending_select = st.session_state.pop("editor-pending-select", None)
+        if pending_select and pending_select in existing:
+            st.session_state["editor-scenario"] = pending_select
+        # 默认落在"场景库当前选中的场景"上：场景库选中谁，这里就编辑谁。
+        if "editor-scenario" not in st.session_state and current in existing:
+            st.session_state["editor-scenario"] = current
+        choice = left.selectbox(
+            "编辑场景",
+            existing,
+            key="editor-scenario",
+            help="只列出 data/specs 下已有 spec 的场景。",
+        ) if existing else ""
+        with right:
+            with st.form("editor-create", clear_on_submit=True):
+                new_name = st.text_input("新建场景名", placeholder="note_qa", help=NAME_HINT)
+                if st.form_submit_button("创建并保存 v1"):
+                    name = (new_name or "").strip()
+                    if not name.replace("_", "").isalnum() or name != name.lower():
+                        st.error(f"名字不合法：{NAME_HINT}")
+                    elif name in spec_scenario_names() or (SPEC_ROOT / name).exists():
+                        st.error(f"场景已存在：{name}")
                     else:
-                        st.session_state["editor-notice"] = f"已创建 {name}：{path}"
-                        st.session_state["editor-pending-select"] = name
-                        st.session_state["editor-current"] = ""  # 下一轮按新场景重新载入
-                        _reset_agent_caches()
-                        st.rerun()
+                        # 默认用检索工具：模板里的 retrieve 块会带 query/limit 调它。
+                        pool = spec_tool_names()
+                        default_tool = "search_notes" if "search_notes" in pool else (pool[0] if pool else None)
+                        try:
+                            path = spec_edit.save_draft(
+                                spec_edit.new_draft(
+                                    name, tools=[default_tool] if default_tool else []
+                                ),
+                                tool_names=set(pool),
+                            )
+                        except SpecError as exc:
+                            st.error("；".join(exc.errors))
+                        else:
+                            st.session_state["editor-notice"] = f"已创建 {name}：{path}"
+                            st.session_state["editor-pending-select"] = name
+                            st.session_state["editor-current"] = ""  # 下一轮按新场景重新载入
+                            _reset_agent_caches()
+                            st.rerun()
 
-    notice = st.session_state.pop("editor-notice", None)
-    if notice:
-        st.success(notice)
-    if not choice:
-        return
+        notice = st.session_state.pop("editor-notice", None)
+        if notice:
+            st.success(notice)
+        if not choice:
+            return
 
     draft = _draft_for(choice)
     prefix = f"ed-{st.session_state.get('editor-gen', 0)}"

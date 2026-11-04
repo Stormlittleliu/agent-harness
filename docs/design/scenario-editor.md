@@ -3,7 +3,8 @@
 > 落地日期：2026-11-04。代码：`core/interfaces/dashboard/editor.py` +
 > `core/interfaces/dashboard/canvas/`（画布组件）+ `core/scenarios/spec_edit.py`
 > + `core/scenarios/generic.py`。
-> 视图名「🎛 场景编辑」，控制台里直接可用，默认就是可视化画布。
+> 入口：`/?app=build&scenario=<name>` → 「结构」页签（编辑器以嵌入模式运行，
+> 场景由路由固定；控制台的整体结构见 [console-ia.md](console-ia.md)）。
 
 ![画布：左侧块库，拖到画布连线](assets/scenario-canvas.png)
 

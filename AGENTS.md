@@ -5,7 +5,7 @@
 ## 环境
 
 - Python 用 conda 环境 **`langchain`**；裸 `python` 是 3.8，跑不了测试。
-- 测试：`python -m pytest -q`（当前 268 passed）。
+- 测试：`python -m pytest -q`（当前 282 passed）。
 
 ## 场景归属（硬约束）
 
@@ -44,7 +44,10 @@ python -m core.scenarios.eject <name> --status
 - ❌ 手改 `data/specs/<name>/state.json` 来绕过守卫；
 - ❌ eject 之后继续改 `data/specs/<name>/*.json` 并期望生效（已失效）；
 - ❌ 为了通过构建而删除或注释掉 `ensure_spec_editable`；
-- ❌ 在 spec-owned 场景里引用未注册的块（会被 `validate_spec` 拒绝）。
+- ❌ 在 spec-owned 场景里引用未注册的块（会被 `validate_spec` 拒绝）；
+- ❌ 在页面里再放一个"全局场景选择器"：场景由路由携带（`?app=build&scenario=...`），
+  每个产品只读自己的上下文，否则又会回到"换场景清一堆状态"的老路；
+- ❌ 让未发布的场景出现在对话端：入口只认 `data/specs/<name>/entry.yml` 的 `enabled`。
 
 ## 契约在哪
 
@@ -59,8 +62,11 @@ python -m core.scenarios.eject <name> --status
 - `core/scenarios/node_docs.py` — 节点说明注册表（调用链 / 轨迹页用它回答"这一步是哪个节点"）；
 - `core/scenarios/ownership.py` — 归属状态机（唯一写 state 的地方）；
 - `core/scenarios/eject.py` — 归属 CLI；
+- `core/scenarios/entry.py` — 对话入口（`data/specs/<name>/entry.yml`）：发布校验 / 发布 / 撤回 / 结构漂移；**对话端只认这个文件**；
 - `core/observability/tracer.py` — 本地 trace；每条模型/工具事件带 `node`（LangGraph 节点名）；
-- `core/interfaces/dashboard/editor.py` — 控制台的「🎛 场景编辑」视图（画布 + 表单）；
+- `core/interfaces/console/` — 控制台三个产品（对话 / 构建 / 质量）与路由（`routes.py`：query 参数 + `AH_CONSOLE_*` 环境变量）；
+- [docs/design/console-ia.md](docs/design/console-ia.md) — 三个产品为什么这么分、发布模型与路由；
+- `core/interfaces/dashboard/editor.py` — 场景结构编辑器（画布 + 表单），由构建页以 `embedded=True` 嵌入；
 - `core/interfaces/dashboard/canvas/index.html` — 画布前端：单文件原生 JS，
   只通过 Streamlit 静态组件协议收发 JSON；**画布回传一律当不可信输入**，
   结构必须过 `spec_edit.merge_canvas` 才进草稿；

@@ -169,7 +169,7 @@ my_agent_harness/
 
 | 层 | 目录 | 负责 | 不负责 |
 |---|---|---|---|
-| 界面 | `core/interfaces/` | CLI、Streamlit、7 视图 dashboard（总览 + 6 功能页；coding 多运行窗口）、工作流 CLI | 业务工具、评测逻辑 |
+| 界面 | `core/interfaces/` | CLI、Streamlit、三产品控制台（对话 / 构建 / 质量；`console/`）、工作流 CLI | 业务工具、评测逻辑 |
 | Harness | `core/agent/` | ReAct 运行时、中间件编排、Scenario 契约、subagent、workflow runtime、checkpoint | 具体业务工具、UI、评测 |
 | 场景 | `core/scenarios/` | 8 个场景的模型/提示词/工具/权限/预算/工作流/用例 | 运行时内部实现 |
 | 工具 | `core/tools/` | 业务 mock 工具 + 文本 RAG | Agent 循环、权限 |

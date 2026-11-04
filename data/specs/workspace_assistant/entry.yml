@@ -1,0 +1,9 @@
+enabled: true
+title: 办公学习助手
+tagline: 笔记检索、总结、翻译和长期记忆，都在一个对话里
+starters:
+- 根据笔记，Agent 评测应该关注哪些指标？
+- Summarize the product brief in Chinese.
+- 请记住：我喜欢简洁的回答，并用要点列出。
+order: 20
+published_hash: 6a6c3630fce36fff

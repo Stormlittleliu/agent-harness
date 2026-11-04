@@ -1,0 +1,9 @@
+enabled: true
+title: 综合助手
+tagline: 一句话说清需求，自动分流到对应的专家场景
+starters:
+- 扫地机器人回充失败怎么办？
+- 帮我写一个输出 99 乘法表的 Python 脚本并运行验证。
+- 对比三份资料，告诉我它们对 Agent 评测的主要差异。
+order: 10
+published_hash: 4621b055707eed4d

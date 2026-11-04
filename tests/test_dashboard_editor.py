@@ -1,21 +1,20 @@
 # -*- coding: utf-8 -*-
-"""场景编辑视图的界面级冒烟：能列场景、能渲染画布与表单、校验不写盘。"""
+"""构建页里的结构编辑器：嵌入模式、画布默认、校验不写盘。"""
 from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
 
+from core.interfaces.console import routes
 from core.interfaces.dashboard.editor import MODE_CANVAS, MODE_FORM
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def _editor_app() -> AppTest:
-    app = AppTest.from_file(str(ROOT / "app_agent.py"), default_timeout=180)
+def _editor_app(scenario: str = "flow_demo") -> AppTest:
+    app = AppTest.from_file(str(ROOT / "app_agent.py"), default_timeout=300)
+    app.session_state["console:route"] = routes.Route("build", scenario)
     app.run()
-    for radio in app.sidebar.radio:
-        if getattr(radio, "label", "") == "页面":
-            radio.set_value("editor")
-            break
+    next(radio for radio in app.radio if radio.label == "页签").set_value("structure")
     app.run()
     return app
 
@@ -42,14 +41,15 @@ def _spec_files() -> list[Path]:
     return sorted((ROOT / "data" / "specs" / "flow_demo").glob("v*.json"))
 
 
-def test_editor_lists_spec_scenarios():
+def test_embedded_editor_has_no_second_scenario_picker():
     app = _editor_app()
     assert not app.exception, [item.value for item in app.exception]
-    tables = [str(frame.value) for frame in app.dataframe]
-    assert any("flow_demo" in table for table in tables), tables
+    labels = _labels(app.selectbox)
+    assert "编辑场景" not in labels  # 场景由路由固定，页面里不再有第二个选择器
+    assert "工作流" in labels
 
 
-def test_editor_defaults_to_canvas_mode():
+def test_embedded_editor_defaults_to_canvas():
     app = _editor_app()
     assert not app.exception, [item.value for item in app.exception]
     assert _mode_radio(app).value == MODE_CANVAS
@@ -65,7 +65,6 @@ def test_editor_form_mode_shows_node_widgets():
     assert "场景描述" in labels
     assert "系统提示词" in labels
     assert "节点 id" in labels  # 每个节点一个
-    assert any(getattr(box, "label", "") == "工作流" for box in app.selectbox)
 
 
 def test_editor_validate_button_does_not_write():

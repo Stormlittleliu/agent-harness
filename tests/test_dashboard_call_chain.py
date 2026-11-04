@@ -2,7 +2,7 @@
 """任务执行调用链的离线测试：trace 事件 / messages 回退。"""
 from langchain_core.messages import AIMessage
 
-from core.interfaces.dashboard.task import _call_chain_dot
+from core.interfaces.dashboard.chain import call_chain_dot as _call_chain_dot
 
 
 def test_call_chain_from_trace_events():

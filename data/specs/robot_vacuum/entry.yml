@@ -1,0 +1,8 @@
+enabled: true
+title: 扫地机器人客服
+tagline: 知识库问答与使用报告；高风险操作会先征求你同意
+starters:
+- 小户型适合哪些扫地机器人？
+- 给我生成我的使用报告
+order: 30
+published_hash: 30f856441deaa906
