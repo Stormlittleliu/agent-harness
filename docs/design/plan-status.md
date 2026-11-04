@@ -15,8 +15,9 @@
 | `03461a1` | P0-3：块 `PortSpec` 输入/输出契约 + `block_ports` 动态端口 + `validate_port_flow` 静态数据流校验 |
 | `f8b2dfe` | M1：轨迹序列/转移挖掘 + 范式卡（只读，不自动采纳） |
 | `dbdd613` | M2：线性范式 → `candidates/` 候选 spec + shadow 记录（不覆盖 active） |
+| `62729f8` | M3：采纳门槛（pass^k/outcome/成本/安全）+ 版本回退 + 质量页「范式」视图 |
 
-最近一次全量测试：**339 passed**。
+最近一次全量测试：**355 passed**。
 
 ### 已落地的质量地基
 
@@ -64,24 +65,27 @@ outputs/runs/<run_id>/
   只写 `outputs/shadow/<shadow_id>/shadow.json`，`decision=pending`
 - 说明见 `docs/design/pattern-to-spec.md`
 
+### 已落地的采纳与回退（M3）
+
+- `core/quality/adoption.py`：五道门槛（pass^k / outcome / token / 延迟 / 安全回归）
+- 采纳写 `vN+1` 并切 active，baseline 版本保留；回退只改 `active.json` 指针
+- 记录落 `outputs/adoptions/<scenario>/`，冲突时能回答"凭什么采纳"
+- 质量页改为「跑一次 / 看资产 / 查记录」分组，新增「范式」视图：
+  编译 / 试运行 shadow / 采纳 / 回退 / 拒绝
+- 没有 shadow 或门槛不过时「采纳」不可点；页面不会自动跑模型
+- 说明见 `docs/design/adoption.md`
+
 ## 2. 下一步队列（按顺序）
 
-### M3 · A/B + UI
-
-- 质量页新增「范式」视图：列表 / 证据 / 指标 / 试运行 / 采纳 / 拒绝。
-- 采纳门槛：pass^k 不降、outcome 不降、成本在预算内、无安全回归。
-- 采纳后保留 baseline，一键回退。
-- 验收：采纳后 pass^k 不降，能回退。
-
-### 编辑器 P0（可与 M3 并行）
+### 编辑器 P0
 
 - 三栏工作台：左块库 / 中画布 / 右检查器；底部状态栏。
 - 撤销/重做、框选、Delete、缩放/平移、草稿按场景保存、错误点击定位。
 - 详见 `docs/design/editor-ux.md`；先做 P0，不做多选/复制/保存并跑用例（P1）。
 
-### 质量页 P1（导航 A 的剩余项）
+### 质量页 P1（剩余项，可与编辑器 P0 并行）
 
-- 质量页 8 个视图分组（跑一次 / 看资产 / 查记录），去掉横排 8 个 radio。
+- ~~质量页视图分组~~：已随 M3 完成（跑一次 / 看资产 / 查记录，两个 segmented control）。
 - 去掉重复 H4；构建库 9 行「打开」改轻量行式操作。
 - 详见 `docs/design/console-ia.md`。
 
@@ -110,5 +114,5 @@ git log --oneline -10
 
 ## 5. 恢复时怎么说
 
-> 继续按 `docs/design/plan-status.md` 的顺序做，从 M3（A/B 门槛 + 范式 UI）开始；
-> 不要重做导航 A、P0-3、M1、M2，不要整平台替换，不要自动采纳 pattern。
+> 继续按 `docs/design/plan-status.md` 的顺序做，从编辑器 P0 开始；
+> 不要重做导航 A、P0-3、M1/M2/M3，不要整平台替换，不要自动采纳 pattern。
