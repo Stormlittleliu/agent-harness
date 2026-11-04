@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-11-04T22:21:25",
+  "generated_at": "2026-11-04T22:44:04",
   "seed": 42,
   "per_category": 5,
   "note": "平衡抽样，不是官方 benchmark 成绩；类别/源规模见 sets。",
   "selection_record": {
     "jsonl": "selections.jsonl",
     "markdown": "selections.md",
-    "count": 165
+    "count": 350
   },
   "sets": {
     "bfcl": {
@@ -149,6 +149,124 @@
         "MultiHopRAG.json": "03cfb4926461f868"
       },
       "note": "null_query 也保留；全量评测另有 outputs/public/multihop_full.json。"
+    },
+    "gaia": {
+      "file": "gaia_5per_level.jsonl",
+      "source": "E:/CODE/benchmarks/GAIA/gaia_validation.jsonl",
+      "source_file": "gaia_validation.jsonl",
+      "counts": {
+        "level_1": 5,
+        "level_2": 5,
+        "level_3": 5
+      },
+      "source_sizes": {
+        "level_1": 53,
+        "level_2": 86,
+        "level_3": 26
+      },
+      "note": "来自现有 BenchTask 适配器；溯源用 source_id（task id），source_index 为空。"
+    },
+    "swebench": {
+      "file": "swebench_5per_repo.jsonl",
+      "source": "E:/CODE/benchmarks/SWE-bench/swebench_verified.jsonl",
+      "source_file": "swebench_verified.jsonl",
+      "counts": {
+        "astropy/astropy": 5,
+        "django/django": 5,
+        "matplotlib/matplotlib": 5,
+        "mwaskom/seaborn": 2,
+        "pallets/flask": 1,
+        "psf/requests": 5,
+        "pydata/xarray": 5,
+        "pylint-dev/pylint": 5,
+        "pytest-dev/pytest": 5,
+        "scikit-learn/scikit-learn": 5,
+        "sphinx-doc/sphinx": 5,
+        "sympy/sympy": 5
+      },
+      "source_sizes": {
+        "astropy/astropy": 22,
+        "django/django": 231,
+        "matplotlib/matplotlib": 34,
+        "mwaskom/seaborn": 2,
+        "pallets/flask": 1,
+        "psf/requests": 8,
+        "pydata/xarray": 22,
+        "pylint-dev/pylint": 10,
+        "pytest-dev/pytest": 19,
+        "scikit-learn/scikit-learn": 32,
+        "sphinx-doc/sphinx": 44,
+        "sympy/sympy": 75
+      },
+      "note": "来自现有 BenchTask 适配器；溯源用 source_id（task id），source_index 为空。"
+    },
+    "webarena": {
+      "file": "webarena_5per_site.jsonl",
+      "source": "E:/CODE/benchmarks/WebArena/config_files",
+      "source_file": "config_files/",
+      "counts": {
+        "gitlab": 5,
+        "gitlab+reddit": 5,
+        "gitlab+wikipedia": 5,
+        "map": 5,
+        "map+shopping_admin": 2,
+        "map+wikipedia": 5,
+        "reddit": 5,
+        "reddit+shopping": 5,
+        "shopping": 5,
+        "shopping_admin": 5
+      },
+      "source_sizes": {
+        "shopping_admin": 182,
+        "map": 109,
+        "gitlab": 180,
+        "shopping": 187,
+        "map+wikipedia": 17,
+        "reddit": 106,
+        "gitlab+reddit": 18,
+        "gitlab+wikipedia": 6,
+        "reddit+shopping": 5,
+        "map+shopping_admin": 2
+      },
+      "note": "来自现有 BenchTask 适配器；溯源用 source_id（task id），source_index 为空。"
+    },
+    "osworld": {
+      "file": "osworld_5per_category.jsonl",
+      "source": "E:/CODE/benchmarks/OSWorld/evaluation_examples/examples",
+      "source_file": "evaluation_examples/examples/",
+      "counts": {
+        "os_chrome": 5,
+        "os_excel": 5,
+        "os_gimp": 5,
+        "os_libreoffice_calc": 5,
+        "os_libreoffice_impress": 5,
+        "os_libreoffice_writer": 5,
+        "os_multi_app": 5,
+        "os_multi_apps": 5,
+        "os_os": 5,
+        "os_ppt": 5,
+        "os_thunderbird": 5,
+        "os_vlc": 5,
+        "os_vs_code": 5,
+        "os_word": 5
+      },
+      "source_sizes": {
+        "os_chrome": 46,
+        "os_gimp": 26,
+        "os_libreoffice_calc": 47,
+        "os_libreoffice_impress": 47,
+        "os_libreoffice_writer": 23,
+        "os_multi_apps": 101,
+        "os_os": 24,
+        "os_thunderbird": 15,
+        "os_vlc": 17,
+        "os_vs_code": 23,
+        "os_excel": 11,
+        "os_multi_app": 22,
+        "os_ppt": 7,
+        "os_word": 9
+      },
+      "note": "来自现有 BenchTask 适配器；溯源用 source_id（task id），source_index 为空。"
     }
   }
 }

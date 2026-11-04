@@ -1,6 +1,6 @@
 # 分层抽样出处记录
 
-- 生成时间：2026-11-04T22:21:25
+- 生成时间：2026-11-04T22:44:04
 - seed：42；每类目标：5 条
 - 产物是平衡抽样，不是官方 benchmark 完整成绩。
 - 每条样本的源文件、源文件 hash、源行号、源 id 见 `selections.jsonl`。
@@ -26,16 +26,55 @@
 | BFCL-v4 | simple_javascript | `BFCL_v4_simple_javascript.json` | 50 | 5 |
 | BFCL-v4 | simple_python | `BFCL_v4_simple_python.json` | 400 | 5 |
 | BFCL-v4 | web_search | `BFCL_v4_web_search.json` | 100 | 5 |
+| GAIA | level_1 | `gaia_validation.jsonl` | 53 | 5 |
+| GAIA | level_2 | `gaia_validation.jsonl` | 86 | 5 |
+| GAIA | level_3 | `gaia_validation.jsonl` | 26 | 5 |
 | MultiHop-RAG | comparison_query | `MultiHopRAG.json` | 856 | 5 |
 | MultiHop-RAG | inference_query | `MultiHopRAG.json` | 816 | 5 |
 | MultiHop-RAG | null_query | `MultiHopRAG.json` | 301 | 5 |
 | MultiHop-RAG | temporal_query | `MultiHopRAG.json` | 583 | 5 |
+| OSWorld | os_chrome | `examples` | 46 | 5 |
+| OSWorld | os_excel | `examples` | 11 | 5 |
+| OSWorld | os_gimp | `examples` | 26 | 5 |
+| OSWorld | os_libreoffice_calc | `examples` | 47 | 5 |
+| OSWorld | os_libreoffice_impress | `examples` | 47 | 5 |
+| OSWorld | os_libreoffice_writer | `examples` | 23 | 5 |
+| OSWorld | os_multi_app | `examples` | 22 | 5 |
+| OSWorld | os_multi_apps | `examples` | 101 | 5 |
+| OSWorld | os_os | `examples` | 24 | 5 |
+| OSWorld | os_ppt | `examples` | 7 | 5 |
+| OSWorld | os_thunderbird | `examples` | 15 | 5 |
+| OSWorld | os_vlc | `examples` | 17 | 5 |
+| OSWorld | os_vs_code | `examples` | 23 | 5 |
+| OSWorld | os_word | `examples` | 9 | 5 |
 | RGB | en_counterfactual | `en_fact.json` | 100 | 5 |
 | RGB | en_integration | `en_int.json` | 100 | 5 |
 | RGB | en_normal | `en_refine.json` | 300 | 5 |
 | RGB | zh_counterfactual | `zh_fact.json` | 100 | 5 |
 | RGB | zh_integration | `zh_int.json` | 100 | 5 |
 | RGB | zh_normal | `zh_refine.json` | 300 | 5 |
+| SWE-bench | astropy/astropy | `swebench_verified.jsonl` | 22 | 5 |
+| SWE-bench | django/django | `swebench_verified.jsonl` | 231 | 5 |
+| SWE-bench | matplotlib/matplotlib | `swebench_verified.jsonl` | 34 | 5 |
+| SWE-bench | mwaskom/seaborn | `swebench_verified.jsonl` | 2 | 2 |
+| SWE-bench | pallets/flask | `swebench_verified.jsonl` | 1 | 1 |
+| SWE-bench | psf/requests | `swebench_verified.jsonl` | 8 | 5 |
+| SWE-bench | pydata/xarray | `swebench_verified.jsonl` | 22 | 5 |
+| SWE-bench | pylint-dev/pylint | `swebench_verified.jsonl` | 10 | 5 |
+| SWE-bench | pytest-dev/pytest | `swebench_verified.jsonl` | 19 | 5 |
+| SWE-bench | scikit-learn/scikit-learn | `swebench_verified.jsonl` | 32 | 5 |
+| SWE-bench | sphinx-doc/sphinx | `swebench_verified.jsonl` | 44 | 5 |
+| SWE-bench | sympy/sympy | `swebench_verified.jsonl` | 75 | 5 |
+| WebArena | gitlab | `config_files` | 180 | 5 |
+| WebArena | gitlab+reddit | `config_files` | 18 | 5 |
+| WebArena | gitlab+wikipedia | `config_files` | 6 | 5 |
+| WebArena | map | `config_files` | 109 | 5 |
+| WebArena | map+shopping_admin | `config_files` | 2 | 2 |
+| WebArena | map+wikipedia | `config_files` | 17 | 5 |
+| WebArena | reddit | `config_files` | 106 | 5 |
+| WebArena | reddit+shopping | `config_files` | 5 | 5 |
+| WebArena | shopping | `config_files` | 187 | 5 |
+| WebArena | shopping_admin | `config_files` | 182 | 5 |
 | tau2-bench | airline | `tasks.json` | 50 | 5 |
 | tau2-bench | banking_knowledge | `tasks.json` | 97 | 5 |
 | tau2-bench | retail | `tasks.json` | 114 | 5 |

@@ -12,6 +12,10 @@
 | `rgb_5per_category.jsonl` | RGB 中/英 × normal/integration/counterfactual，每类 5 条 |
 | `tau2_5per_domain.jsonl` | τ² 的 airline / banking / retail / telecom，每域 5 条 |
 | `multihop_5per_type.jsonl` | MultiHop 的 4 个 question_type，每类 5 条 |
+| `gaia_5per_level.jsonl` | GAIA validation 的 3 个难度，每级 5 条 |
+| `swebench_5per_repo.jsonl` | SWE-bench 按 repo 分组，每 repo 5 条 |
+| `webarena_5per_site.jsonl` | WebArena 按站点组合分组，每组 5 条 |
+| `osworld_5per_category.jsonl` | OSWorld 按应用/任务类别，每类 5 条 |
 | `selections.jsonl` | **逐条出处**：源文件、源 hash、源行号、源 id |
 | `selections.md` | 按类别汇总的出处表 |
 | `manifest.json` | seed、每类目标、各集合计数与源规模 |
@@ -20,6 +24,11 @@
 > （RGB 源数据是 CC BY-NC-SA，不能直接塞进 MIT 仓库）。
 > 仓库只保留 `selections.jsonl` / `selections.md` / `manifest.json` 作为出处记录；
 > 在本地跑一次生成命令即可还原原始样本。
+>
+> 当前（seed=42，每类 5 条）共 **350 条**：BFCL 95、RGB 30、τ² 20、MultiHop 20、
+> GAIA 15、SWE-bench 53、WebArena 47、OSWorld 70。
+> GAIA/SWE-bench/WebArena/OSWorld 走现有 BenchTask 适配器，`source_index` 为空，
+> 用 `source_id`（task id）溯源。
 
 ## 抽样规则
 

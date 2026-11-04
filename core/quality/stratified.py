@@ -91,7 +91,7 @@ def select_row(
     benchmark: str,
     category: str,
     source_path: Path,
-    source_index: int,
+    source_index: int | None,
     source_row: dict[str, Any],
     seed: int,
     per_category: int,
@@ -336,6 +336,152 @@ def build_multihop(
     )
 
 
+def build_from_adapter(
+    root: Path,
+    out_dir: Path,
+    *,
+    benchmark: str,
+    adapter_name: str,
+    category_fn,
+    source_path: Path,
+    source_file: str,
+    output_file: str,
+    per_category: int,
+    seed: int,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """用现有 BenchTask 适配器抽 5 条/类；没有原始行号，用 task id 溯源。"""
+    from core.benchmarks.adapters import get_adapter
+
+    adapter = get_adapter(adapter_name)
+    tasks = adapter.load()
+    if not tasks:
+        return (
+            {
+                "file": output_file,
+                "source": source_path.as_posix(),
+                "counts": {},
+                "source_sizes": {},
+                "note": "adapter 不可用或没有任务",
+            },
+            [],
+        )
+    grouped: dict[str, list] = {}
+    for task in tasks:
+        grouped.setdefault(str(category_fn(task)), []).append(task)
+
+    rows: list[dict[str, Any]] = []
+    selections: list[dict[str, Any]] = []
+    counts: dict[str, int] = {}
+    for category, items in sorted(grouped.items()):
+        picked = sample_with_index(
+            [item.to_dict() for item in items],
+            per_category=per_category,
+            seed=seed,
+            category=f"{adapter_name}:{category}",
+        )
+        counts[category] = len(picked)
+        for index, item in picked:
+            task = items[index]
+            data = item
+            data.update({
+                "benchmark": benchmark,
+                "category": category,
+                "source_category": task.category,
+            })
+            rows.append(data)
+            selections.append(select_row(
+                benchmark=benchmark,
+                category=category,
+                source_path=source_path,
+                source_index=None,
+                source_row=task.to_dict(),
+                seed=seed,
+                per_category=per_category,
+                source_sha="",
+                source_size=len(items),
+            ))
+    _write_jsonl(out_dir / output_file, rows)
+    return (
+        {
+            "file": output_file,
+            "source": source_path.as_posix(),
+            "source_file": source_file,
+            "counts": counts,
+            "source_sizes": {name: len(items) for name, items in grouped.items()},
+            "note": "来自现有 BenchTask 适配器；溯源用 source_id（task id），source_index 为空。",
+        },
+        selections,
+    )
+
+
+def build_gaia(
+    root: Path, out_dir: Path, *, per_category: int, seed: int
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    return build_from_adapter(
+        root,
+        out_dir,
+        benchmark="GAIA",
+        adapter_name="gaia",
+        category_fn=lambda task: f"level_{task.difficulty}",
+        source_path=root / "GAIA" / "gaia_validation.jsonl",
+        source_file="gaia_validation.jsonl",
+        output_file="gaia_5per_level.jsonl",
+        per_category=per_category,
+        seed=seed,
+    )
+
+
+def build_swebench(
+    root: Path, out_dir: Path, *, per_category: int, seed: int
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    return build_from_adapter(
+        root,
+        out_dir,
+        benchmark="SWE-bench",
+        adapter_name="swe-bench",
+        category_fn=lambda task: str(task.environment.get("repo") or "unknown"),
+        source_path=root / "SWE-bench" / "swebench_verified.jsonl",
+        source_file="swebench_verified.jsonl",
+        output_file="swebench_5per_repo.jsonl",
+        per_category=per_category,
+        seed=seed,
+    )
+
+
+def build_webarena(
+    root: Path, out_dir: Path, *, per_category: int, seed: int
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    return build_from_adapter(
+        root,
+        out_dir,
+        benchmark="WebArena",
+        adapter_name="webarena",
+        category_fn=lambda task: "+".join(sorted(task.environment.get("sites") or [])) or "unknown",
+        source_path=root / "WebArena" / "config_files",
+        source_file="config_files/",
+        output_file="webarena_5per_site.jsonl",
+        per_category=per_category,
+        seed=seed,
+    )
+
+
+def build_osworld(
+    root: Path, out_dir: Path, *, per_category: int, seed: int
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    return build_from_adapter(
+        root,
+        out_dir,
+        benchmark="OSWorld",
+        adapter_name="osworld",
+        category_fn=lambda task: task.category,
+        source_path=root / "OSWorld" / "evaluation_examples" / "examples",
+        source_file="evaluation_examples/examples/",
+        output_file="osworld_5per_category.jsonl",
+        per_category=per_category,
+        seed=seed,
+    )
+
+
 def _write_selection_record(
     out_dir: Path,
     selections: list[dict[str, Any]],
@@ -378,6 +524,7 @@ def build_all(
     *,
     per_category: int = DEFAULT_PER_CATEGORY,
     seed: int = DEFAULT_SEED,
+    sources: Iterable[str] | None = None,
 ) -> dict[str, Any]:
     root = Path(root)
     out_dir = Path(out_dir)
@@ -387,11 +534,19 @@ def build_all(
         "rgb": build_rgb,
         "tau2": build_tau2,
         "multihop": build_multihop,
+        "gaia": build_gaia,
+        "swebench": build_swebench,
+        "webarena": build_webarena,
+        "osworld": build_osworld,
     }
+    selected = list(builders) if sources is None else [name for name in sources if name in builders]
+    unknown = [name for name in (sources or []) if name not in builders]
+    if unknown:
+        raise KeyError(f"未知抽样集合：{', '.join(unknown)}")
     sets: dict[str, Any] = {}
     selections: list[dict[str, Any]] = []
-    for name, builder in builders.items():
-        info, picked = builder(root, out_dir, per_category=per_category, seed=seed)
+    for name in selected:
+        info, picked = builders[name](root, out_dir, per_category=per_category, seed=seed)
         sets[name] = info
         selections.extend(picked)
 

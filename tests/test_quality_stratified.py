@@ -61,7 +61,13 @@ def test_sample_with_index_is_deterministic():
 def test_build_all_records_every_pick(tmp_path):
     root = _fake_root(tmp_path)
     out = tmp_path / "out"
-    manifest = build_all(root, out, per_category=5, seed=42)
+    manifest = build_all(
+        root,
+        out,
+        per_category=5,
+        seed=42,
+        sources=("bfcl", "rgb", "tau2", "multihop"),
+    )
 
     expected = sum(len(info["counts"]) * 5 for info in manifest["sets"].values())
     assert manifest["selection_record"]["count"] == expected
