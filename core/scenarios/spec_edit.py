@@ -488,8 +488,12 @@ def canvas_payload(
     errors: list[str] | None = None,
     root: str | Path | None = None,
     selected: str | None = None,
+    include_blocks: bool = True,
 ) -> dict[str, Any]:
-    """给前端画布的完整输入：节点（含中文名与坐标）、边、块库、标红节点。"""
+    """给前端画布的完整输入：节点（含中文名与坐标）、边、块库、标红节点。
+
+    ``include_blocks=False`` 时前端隐藏自带块库，由外层工作台提供（三栏布局）。
+    """
     workflow_draft = draft["workflows"][workflow]
     nodes = list(workflow_draft["nodes"])
     edges = [list(edge) for edge in workflow_draft["edges"]]
@@ -525,7 +529,7 @@ def canvas_payload(
         "blocks": [
             {"fn": fn, "label": block_label(fn)}
             for fn in NODE_REGISTRY
-        ],
+        ] if include_blocks else [],
         "errors": bad_node_ids(list(errors or []), nodes),
         "selected": selected if selected and selected not in {START, END} else None,
         "workflow": workflow,

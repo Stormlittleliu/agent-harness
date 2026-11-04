@@ -13,6 +13,7 @@
     background: #ffffff;
   }
   .wrap { display: flex; border: 1px solid rgba(128,128,128,.28); border-radius: 10px; overflow: hidden; }
+  .wrap.palette-off .palette { display: none; }
   .palette {
     width: 152px;
     flex: 0 0 152px;
@@ -51,13 +52,29 @@
     pointer-events: none;
   }
   .flash.on { opacity: 1; }
+  .zoombar {
+    position: absolute; right: 10px; top: 8px; display: flex; gap: 4px;
+    background: rgba(255,255,255,.92); border: 1px solid rgba(128,128,128,.2);
+    border-radius: 8px; padding: 3px;
+  }
+  .zoombar button {
+    border: 0; background: transparent; color: #3a4a63; cursor: pointer;
+    font-size: 11px; padding: 2px 7px; border-radius: 5px;
+  }
+  .zoombar button:hover { background: rgba(76,125,240,.12); }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="palette" id="palette"><h4>块库（拖到画布）</h4></div>
   <div class="board">
-    <div class="hint">拖节点移动 · 从右侧圆点拖到目标节点左侧圆点连线 · 点连线删除 · 选中后右上角 × 删节点</div>
+    <div class="hint">拖节点移动 · 从右侧圆点拖到目标节点左侧圆点连线 · 点连线删除 · Delete 删节点 · 滚轮缩放 · 空白处拖动平移</div>
+    <div class="zoombar">
+      <button type="button" data-zoom="out" title="缩小">−</button>
+      <button type="button" data-zoom="reset" title="恢复 100%">100%</button>
+      <button type="button" data-zoom="in" title="放大">+</button>
+      <button type="button" data-zoom="fit" title="适配视图">适配</button>
+    </div>
     <svg id="board" viewBox="0 0 1180 470" preserveAspectRatio="xMinYMin meet"></svg>
     <div class="flash" id="flash"></div>
   </div>
@@ -70,9 +87,12 @@
   var model = { nodes: [], edges: [], blocks: [], errors: [], selected: null };
   var drag = null;      // { id, dx, dy, moved }
   var link = null;      // { from, x, y }
+  var pan = null;       // { sx, sy, vx, vy }
+  var view = { x: 0, y: 0, w: BOARD_W, h: BOARD_H };
   var version = 0;
   var svg = document.getElementById("board");
   var palette = document.getElementById("palette");
+  var wrap = document.querySelector(".wrap");
   var flashBox = document.getElementById("flash");
   var flashTimer = null;
 
@@ -107,7 +127,9 @@
     var keep = args.selected || null;
     if (keep && !findNode(keep)) { keep = null; }
     model.selected = keep;
+    if (wrap) { wrap.classList.toggle("palette-off", model.blocks.length === 0); }
     renderPalette();
+    applyView();
     draw();
     setHeight(510);
   }
@@ -137,14 +159,43 @@
     if (flashTimer) { clearTimeout(flashTimer); }
     flashTimer = setTimeout(function () { flashBox.classList.remove("on"); }, 1400);
   }
+  function applyView() {
+    svg.setAttribute("viewBox", view.x + " " + view.y + " " + view.w + " " + view.h);
+  }
   function toBoard(event) {
     var rect = svg.getBoundingClientRect();
-    var scaleX = BOARD_W / (rect.width || 1);
-    var scaleY = BOARD_H / (rect.height || 1);
     return {
-      x: (event.clientX - rect.left) * scaleX,
-      y: (event.clientY - rect.top) * scaleY
+      x: view.x + (event.clientX - rect.left) * view.w / (rect.width || 1),
+      y: view.y + (event.clientY - rect.top) * view.h / (rect.height || 1)
     };
+  }
+  function zoomAt(factor, event) {
+    var point = event ? toBoard(event) : { x: view.x + view.w / 2, y: view.y + view.h / 2 };
+    var nextW = Math.max(BOARD_W * 0.4, Math.min(BOARD_W * 2.2, view.w / factor));
+    var ratio = nextW / view.w;
+    view.x = point.x - (point.x - view.x) * ratio;
+    view.y = point.y - (point.y - view.y) * ratio;
+    view.w = nextW;
+    view.h = BOARD_H * nextW / BOARD_W;
+    applyView();
+  }
+  function fitView() {
+    var nodes = model.nodes;
+    if (!nodes.length) {
+      view = { x: 0, y: 0, w: BOARD_W, h: BOARD_H };
+      applyView();
+      return;
+    }
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach(function (node) {
+      minX = Math.min(minX, node.x); minY = Math.min(minY, node.y);
+      maxX = Math.max(maxX, node.x + NODE_W); maxY = Math.max(maxY, node.y + NODE_H);
+    });
+    var pad = 60;
+    var w = Math.max(BOARD_W * 0.4, maxX - minX + pad * 2);
+    var h = Math.max(BOARD_H * 0.55, maxY - minY + pad * 2);
+    view = { x: minX - pad, y: minY - pad, w: w, h: h };
+    applyView();
   }
   function uniqueId(fn) {
     var base = String(fn || "step");
@@ -292,7 +343,11 @@
         emit();
         flash("已删除连线");
       }
+      return;
     }
+    // 空白处拖动 = 平移画布。
+    event.preventDefault();
+    pan = { cx: event.clientX, cy: event.clientY, vx: view.x, vy: view.y };
   });
 
   window.addEventListener("mousemove", function (event) {
@@ -300,8 +355,8 @@
       var node = findNode(drag.id);
       if (!node) { drag = null; return; }
       var point = toBoard(event);
-      node.x = Math.max(0, Math.min(920, point.x - drag.dx));
-      node.y = Math.max(0, Math.min(BOARD_H - NODE_H, point.y - drag.dy));
+      node.x = Math.max(-2000, point.x - drag.dx);
+      node.y = Math.max(-2000, point.y - drag.dy);
       drag.moved = true;
       draw();
     } else if (link) {
@@ -309,10 +364,18 @@
       link.x = here.x;
       link.y = here.y;
       draw();
+    } else if (pan) {
+      var rect = svg.getBoundingClientRect();
+      var dx = (event.clientX - pan.cx) * view.w / (rect.width || 1);
+      var dy = (event.clientY - pan.cy) * view.h / (rect.height || 1);
+      view.x = pan.vx - dx;
+      view.y = pan.vy - dy;
+      applyView();
     }
   });
 
   window.addEventListener("mouseup", function (event) {
+    if (pan) { pan = null; return; }
     if (drag) {
       var moved = drag.moved;
       drag = null;
@@ -378,8 +441,8 @@
       fn: fn,
       label: labelOf(fn),
       kind: "",
-      x: Math.max(0, Math.min(920, point.x - NODE_W / 2)),
-      y: Math.max(0, Math.min(BOARD_H - NODE_H, point.y - NODE_H / 2))
+      x: point.x - NODE_W / 2,
+      y: point.y - NODE_H / 2
     });
     draw();
     emit();
@@ -391,6 +454,52 @@
       if (model.blocks[i].fn === fn) { return model.blocks[i].label; }
     }
     return fn;
+  }
+
+  svg.addEventListener("wheel", function (event) {
+    event.preventDefault();
+    zoomAt(event.deltaY < 0 ? 1.12 : 1 / 1.12, event);
+  }, { passive: false });
+
+  document.addEventListener("keydown", function (event) {
+    var tag = String((event.target && event.target.tagName) || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") { return; }
+    var node = model.selected ? findNode(model.selected) : null;
+    if ((event.key === "Delete" || event.key === "Backspace") && node && !isAnchor(node)) {
+      event.preventDefault();
+      model.nodes = model.nodes.filter(function (item) { return item.id !== node.id; });
+      model.edges = model.edges.filter(function (edge) {
+        return edge[0] !== node.id && edge[1] !== node.id;
+      });
+      model.selected = null;
+      draw();
+      emit();
+      flash("已删除节点 " + node.id + "（可撤销）");
+      return;
+    }
+    if (!node || isAnchor(node)) { return; }
+    var step = event.shiftKey ? 16 : 4;
+    var moved = false;
+    if (event.key === "ArrowLeft") { node.x -= step; moved = true; }
+    if (event.key === "ArrowRight") { node.x += step; moved = true; }
+    if (event.key === "ArrowUp") { node.y -= step; moved = true; }
+    if (event.key === "ArrowDown") { node.y += step; moved = true; }
+    if (moved) {
+      event.preventDefault();
+      draw();
+      emit();
+    }
+  });
+
+  var zoomButtons = document.querySelectorAll("[data-zoom]");
+  for (var zi = 0; zi < zoomButtons.length; zi++) {
+    zoomButtons[zi].addEventListener("click", function () {
+      var action = this.getAttribute("data-zoom");
+      if (action === "fit") { fitView(); }
+      else if (action === "reset") { view = { x: 0, y: 0, w: BOARD_W, h: BOARD_H }; applyView(); }
+      else if (action === "in") { zoomAt(1.2); }
+      else { zoomAt(1 / 1.2); }
+    });
   }
 
   draw();

@@ -17,7 +17,10 @@
 """
 from __future__ import annotations
 
+import copy
 import json
+from datetime import datetime
+from pathlib import Path
 from types import SimpleNamespace
 
 import streamlit as st
@@ -39,6 +42,8 @@ from core.scenarios.spec_nodes import block_desc, block_label, block_params, reg
 NAME_HINT = "只用小写字母、数字和下划线，例如 note_qa"
 MODE_CANVAS = "🎨 可视化画布"
 MODE_FORM = "📝 表单"
+DRAFT_ROOT = Path("data/runtime/spec_drafts")
+HISTORY_LIMIT = 50
 
 
 def _status_rows() -> list[dict]:
@@ -83,14 +88,123 @@ def _bump_generation() -> None:
     st.session_state["editor-gen"] = int(st.session_state.get("editor-gen", 0)) + 1
 
 
+def _draft_path(name: str) -> Path:
+    return DRAFT_ROOT / f"{name}.json"
+
+
+def _drafts() -> dict[str, dict]:
+    return st.session_state.setdefault("editor:drafts", {})
+
+
+def _bases() -> dict[str, dict]:
+    return st.session_state.setdefault("editor:bases", {})
+
+
+def _undo_stacks() -> dict[str, list]:
+    return st.session_state.setdefault("editor:undo", {})
+
+
+def _redo_stacks() -> dict[str, list]:
+    return st.session_state.setdefault("editor:redo", {})
+
+
+def _runtime_draft(name: str) -> dict | None:
+    """崩溃恢复用的草稿；文件坏了就当没有，不让它挡住编辑。"""
+    path = _draft_path(name)
+    if not path.is_file():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    draft = payload.get("draft") if isinstance(payload, dict) else payload
+    return draft if isinstance(draft, dict) else None
+
+
 def _draft_for(name: str) -> dict:
-    """当前正在编辑的草稿；切换场景时重新从磁盘载入。"""
-    if st.session_state.get("editor-current") != name or "editor-draft" not in st.session_state:
-        st.session_state["editor-draft"] = spec_edit.load_draft(name, tools=spec_tool_names())
-        st.session_state["editor-current"] = name
+    """按场景保存草稿：切走再切回不丢未保存改动。"""
+    drafts = _drafts()
+    if name not in drafts:
+        base = spec_edit.load_draft(name, tools=spec_tool_names())
+        draft = copy.deepcopy(base)
+        recovered = _runtime_draft(name)
+        if recovered is not None and recovered != base:
+            draft = recovered
+            st.session_state["editor-notice"] = f"已恢复 {name} 的未保存草稿"
+        drafts[name] = draft
+        _bases()[name] = copy.deepcopy(base)
+        _undo_stacks()[name] = []
+        _redo_stacks()[name] = []
         st.session_state["editor-errors"] = []
         _bump_generation()
-    return st.session_state["editor-draft"]
+    return drafts[name]
+
+
+def _draft_base(name: str) -> dict:
+    return _bases().get(name) or spec_edit.load_draft(name, tools=spec_tool_names())
+
+
+def _is_dirty(name: str, draft: dict) -> bool:
+    return draft != _draft_base(name)
+
+
+def _push_undo(name: str, snapshot: dict) -> None:
+    undo = _undo_stacks().setdefault(name, [])
+    if undo and undo[-1] == snapshot:
+        return
+    undo.append(copy.deepcopy(snapshot))
+    del undo[:-HISTORY_LIMIT]
+    _redo_stacks()[name] = []
+
+
+def _remember(name: str, draft: dict) -> None:
+    """改结构/参数前压栈；同一状态不重复压。"""
+    _push_undo(name, draft)
+
+
+def _undo(name: str) -> bool:
+    undo = _undo_stacks().setdefault(name, [])
+    if not undo:
+        return False
+    current = copy.deepcopy(_drafts()[name])
+    _drafts()[name] = undo.pop()
+    _redo_stacks().setdefault(name, []).append(current)
+    return True
+
+
+def _redo(name: str) -> bool:
+    redo = _redo_stacks().setdefault(name, [])
+    if not redo:
+        return False
+    current = copy.deepcopy(_drafts()[name])
+    _drafts()[name] = redo.pop()
+    _undo_stacks().setdefault(name, []).append(current)
+    return True
+
+
+def _autosave(name: str, draft: dict) -> None:
+    """未保存草稿写到运行时目录；不进 spec、不进 git，用于崩溃恢复。"""
+    if not _is_dirty(name, draft):
+        _clear_runtime_draft(name)
+        return
+    path = _draft_path(name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "saved_at": datetime.now().isoformat(timespec="seconds"),
+        "draft": draft,
+    }
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(path)
+
+
+def _clear_runtime_draft(name: str) -> None:
+    path = _draft_path(name)
+    if path.is_file():
+        try:
+            path.unlink()
+        except OSError:
+            pass
 
 
 def _rows_of(table) -> list[dict]:
@@ -296,49 +410,52 @@ def _render_canvas_editor(
         draft,
         errors,
         selected=st.session_state.get("editor-selected"),
+        include_blocks=False,
     )
     result = render_canvas(payload, key=f"{prefix}-canvas-{workflow}")
     if isinstance(result, dict) and result.get("version") != st.session_state.get("editor-canvas-version"):
         st.session_state["editor-canvas-version"] = result.get("version")
+        before = copy.deepcopy(draft)
         changed = spec_edit.absorb_canvas(name, workflow, draft, result)
-        st.session_state["editor-selected"] = result.get("selected")
         if changed:
+            _remember(name, before)
             # 结构变了，之前那次校验的结论就过期了。
             st.session_state["editor-errors"] = []
+        st.session_state["editor-selected"] = result.get("selected")
         st.rerun()
 
-    header = st.columns([1.6, 1], vertical_alignment="center")
-    header[0].caption("拖节点移动 · 从右侧圆点连到下一个节点 · 点连线删除 · 选中后右上角 × 删节点")
+    header = st.columns([2.2, 1], vertical_alignment="center")
+    header[0].caption("拖节点移动 · 右侧圆点连线 · 点连线删除 · Delete 删节点 · 滚轮缩放 / 空白拖动平移")
     if header[1].button("重新自动排版", key=f"{prefix}-canvas-relayout"):
         spec_edit.clear_layout(name, workflow)
         _bump_generation()
         st.rerun()
 
-    _render_selected_node(draft, workflow, prefix, tools, "画布上点一个节点，这里改它的 id 与参数。")
-
 
 def _render_selected_node(
+    name: str,
     draft: dict,
     workflow: str,
     prefix: str,
     tools: list[str],
     empty_hint: str,
 ) -> None:
-    """选中节点的身份 + 参数面板（画布与表单两种模式共用）。"""
-    nodes = draft["workflows"][workflow]["nodes"]
+    """右侧检查器：选中节点的身份 + 参数，不再跳到画布下方。"""
+    nodes = draft["workflows"][workflow]["nodes"] if workflow else []
     selected = st.session_state.get("editor-selected")
     node = next((item for item in nodes if str(item.get("id")) == selected), None)
     if node is None:
-        st.info(empty_hint)
+        st.caption(empty_hint)
         return
 
     fn = str(node.get("fn"))
     options = registered_nodes()
-    col_id, col_fn, col_del = st.columns([1.1, 1.5, 0.5], vertical_alignment="bottom")
-    new_id = col_id.text_input(
+    st.caption(f"`{fn}` · {block_desc(fn) or '该块没有说明。'}")
+
+    new_id = st.text_input(
         "节点 id", value=str(node.get("id")), key=f"{prefix}-sel-id"
     ).strip()
-    new_fn = col_fn.selectbox(
+    new_fn = st.selectbox(
         "块",
         options,
         index=options.index(fn) if fn in options else 0,
@@ -346,7 +463,27 @@ def _render_selected_node(
         key=f"{prefix}-sel-fn",
         help=block_desc(fn),
     )
-    if col_del.button("删除节点", key=f"{prefix}-sel-del"):
+
+    if new_fn != fn:
+        _remember(name, draft)
+        node["fn"] = new_fn
+        node["args"] = spec_edit.block_defaults(new_fn)
+        _bump_generation()
+        st.rerun()
+    if new_id and new_id != node.get("id"):
+        before = copy.deepcopy(draft)
+        try:
+            spec_edit.rename_node(draft, workflow, str(node.get("id")), new_id)
+        except SpecError as exc:
+            st.error("；".join(exc.errors))
+        else:
+            _push_undo(name, before)
+            st.session_state["editor-selected"] = new_id
+            _bump_generation()
+            st.rerun()
+
+    if st.button("删除节点", key=f"{prefix}-sel-del", use_container_width=True):
+        _remember(name, draft)
         index = next(
             (position for position, item in enumerate(nodes) if str(item.get("id")) == selected),
             None,
@@ -357,28 +494,16 @@ def _render_selected_node(
         _bump_generation()
         st.rerun()
 
-    if new_fn != fn:
-        node["fn"] = new_fn
-        node["args"] = spec_edit.block_defaults(new_fn)
-        _bump_generation()
-        st.rerun()
-    if new_id and new_id != node.get("id"):
-        try:
-            spec_edit.rename_node(draft, workflow, str(node.get("id")), new_id)
-        except SpecError as exc:
-            st.error("；".join(exc.errors))
-        else:
-            st.session_state["editor-selected"] = new_id
-            _bump_generation()
-            st.rerun()
-
-    st.caption(block_desc(fn) or "该块没有说明。")
-    node["args"] = _render_params(
-        str(node.get("fn")), node.get("args") or {}, f"{prefix}-sel-{node.get('id')}", tools
+    old_args = copy.deepcopy(node.get("args") or {})
+    new_args = _render_params(
+        str(node.get("fn")), old_args, f"{prefix}-sel-{node.get('id')}", tools
     )
+    if new_args != old_args:
+        _remember(name, draft)
+        node["args"] = new_args
 
 
-def _render_nodes(draft: dict, workflow: str, prefix: str, tools: list[str]) -> None:
+def _render_nodes(name: str, draft: dict, workflow: str, prefix: str, tools: list[str]) -> None:
     workflow_draft = draft["workflows"][workflow]
     nodes = workflow_draft["nodes"]
     for index, node in enumerate(list(nodes)):
@@ -392,6 +517,7 @@ def _render_nodes(draft: dict, workflow: str, prefix: str, tools: list[str]) -> 
                 "节点 id", value=str(node.get("id") or ""), key=f"{prefix}-n{index}-id"
             ).strip()
             if new_id and new_id != node.get("id"):
+                _remember(name, draft)
                 node["id"] = new_id
             options = registered_nodes()
             current_fn = str(node.get("fn") or options[0])
@@ -399,39 +525,46 @@ def _render_nodes(draft: dict, workflow: str, prefix: str, tools: list[str]) -> 
                 "块",
                 options,
                 index=options.index(current_fn) if current_fn in options else 0,
-                format_func=lambda name: f"{block_label(name)}（{name}）",
+                format_func=lambda option: f"{block_label(option)}（{option}）",
                 key=f"{prefix}-n{index}-fn",
                 help=block_desc(current_fn),
             )
             if new_fn != current_fn:
+                _remember(name, draft)
                 node["fn"] = new_fn
                 node["args"] = spec_edit.block_defaults(new_fn)
                 _bump_generation()
                 st.rerun()
             if col_del.button("删除", key=f"{prefix}-n{index}-del"):
+                _remember(name, draft)
                 spec_edit.remove_node(draft, workflow, index)
                 _bump_generation()
                 st.rerun()
             st.caption(block_desc(fn) or "该块没有说明。")
-            node["args"] = _render_params(
-                str(node.get("fn") or fn), node.get("args") or {}, f"{prefix}-n{index}-{fn}", tools
+            old_args = copy.deepcopy(node.get("args") or {})
+            new_args = _render_params(
+                str(node.get("fn") or fn), old_args, f"{prefix}-n{index}-{fn}", tools
             )
+            if new_args != old_args:
+                _remember(name, draft)
+                node["args"] = new_args
 
     add_col1, add_col2 = st.columns([1.6, 1])
     block_options = registered_nodes()
     chosen = add_col1.selectbox(
         "新增节点使用的块",
         block_options,
-        format_func=lambda name: f"{block_label(name)}（{name}）",
+        format_func=lambda option: f"{block_label(option)}（{option}）",
         key=f"{prefix}-add-block",
     )
     if add_col2.button("加一个节点", key=f"{prefix}-add-node"):
+        _remember(name, draft)
         spec_edit.add_node(draft, workflow, chosen)
         _bump_generation()
         st.rerun()
 
 
-def _render_edges(draft: dict, workflow: str, prefix: str) -> None:
+def _render_edges(name: str, draft: dict, workflow: str, prefix: str) -> None:
     workflow_draft = draft["workflows"][workflow]
     node_ids = [str(node.get("id")) for node in workflow_draft["nodes"]]
     options = ["__start__", *node_ids, "__end__"]
@@ -439,10 +572,12 @@ def _render_edges(draft: dict, workflow: str, prefix: str) -> None:
     if not rows:
         st.caption("还没有边；加一条 START 到第一个节点的边，流程才能开始。")
         if st.button("加第一条边", key=f"{prefix}-edge-first"):
+            _remember(name, draft)
             spec_edit.set_edge(draft, workflow, "__start__", node_ids[0] if node_ids else "__end__")
             _bump_generation()
             st.rerun()
         return
+    before = copy.deepcopy(draft)
     edited = st.data_editor(
         rows,
         num_rows="dynamic",
@@ -458,6 +593,8 @@ def _render_edges(draft: dict, workflow: str, prefix: str) -> None:
         source, target = str(row.get("从") or ""), str(row.get("到") or "")
         if source and target:
             pairs.append([source, target])
+    if pairs != before["workflows"][workflow]["edges"]:
+        _push_undo(name, before)
     workflow_draft["edges"] = pairs
 
 
@@ -580,6 +717,227 @@ def _render_readonly(name: str, draft: dict) -> None:
     st.json(draft, expanded=False)
 
 
+def _render_block_library(name: str, draft: dict, workflow: str, prefix: str) -> None:
+    st.markdown("**块库**")
+    query = st.text_input(
+        "搜索块",
+        key=f"{prefix}-block-search",
+        placeholder="名称 / 说明",
+        label_visibility="collapsed",
+    ).strip().lower()
+    if not workflow:
+        st.caption("先选一个工作流。")
+        return
+    composite = {"react_loop", "fan_out"}
+    with st.container(height=300):
+        for is_composite, title in ((True, "复合块"), (False, "基础块")):
+            matches = [
+                fn for fn in registered_nodes()
+                if (fn in composite) == is_composite
+                and (
+                    not query
+                    or query in block_label(fn).lower()
+                    or query in fn.lower()
+                    or query in block_desc(fn).lower()
+                )
+            ]
+            if not matches:
+                continue
+            st.caption(title)
+            for fn in matches:
+                if st.button(
+                    f"+ {block_label(fn)}",
+                    key=f"{prefix}-add-{fn}",
+                    help=block_desc(fn),
+                    use_container_width=True,
+                ):
+                    _remember(name, draft)
+                    node_id = spec_edit.add_node(draft, workflow, fn)
+                    st.session_state["editor-selected"] = node_id
+                    _bump_generation()
+                    st.rerun()
+
+
+def _render_error_list(draft: dict, workflow: str, prefix: str) -> None:
+    errors = st.session_state.get("editor-errors") or []
+    if not errors:
+        st.caption("校验通过。")
+        return
+    nodes = draft["workflows"][workflow]["nodes"] if workflow else []
+    st.markdown(f"**{len(errors)} 个问题**")
+    for index, error in enumerate(errors[:8]):
+        bad = spec_edit.bad_node_ids([error], nodes)
+        if bad:
+            if st.button(
+                f"定位 {bad[0]}",
+                key=f"{prefix}-err-loc-{index}",
+                use_container_width=True,
+            ):
+                st.session_state["editor-selected"] = bad[0]
+                st.rerun()
+        st.caption(error)
+
+
+def _save_draft(name: str, draft: dict) -> None:
+    try:
+        path = spec_edit.save_draft(draft)
+    except SpecError as exc:
+        st.session_state["editor-errors"] = exc.errors
+    else:
+        _bases()[name] = copy.deepcopy(draft)
+        _clear_runtime_draft(name)
+        st.session_state["editor-errors"] = []
+        st.session_state["editor-notice"] = f"已保存：{path}（新版本已设为 active）"
+        _reset_agent_caches()
+        _bump_generation()
+    st.rerun()
+
+
+def _render_status(name: str, draft: dict, prefix: str, tools: list[str]) -> None:
+    errors = st.session_state.get("editor-errors") or []
+    versions = spec_edit.versions(name)
+    active = next((row["版本"] for row in versions if row["当前"]), "—")
+    undo = _undo_stacks().get(name) or []
+    redo = _redo_stacks().get(name) or []
+    with st.container(border=True):
+        cols = st.columns(
+            [1.25, 1.25, 1.0, 0.75, 0.75, 1.35, 1.4],
+            vertical_alignment="center",
+            gap="small",
+        )
+        cols[0].caption("● 未保存" if _is_dirty(name, draft) else "已保存")
+        cols[1].caption(f"{len(errors)} errors" if errors else "校验通过")
+        cols[2].caption(f"版本 {active}")
+        if cols[3].button("撤销", key=f"{prefix}-undo", disabled=not undo):
+            if _undo(name):
+                _bump_generation()
+                st.rerun()
+        if cols[4].button("重做", key=f"{prefix}-redo", disabled=not redo):
+            if _redo(name):
+                _bump_generation()
+                st.rerun()
+        if cols[5].button("只校验，不保存", key=f"{prefix}-check"):
+            st.session_state["editor-errors"] = spec_edit.draft_errors(draft, set(tools))
+            st.rerun()
+        if cols[6].button("保存为新版本", type="primary", key=f"{prefix}-save"):
+            _save_draft(name, draft)
+
+
+def _render_versions(name: str, draft: dict, prefix: str) -> None:
+    version_rows = spec_edit.versions(name)
+    if version_rows:
+        compact_table(version_rows, height=150, key=f"{prefix}-versions")
+        options = [row["文件"] for row in version_rows]
+        picked = st.selectbox("载入哪个版本到编辑器", options, key=f"{prefix}-version-pick")
+        if st.button("载入这个版本", key=f"{prefix}-version-load"):
+            _drafts()[name] = spec_edit.load_version(name, picked)
+            st.session_state["editor-errors"] = []
+            _bump_generation()
+            st.rerun()
+    st.caption(f"spec 目录：`{SPEC_ROOT / name}`")
+    st.download_button(
+        "下载当前草稿 JSON",
+        data=json.dumps(draft, ensure_ascii=False, indent=2),
+        file_name=f"{name}.json",
+        mime="application/json",
+        key=f"{prefix}-download",
+    )
+
+
+def _render_eject(name: str, prefix: str) -> None:
+    has_code = (CODE_ROOT / name).is_dir()
+    with st.expander("转为代码（eject）", expanded=False):
+        st.caption(
+            "单向门：spec 失效、构建改用代码、这里变只读。"
+            + ("原本就有代码目录。" if has_code else
+               "这个场景还没有代码目录，eject 后需要自己写 `core/scenarios/"
+               f"{name}/scenario.py`，否则它会从场景列表里消失。")
+        )
+        reason = st.text_input("原因", key=f"{prefix}-eject-reason")
+        confirmed = st.checkbox(
+            "我确认放弃这份 spec 的编辑能力", key=f"{prefix}-eject-confirm"
+        )
+        if st.button(
+            "eject",
+            key=f"{prefix}-eject",
+            disabled=not (reason.strip() and confirmed and has_code),
+            help="需要填原因 + 勾确认 + 已存在代码目录",
+        ):
+            eject(name, reason=reason.strip())
+            _reset_agent_caches()
+            st.session_state["editor-notice"] = f"{name} 已转为 code-owned"
+            _bump_generation()
+            st.rerun()
+
+
+def _render_workbench(name: str, draft: dict, prefix: str, tools: list[str]) -> None:
+    """三栏工作台：左块库 / 中画布 / 右检查器；状态栏在下方。"""
+    workflow_names = list((draft.get("workflows") or {}).keys())
+    left, center, right = st.columns([1.05, 3.2, 1.55], gap="small")
+    with left:
+        workflow = st.selectbox(
+            "工作流", workflow_names, key=f"{prefix}-workflow"
+        ) if workflow_names else ""
+        if st.session_state.get("editor-workflow-current") != workflow:
+            st.session_state["editor-workflow-current"] = workflow
+            st.session_state["editor-selected"] = None
+        with st.form(f"{prefix}-workflow-new", clear_on_submit=True):
+            workflow_name = st.text_input("新增工作流名", placeholder="report")
+            if st.form_submit_button("新增"):
+                _remember(name, draft)
+                try:
+                    spec_edit.add_workflow(draft, workflow_name)
+                except SpecError as exc:
+                    st.error("；".join(exc.errors))
+                else:
+                    _bump_generation()
+                    st.rerun()
+        mode = st.radio(
+            "编辑方式",
+            [MODE_CANVAS, MODE_FORM],
+            horizontal=True,
+            key=f"{prefix}-mode",
+            help="画布：拖节点 / 连线 / 缩放；表单：逐节点展开，适合同屏改多个参数。",
+        )
+        _render_block_library(name, draft, workflow, prefix)
+        if workflow and len(workflow_names) > 1:
+            if st.button(f"删除工作流 {workflow}", key=f"{prefix}-workflow-del"):
+                _remember(name, draft)
+                try:
+                    spec_edit.remove_workflow(draft, workflow)
+                except SpecError as exc:
+                    st.error("；".join(exc.errors))
+                else:
+                    _bump_generation()
+                    st.rerun()
+
+    with center:
+        if not workflow:
+            empty_state("还没有工作流；先在左侧新建一个。")
+        elif mode == MODE_CANVAS:
+            _render_canvas_editor(name, draft, workflow, prefix, tools)
+        else:
+            _render_nodes(name, draft, workflow, prefix, tools)
+            st.markdown("**边**（从 → 到；`__start__` / `__end__` 是入口与出口）")
+            _render_edges(name, draft, workflow, prefix)
+
+    with right:
+        st.markdown("**检查器**")
+        if workflow:
+            _render_selected_node(
+                name,
+                draft,
+                workflow,
+                prefix,
+                tools,
+                "点画布上的节点，或从左侧块库添加一个。",
+            )
+            st.divider()
+            _render_error_list(draft, workflow, prefix)
+        else:
+            st.caption("先选工作流。")
+
+
 def render_editor(current: str | None = None, *, embedded: bool = False) -> None:
     """``embedded=True``：场景由路由固定，只渲染这个场景的结构编辑（构建页用）。
 
@@ -668,119 +1026,25 @@ def render_editor(current: str | None = None, *, embedded: bool = False) -> None
         _render_readonly(choice, draft)
         return
 
+    notice = st.session_state.pop("editor-notice", None)
+    if notice:
+        st.success(notice)
+
     tools = spec_tool_names()
-    section("基本信息", "这一层直接决定 Agent 的行为边界。")
-    _render_basics(choice, draft, prefix, tools)
+    structure_tab, basics_tab, advanced_tab = st.tabs(["结构", "基本信息", "策略与版本"])
+    with structure_tab:
+        _render_workbench(choice, draft, prefix, tools)
+    with basics_tab:
+        section("基本信息", "这一层直接决定 Agent 的行为边界。")
+        _render_basics(choice, draft, prefix, tools)
+    with advanced_tab:
+        with st.expander("高级：策略覆盖（中间件）", expanded=False):
+            _render_policies(draft, prefix)
+        with st.expander("版本与导出", expanded=True):
+            _render_versions(choice, draft, prefix)
+        _render_eject(choice, prefix)
+        errors = st.session_state.get("editor-errors") or []
+        _render_preview(draft, errors)
 
-    section("工作流", "节点只能引用已注册的块；删节点不会自动重连，悬空边会被校验拦下。")
-    workflow_names = list((draft.get("workflows") or {}).keys())
-    control_left, control_right = st.columns([1.4, 1], vertical_alignment="bottom")
-    workflow = control_left.selectbox(
-        "工作流", workflow_names, key=f"{prefix}-workflow"
-    ) if workflow_names else ""
-    if st.session_state.get("editor-workflow-current") != workflow:
-        st.session_state["editor-workflow-current"] = workflow
-        st.session_state["editor-selected"] = None
-    with control_right:
-        with st.form(f"{prefix}-workflow-new", clear_on_submit=True):
-            workflow_name = st.text_input("新增工作流名", placeholder="report")
-            if st.form_submit_button("新增"):
-                try:
-                    spec_edit.add_workflow(draft, workflow_name)
-                except SpecError as exc:
-                    st.error("；".join(exc.errors))
-                else:
-                    _bump_generation()
-                    st.rerun()
-
-    if workflow:
-        mode = st.radio(
-            "编辑方式",
-            [MODE_CANVAS, MODE_FORM],
-            horizontal=True,
-            key=f"{prefix}-mode",
-            help="画布：拖块、连线、移动；表单：逐节点展开，适合同屏改多个参数。",
-        )
-        if mode == MODE_CANVAS:
-            _render_canvas_editor(choice, draft, workflow, prefix, tools)
-        else:
-            _render_nodes(draft, workflow, prefix, tools)
-            st.markdown("**边**（从 → 到；`__start__` / `__end__` 是入口与出口）")
-            _render_edges(draft, workflow, prefix)
-        if len(workflow_names) > 1:
-            if st.button(f"删除工作流 {workflow}", key=f"{prefix}-workflow-del"):
-                try:
-                    spec_edit.remove_workflow(draft, workflow)
-                except SpecError as exc:
-                    st.error("；".join(exc.errors))
-                else:
-                    _bump_generation()
-                    st.rerun()
-
-    with st.expander("高级：策略覆盖（中间件）", expanded=False):
-        _render_policies(draft, prefix)
-
-    with st.expander("版本与导出", expanded=False):
-        version_rows = spec_edit.versions(choice)
-        if version_rows:
-            compact_table(version_rows, height=150, key=f"{prefix}-versions")
-            options = [row["文件"] for row in version_rows]
-            picked = st.selectbox("载入哪个版本到编辑器", options, key=f"{prefix}-version-pick")
-            if st.button("载入这个版本", key=f"{prefix}-version-load"):
-                st.session_state["editor-draft"] = spec_edit.load_version(choice, picked)
-                st.session_state["editor-errors"] = []
-                _bump_generation()
-                st.rerun()
-        st.caption(f"spec 目录：`{SPEC_ROOT / choice}`")
-        st.download_button(
-            "下载当前草稿 JSON",
-            data=json.dumps(draft, ensure_ascii=False, indent=2),
-            file_name=f"{choice}.json",
-            mime="application/json",
-            key=f"{prefix}-download",
-        )
-
-    errors = st.session_state.get("editor-errors") or []
-    _render_preview(draft, errors)
-
-    section("保存", "校验 + 编译都通过才会生成新版本。")
-    save_col, check_col, eject_col = st.columns([1, 1, 2], vertical_alignment="bottom")
-    if check_col.button("只校验，不保存", key=f"{prefix}-check"):
-        st.session_state["editor-errors"] = spec_edit.draft_errors(draft, set(tools))
-        st.rerun()
-    if save_col.button("保存为新版本", type="primary", key=f"{prefix}-save"):
-        try:
-            path = spec_edit.save_draft(draft)
-        except SpecError as exc:
-            st.session_state["editor-errors"] = exc.errors
-        else:
-            st.session_state["editor-errors"] = []
-            st.session_state["editor-notice"] = f"已保存：{path}（新版本已设为 active）"
-            _reset_agent_caches()
-            _bump_generation()
-        st.rerun()
-
-    with eject_col:
-        has_code = (CODE_ROOT / choice).is_dir()
-        with st.expander("转为代码（eject）", expanded=False):
-            st.caption(
-                "单向门：spec 失效、构建改用代码、这里变只读。"
-                + ("原本就有代码目录。" if has_code else
-                   "这个场景还没有代码目录，eject 后需要自己写 `core/scenarios/"
-                   f"{choice}/scenario.py`，否则它会从场景列表里消失。")
-            )
-            reason = st.text_input("原因", key=f"{prefix}-eject-reason")
-            confirmed = st.checkbox(
-                "我确认放弃这份 spec 的编辑能力", key=f"{prefix}-eject-confirm"
-            )
-            if st.button(
-                "eject",
-                key=f"{prefix}-eject",
-                disabled=not (reason.strip() and confirmed and has_code),
-                help="需要填原因 + 勾确认 + 已存在代码目录",
-            ):
-                eject(choice, reason=reason.strip())
-                _reset_agent_caches()
-                st.session_state["editor-notice"] = f"{choice} 已转为 code-owned"
-                _bump_generation()
-                st.rerun()
+    _render_status(choice, draft, prefix, tools)
+    _autosave(choice, draft)
