@@ -7,7 +7,7 @@
 
 ## 1. 一句话定位
 
-> 我做了一个面向办公、学习、内容创作和跨语言的 **Agent Harness**：用统一运行时承载工具调用、MCP、工作流、只读子代理和 outcome 评测，并用智能硬件客服场景验证高风险操作。
+> 我做了一个面向办公、学习、内容创作和跨语言的 **Agent 产品工作台**：对话/构建/质量三端共用一套运行时，承载工具调用、MCP、工作流、只读子代理和 outcome 评测；起点是开源 RAG，后来把 RAG 收成 Agent 工具，并用评测集验证功能是否真的发生。
 
 不要说“我用 LangChain 做了一个聊天机器人”——那是 API wrapper 的叙事。
 
@@ -23,8 +23,8 @@
 ### 2.2 四条 bullet（主投版）
 
 > - **Agent Runtime**：设计 Scenario 契约 + 通用 ReAct 运行时，用 14 层中间件统一编排工具权限、参数校验、错误回注、超时/重试、步数与 token 预算、PII 脱敏、HITL 审批、上下文压缩和 checkpoint；用 TodoList + SQLite 任务图（blocked_by）+ 只读 subagent fan-out 支持任务规划与上下文隔离。
-> - **Planning / 场景 / 工作流**：实现带 abstain 的确定性 planning policy，把“模型自发委派 0/10”变成可测的 Harness 决策（router 12/12，baseline 11/12；eligible 3/10 → 3/3）；覆盖 8 个场景、20+ 工具：办公学习（笔记检索、长期偏好、翻译、总结）、研究（多源 fan-out + 引用报告）、编码（文件/命令/任务图）、智能硬件客服（RAG + 高风险操作审批）；接入 Memory/Fetch 两个 MCP server（stdio），实现域名白名单、私网拦截和不可信输出标记；文本 RAG 用本地 BGE + Chroma + BM25 混合检索。
-> - **评测 / 可观测**：建立 capability + behavior + outcome 三层评测，44 条行为用例、12 条 outcome 用例 / 13 个断言（文件 / SQLite / 任务图 / 路由 trace）、3-trial pass^k、5 类故障注入和评测门禁；JSONL tracing + 成本/时延聚合（p50/p95、token、示例价）和 7 视图证据看板（总览 + 6 功能页），支持从 case 下钻到 tool/middleware/trace。
+> - **Planning / 场景 / 工作流**：实现带 abstain 的确定性 planning policy，把“模型自发委派 0/10”变成可测的 Harness 决策（router 12/12，baseline 11/12；eligible 3/10 → 3/3）；覆盖 9 个场景、20+ 工具：办公学习（笔记检索、长期偏好、翻译、总结）、研究（多源 fan-out + 引用报告）、编码（文件/命令/任务图）、智能硬件客服（RAG + 高风险操作审批）；接入 Memory/Fetch 两个 MCP server（stdio），实现域名白名单、私网拦截和不可信输出标记；文本 RAG 用本地 BGE + Chroma + BM25 混合检索。
+> - **评测 / 可观测**：建立 capability + behavior + outcome 三层评测，44 条行为用例、12 条 outcome 用例 / 13 个断言（文件 / SQLite / 任务图 / 路由 trace）、3-trial pass^k、5 类故障注入和评测门禁；JSONL tracing + 成本/时延聚合（p50/p95、token、示例价）和质量页 9 视图（按跑一次 / 看资产 / 查记录分组），支持从 case 下钻到 tool/middleware/trace。
 > - **结果**：BFCL v4 200 条**模型层**抽样函数选择 100/100、参数 exact 90/100、无关工具不调用 79/100；Harness 层 BFCL 60 条优化集 60/60；τ²-bench retail 20 条抽样 Pass^1 0.95、DB 20/20；新场景 3-trial：workspace 5/5、research 2/3、router 3/4；outcome 断言 12 条，3-trial pass^k 12/12；成本历史快照 3,203 runs、成功率 98.3%、p50 2.50s / p95 8.54s、约 ¥0.015/run（示例价，最新聚合 3,495 runs / 96.7%，含故意失败用例）。以上均为抽样/简化评分，不是官方榜单。
 
 ### 2.3 两条精简版（空间紧张时）
@@ -47,7 +47,7 @@
 | 触发率 | natural 0/10；policy eligible 3/10 → 3/3 | 10 条 coding 任务 |
 | 成本/时延 | 历史快照 3,203 runs / 98.3% / p50 2.50s / p95 8.54s；最新聚合 3,495 / 96.7% / p95 9.10s | 示例单价；最新聚合含故意失败用例与实验，不是产品成功率 |
 | 结构化输出 | 5/5；schema 5/5 | 自建 5 条 |
-| 测试 | 76 passed | 确定性单测，不调用模型 |
+| 测试 | 365 passed | 确定性单测，不调用模型 |
 
 ### 2.5 不能写的话
 
@@ -64,18 +64,20 @@
 
 ### 3.1 30 秒
 
-> 我做了一个面向办公、学习、内容创作和跨语言的 Agent Harness。它不只是接一个大模型：我用 LangChain 1.x + LangGraph 把 ReAct 循环、工具调用、MCP、工作流、只读子代理、权限审批和评测做成一个可切换场景的运行时，再用智能硬件客服场景验证高风险操作。我重点解决的是“Demo 到可交付”之间的工程问题：工具会不会选错、上下文会不会爆、失败能不能定位、改完有没有回归。
+> 我背景是算法/微调，想转到 AI 应用。最开始跟着一个开源 RAG 项目做，跑通后放了一段时间；后来研究 Agent，把 RAG 收成一个工具，套进 Agent 里。接着跟着一个解构 Claude Code 的项目，缺什么补什么：工具调用、权限、上下文、记忆、错误恢复。补到后面框架越来越臃肿，我让 AI 辅助做了一次分层，定 Scenario 契约，把框架和业务拆开。结构清楚之后，我发现很多功能在日常里很难触发、很难验证，于是开始从真实评测集出发，用 trigger rate、trace 和 outcome 断言看它到底有没有在工作。
 
 ### 3.2 2 分钟（问题 → 方案 → 结果 → 取舍）
 
-**问题**：客服/办公类任务看起来简单，但 Demo 和可用系统差很多——工具会选错、参数会传错、长对话会丢上下文、高风险操作不能直接执行，最要命的是没有评测，改完不知道变好还是变坏。
+**起点**：算法/微调转 AI 应用；先跟开源 RAG 项目跑通，再把 RAG 收成 Agent 工具；跟 Claude Code 解构项目补能力，框架臃肿后做分层与 Scenario 契约。
+
+**真正的痛点**：功能加了很多，但日常使用中很难让 Agent 自己 plan 或开 subagent，要费很大劲才能验证功能到底在不在运行；功能存在，但不可验证。
 
 **方案**：拆成三层。
 - Harness 层：`FrameworkAgent` + `create_agent` + 中间件，负责循环、工具、上下文、权限、预算、记忆。
-- 场景层：Scenario 契约，业务只声明工具/提示词/权限/工作流；现有 8 个场景，办公学习、研究、编码、智能硬件客服。
-- 评测层：工具层直接调工具测检索/生成；行为层跑完整 Agent 测工具选择、传参、多步执行；再加 outcome 断言，检查文件/DB/任务图/路由目标，而不是只看回答文本。
+- 场景层：Scenario 契约，业务只声明工具/提示词/权限/工作流；现有 9 个 spec 场景，办公学习、研究、编码、模拟智能硬件客服等。
+- 评测层：从真实评测集出发——公开集做外部压力，自建 cases 专门构造会触发 plan/subagent/工具链的任务；再用 trigger rate、trace 和 outcome 断言看它有没有真的发生。
 
-**结果**：BFCL 200 条抽样函数选择 100/100、参数 exact 90/100；τ² retail 20 条 Pass^1 0.95、DB 20/20；新场景 3-trial workspace 5/5、research 2/3、router 3/4；outcome 1-trial 12/12；3,203 runs 成功率 98.3%、p50 2.50s / p95 8.54s、约 ¥0.015/run（示例价）。
+**结果**：trigger rate natural / routed 0/10 → policy eligible 3/3；planning policy router 12/12（baseline 11/12）；新场景 3-trial workspace 5/5、research 2/3、router 3/4；outcome 3-trial 12/12；365 tests。BFCL 200 条抽样、τ² 20 条、3,203 runs 成本快照只作补充，且说明是抽样/简化评分。
 
 **取舍**：没有上多 Agent handoff——顺序依赖强的任务 handoff 成本大于收益；只读 fan-out 用 3 个 subagent 并行调研。没有做多模态/语音/OCR——这是真实缺口，下一步从 OCR 文档解析接入现有 RAG 开始。MCP 只做 stdio，生产网关要补 HTTP/SSE/auth/治理。
 
@@ -84,7 +86,7 @@
 **BFS（先给地图）**
 1. 定位：Agent = Model + Harness。
 2. 架构：CLI/Streamlit → FrameworkAgent → Scenario → Tools/RAG/Workflow → Trace/Eval。
-3. 场景：workspace / research / coding / robot / router / mcp / structured / general。
+3. 场景：workspace / research / coding / robot / router / mcp / structured / general / flow_demo。
 4. 评测：capability + behavior + outcome + public sample + gate。
 5. 可观测：trace → cost/latency → dashboard。
 6. 边界：多模态/多 Agent/生产服务没做。
@@ -113,7 +115,7 @@
 
 ```powershell
 conda activate langchain
-python -m pytest -q                      # 期望 75 passed
+python -m pytest -q                      # 期望 365 passed
 python -m core.quality.gate              # 期望 GATE: PASS
 python -m streamlit run app_agent.py     # 打开 dashboard
 ```
