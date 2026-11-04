@@ -367,6 +367,64 @@ def fan_out(
 
 
 @register_node(
+    "branch",
+    label="分支判断",
+    desc="看一个 state 字段（关键词命中 / 是否为空），把结果写进 scratch.route，配合条件边决定走哪条路",
+    params=(
+        ParamSpec(
+            "mode",
+            "enum",
+            default="keywords",
+            choices=("keywords", "empty"),
+            help="keywords：命中任一关键词走 hit；empty：字段为空走 hit",
+        ),
+        ParamSpec("field", "str", default="tool_result", help="要检查的 state key（可用 scratch.xxx）"),
+        ParamSpec("keywords", "str_list", default=None, help="keywords 模式的触发词"),
+        ParamSpec("hit", "str", default="hit", help="命中时写入的 route 值（对应条件边标签）"),
+        ParamSpec("miss", "str", default="miss", help="未命中时写入的 route 值"),
+    ),
+)
+def branch(
+    state: dict[str, Any],
+    scenario: Any = None,
+    mode: str = "keywords",
+    field: str = "tool_result",
+    keywords: list[str] | None = None,
+    hit: str = "hit",
+    miss: str = "miss",
+    **_,
+) -> dict[str, Any]:
+    """把分支结果写进 ``scratch.route``；条件边靠它选路。"""
+    value = _lookup(state, field)
+    if mode == "empty":
+        matched = not value.strip()
+    else:
+        words = [str(word) for word in (keywords or []) if str(word).strip()]
+        matched = any(word in value for word in words)
+    return {"scratch": _merge_scratch(state, route=hit if matched else miss)}
+
+
+@register_node(
+    "constant",
+    label="固定文本",
+    desc="把一段固定文本写回 state（拒答话术这类不需要模型的内容）",
+    params=(
+        ParamSpec("text", "str", required=True, help="要写入的文本"),
+        ParamSpec("save_to", "str", default="answer", help="answer / tool_result / scratch.<key>"),
+    ),
+)
+def constant(
+    state: dict[str, Any],
+    scenario: Any = None,
+    text: str = "",
+    save_to: str = "answer",
+    **_,
+) -> dict[str, Any]:
+    """不调模型，直接写固定文本。"""
+    return _save({}, state, save_to, render_template(text, state))
+
+
+@register_node(
     "llm_text",
     label="模型生成",
     desc="把 prompt 渲染后交给模型，结果写回 answer / scratch.<key>（适合核查、报告这类固定话术）",

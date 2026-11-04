@@ -63,7 +63,24 @@ class WorkflowSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     nodes: list[NodeSpec] = Field(default_factory=list)
-    edges: list[tuple[str, str]] = Field(default_factory=list)
+    # 边：["from","to"] 或 ["from","to","when"]。带第三项的是条件边，
+    # 由 branch 块写的 scratch.route 决定走哪条；旧 spec（两项）照旧能读。
+    edges: list[Any] = Field(default_factory=list)
+
+
+def split_edge(edge: Any) -> tuple[str, str, str | None]:
+    """把一条边拆成 ``(source, target, when)``；非法形状按无条件处理。"""
+    if isinstance(edge, dict):
+        return str(edge.get("from") or ""), str(edge.get("to") or ""), edge.get("when")
+    if isinstance(edge, (list, tuple)) and len(edge) >= 2:
+        when = edge[2] if len(edge) >= 3 else None
+        return str(edge[0]), str(edge[1]), None if when in (None, "") else str(when)
+    return "", "", None
+
+
+def edge_pair(edge: Any) -> tuple[str, str]:
+    source, target, _ = split_edge(edge)
+    return source, target
 
 
 class HarnessSpec(BaseModel):
@@ -148,15 +165,29 @@ def _validate_workflow(name: str, workflow: WorkflowSpec, tool_names: set[str] |
     known = set(node_ids) | {START, END}
     adjacency: dict[str, set[str]] = {}
     reverse: dict[str, set[str]] = {}
-    for source, target in workflow.edges:
+    conditional_sources: set[str] = set()
+    plain_sources: set[str] = set()
+    for edge in workflow.edges:
+        source, target, when = split_edge(edge)
         if source not in known:
             errors.append(f"{prefix} 边起点不存在：{source}")
             continue
         if target not in known:
             errors.append(f"{prefix} 边终点不存在：{target}")
             continue
+        if when is not None:
+            if not str(when).strip():
+                errors.append(f"{prefix}.{source} 存在空的条件标签")
+            conditional_sources.add(source)
+        else:
+            plain_sources.add(source)
         adjacency.setdefault(source, set()).add(target)
         reverse.setdefault(target, set()).add(source)
+
+    for source in sorted(conditional_sources & plain_sources):
+        errors.append(
+            f"{prefix}.{source} 同时有条件和无条件出边：一个节点要么固定去一处，要么按分支走"
+        )
 
     if not adjacency.get(START):
         errors.append(f"{prefix} 缺少从 START 出发的边")
@@ -218,15 +249,34 @@ def build_workflows(spec: ScenarioSpec, scenario: Any) -> dict[str, Any]:
         for node in workflow.nodes:
             fn = NODE_REGISTRY[node.fn]
             graph.add_node(node.id, partial(fn, scenario=scenario, **node.args))
-        for source, target in workflow.edges:
+
+        plain: list[tuple[str, str]] = []
+        branches: dict[str, dict[str, str]] = {}
+        for edge in workflow.edges:
+            source, target, when = split_edge(edge)
+            if when is None:
+                plain.append((source, target))
+            else:
+                branches.setdefault(source, {})[when] = target
+
+        for source, target in plain:
             if source == START:
                 graph.add_edge(START, target)
             elif target == END:
                 graph.add_edge(source, END)
             else:
                 graph.add_edge(source, target)
+
+        for source, mapping in branches.items():
+            graph.add_conditional_edges(source, _route_of, mapping)
         graphs[name] = graph.compile()
     return graphs
+
+
+def _route_of(state: dict[str, Any]) -> str:
+    """条件边用的路由值：branch 块把它写进 ``scratch.route``。"""
+    scratch = state.get("scratch") or {}
+    return str(scratch.get("route") or "")
 
 
 def build_from_spec(

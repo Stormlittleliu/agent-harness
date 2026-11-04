@@ -23,8 +23,10 @@
 
 ## 仿造时的取舍（差异都记在这里，不藏在代码里）
 
-- **条件边还没进 spec**：`robot_vacuum` 的"拒答直接结束"、`workspace_assistant` 的
-  `refuse` 分支，在 spec 版里都退化成"继续往下走"。答案内容不受影响，只是多跑一个节点。
+- **条件边已支持**（`branch` 块 + 边的第三位）：`robot_vacuum` 的"拒答直接结束"、
+  `workspace_assistant` 的"检索为空就拒答"都按原样表达。边写成
+  `["branch", "verify", "miss"]`，`when` 对应 `branch` 写进 `scratch.route` 的值；
+  同一节点的条件边和无条件边不能混用（校验会拒绝）。
 - **`robot_vacuum.rag_qa.verify`**：原实现用检索到的 docs 做事实核查；spec 版的
   `call_tool` 会把工具返回值里的 `docs` 顺带存进 `tool_result`，所以核查材料仍然是 docs。
 - **`workspace_assistant.cite`**：原实现会在缺引用时**补**来源列表；spec 版只做
@@ -34,6 +36,9 @@
 - **`research_assistant`**：`cite` 节点省略（不追加来源 id）；`fan_out` 用 `subagent`
   并发，指令模板与原实现一致。
 - **`router`**：无差异——工具、确定性规则、系统提示词都由 `data/routes/router.json` 生成。
+- **`robot_vacuum` 的 13 条用例里，`agent-report-001` 偶发不稳**（同一份 spec 有时 13/13、
+  有时 12/13，失败那次是模型少调了一个工具）。代码版同样有这个问题，属于模型随机性，
+  不是接管引入的回归。
 
 ## 改场景的正确姿势
 

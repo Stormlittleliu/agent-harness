@@ -17,6 +17,7 @@ from typing import Any
 from langgraph.graph import END, START
 
 from core.scenarios.spec import (
+    split_edge,
     SPEC_ROOT,
     ScenarioSpec,
     SpecError,
@@ -437,14 +438,23 @@ def merge_canvas(draft: dict[str, Any], workflow: str, payload: Any) -> bool:
         return False
 
     known = used | {START, END}
+    # 画布只画 from→to，不表达条件；条件边原样保留（按 from/to 配对找回 when）。
+    conditions: dict[tuple[str, str], str | None] = {}
+    for edge in draft["workflows"][workflow]["edges"]:
+        source, target, when = split_edge(edge)
+        conditions[(source, target)] = when
     raw_edges = payload.get("edges")
     edges: list[list[str]] = []
     for edge in raw_edges if isinstance(raw_edges, list) else []:
-        if not isinstance(edge, (list, tuple)) or len(edge) != 2:
+        if not isinstance(edge, (list, tuple)) or len(edge) < 2:
             continue
         source, target = str(edge[0]), str(edge[1])
-        if source in known and target in known and [source, target] not in edges:
-            edges.append([source, target])
+        if source not in known or target not in known:
+            continue
+        when = edge[2] if len(edge) >= 3 else conditions.get((source, target))
+        item = [source, target] if when in (None, "") else [source, target, str(when)]
+        if item not in edges:
+            edges.append(item)
 
     changed = (
         merged != draft["workflows"][workflow]["nodes"]

@@ -99,8 +99,9 @@
     model.nodes = (Array.isArray(args.nodes) ? args.nodes : []).map(function (node) {
       return Object.assign({}, node, { x: Number(node.x) || 0, y: Number(node.y) || 0 });
     });
+    // 保留整条边（可能带第三个条件标签），否则一次拖动就会把条件边降级成普通边。
     model.edges = (Array.isArray(args.edges) ? args.edges : []).map(function (edge) {
-      return [String(edge[0]), String(edge[1])];
+      return Array.prototype.map.call(edge, String);
     });
     model.errors = Array.isArray(args.errors) ? args.errors : [];
     var keep = args.selected || null;

@@ -124,3 +124,66 @@ def test_router_spec_uses_route_table():
     assert [tool.name for tool in scenario.tools] == [item["tool"] for item in table]
     assert scenario.kind == "router"
     assert scenario.system_prompt.count("-> route_to_") == len(table)
+
+def test_branch_and_constant_blocks():
+    from core.scenarios.spec_nodes import branch, constant
+
+    hit = branch({"tool_result": "资料不足，无法确定"}, mode="keywords", keywords=["资料不足"], hit="refuse", miss="ok")
+    assert hit["scratch"]["route"] == "refuse"
+
+    miss = branch({"tool_result": "有资料"}, mode="keywords", keywords=["资料不足"], hit="refuse", miss="ok")
+    assert miss["scratch"]["route"] == "ok"
+
+    empty = branch({"tool_result": "  "}, mode="empty", hit="refuse", miss="ok")
+    assert empty["scratch"]["route"] == "refuse"
+
+    fixed = constant({"input": "x"}, text="资料中没有找到足够信息，无法确定。")
+    assert fixed["answer"].startswith("资料中")
+
+
+def test_conditional_edges_compile_and_validate():
+    from core.scenarios.spec import SpecError, build_workflows, spec_from_dict, validate_spec
+
+    data = {
+        "schema_version": 1,
+        "name": "branch_demo",
+        "tools": [],
+        "workflows": {
+            "qa": {
+                "nodes": [
+                    {"id": "probe", "fn": "constant", "args": {"text": "资料不足"}},
+                    {"id": "branch", "fn": "branch", "args": {"mode": "keywords", "field": "answer", "keywords": ["资料不足"], "hit": "refuse", "miss": "done"}},
+                    {"id": "refuse", "fn": "constant", "args": {"text": "无法确定"}},
+                    {"id": "done", "fn": "constant", "args": {"text": "ok"}},
+                ],
+                "edges": [
+                    ["__start__", "probe"],
+                    ["probe", "branch"],
+                    ["branch", "refuse", "refuse"],
+                    ["branch", "done", "done"],
+                    ["refuse", "__end__"],
+                    ["done", "__end__"],
+                ],
+            }
+        },
+    }
+    spec = spec_from_dict(data)
+    assert validate_spec(spec) == []
+    compiled = build_workflows(spec, type("S", (), {"tools": []})())
+    assert "qa" in compiled
+
+    mixed = dict(data)
+    mixed["workflows"] = {
+        "qa": {
+            "nodes": data["workflows"]["qa"]["nodes"],
+            "edges": [
+                ["__start__", "probe"],
+                ["probe", "branch"],
+                ["branch", "refuse", "refuse"],
+                ["branch", "done", "done"],
+                ["branch", "__end__"],
+            ],
+        }
+    }
+    errors = validate_spec(spec_from_dict(mixed))
+    assert any("同时有条件和无条件出边" in error for error in errors)
