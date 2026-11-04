@@ -78,6 +78,7 @@ python test_entry.py bfcl --simple 2 --irrelevance 2
 python -m core.quality.fixtures --family bfcl --limit 3 --dry-run
 python -m core.quality.fixtures --family bfcl --limit 3
 python -m core.quality.fixtures --family permission
+python -m core.quality.fixtures --family selfbuilt --limit 8
 ```
 
 变体：`clean` / `distractor` / `missing` / `failure` / `permission`。

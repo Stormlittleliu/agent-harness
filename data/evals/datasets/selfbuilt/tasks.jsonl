@@ -8,7 +8,7 @@
 {"id":"sb-rag-008","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"purchase","question":"小户型适合选什么样的扫地机器人？","expected_sources":["选购指南.txt"]}
 {"id":"sb-rag-009","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"purchase","question":"扫地机器人吸力选多大合适？","expected_sources":["选购指南.txt"]}
 {"id":"sb-rag-010","kind":"retrieval","cell":"单轮×检索","scenario":"robot_vacuum","category":"purchase","question":"扫地机器人续航一般要多久才够用？","expected_sources":["选购指南.txt"]}
-{"id":"sb-single-008","kind":"single_turn","cell":"单轮×多工具","scenario":"robot_vacuum","question":"查一下用户 1001 这个月的使用记录。","expected_points":["1001"],"expected_tools":["fetch_external_data"],"should_refuse":false}
+{"id":"sb-single-008","kind":"single_turn","cell":"单轮×多工具","scenario":"robot_vacuum","question":"查一下用户 1001 这个月的使用记录。","expected_points":["1001"],"expected_tools":["get_current_month","fetch_external_data"],"should_refuse":false}
 {"id":"sb-single-011","kind":"single_turn","cell":"单轮×文本","scenario":"robot_vacuum","question":"机器人建图不完整、地图错乱怎么办？","expected_points":["反光"],"expected_tools":["rag_summarize"],"should_refuse":false,"source":"kb:故障排除#13"}
 {"id":"sb-single-012","kind":"single_turn","cell":"单轮×文本","scenario":"robot_vacuum","question":"拖地时不出水怎么排查？","expected_points":["出水管"],"expected_tools":["rag_summarize"],"should_refuse":false,"source":"kb:故障排除#16"}
 {"id":"sb-single-013","kind":"single_turn","cell":"单轮×文本","scenario":"robot_vacuum","question":"低温环境下机器人无法开机怎么办？","expected_points":["低温"],"expected_tools":["rag_summarize"],"should_refuse":false,"source":"kb:故障排除#173"}

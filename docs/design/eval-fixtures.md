@@ -106,6 +106,28 @@ permission：
 
 这两个结果说明变体不是“换个 prompt 重跑”，而是真的改变了工具集和断言。
 
+## selfbuilt 迁移（2026-11-05）
+
+`selfbuilt` 里 `robot_vacuum` 的 8 条单轮/多轮任务已经迁到 fixture：
+
+```powershell
+python -m core.quality.fixtures --family selfbuilt --limit 8
+```
+
+结果：**8/8**。这些任务不再经过 `robot_vacuum` 的完整 prompt、意图路由和 13 条业务 case，
+只保留任务需要的工具（`rag_summarize` / `fetch_external_data` / `get_current_month`）。
+
+迁移中发现一个任务定义缺口：`sb-single-008` 只写了 `fetch_external_data`，
+但“这个月”需要 `get_current_month`；不补这个前置工具，fixture 里模型只能追问。
+已把任务定义补成两个工具。
+
+还没迁的：
+
+- 10 条 retrieval 任务：它们直接调 `rag_retrieve`，本来就不依赖场景，留在能力层；
+- `research_assistant` / `coding_demo` / `router` / `workspace_assistant` 的单轮/多轮：
+  任务定义里的 `expected_tools` 还不完整（例如 workspace multi-005 少了 `remember`），
+  先不硬迁，避免把任务缺口伪装成模型失败。
+
 ## 边界
 
 - **这是行为探针，不是官方榜**：BFCL 的官方分仍走官方 AST/harness；fixture 只回答“工具选择/参数/恢复”这一层。

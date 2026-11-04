@@ -30,7 +30,7 @@ from core.agent.contracts import Scenario
 from core.agent.framework import FrameworkAgent
 from core.llm.factory import chat_model
 from core.quality.agent_eval import extract_final_answer, extract_tool_calls
-from core.quality.paths import OUTPUTS_DIR
+from core.quality.paths import DATASETS_DIR, OUTPUTS_DIR
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -109,8 +109,9 @@ class TaskFixture:
     family: str
     variant: str
     instruction: str
-    tools: list[ToolStub]
+    tools: list[Any]
     expected: dict[str, Any]
+    turns: list[str] = field(default_factory=list)
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
     high_risk_tools: dict[str, bool] = field(default_factory=dict)
     tool_policy: dict[str, Any] = field(default_factory=dict)
@@ -125,7 +126,10 @@ class TaskFixture:
             description=f"eval fixture: {self.family}/{self.variant}",
             model=model or chat_model,
             system_prompt=self.system_prompt,
-            tools=[tool.build() for tool in self.tools],
+            tools=[
+                tool.build() if isinstance(tool, ToolStub) else tool
+                for tool in self.tools
+            ],
             high_risk_tools=dict(self.high_risk_tools),
             tool_policy=dict(self.tool_policy),
             enable_todo=False,
@@ -193,8 +197,14 @@ def score_fixture(fixture: TaskFixture, calls: list[dict], answer: str, status: 
     forbidden_hit = sorted(forbidden & called_names)
     contains = expected.get("answer_contains") or []
     contains_ok = all(str(text) in answer for text in contains)
+    points = expected.get("expected_points") or []
+    matched_points = [str(point) for point in points if str(point) in answer]
+    coverage = (len(matched_points) / len(points)) if points else 1.0
+    points_ok = coverage >= 0.5
     any_terms = expected.get("answer_any") or []
     any_ok = (not any_terms) or any(str(text) in answer for text in any_terms)
+    any_tools = {_safe_name(str(name)) for name in (expected.get("any_tools") or [])}
+    any_tools_ok = (not any_tools) or bool(any_tools & called_names)
     min_calls = expected.get("min_calls")
     max_calls = expected.get("max_calls")
     count_ok = (min_calls is None or len(calls) >= min_calls) and (
@@ -206,7 +216,9 @@ def score_fixture(fixture: TaskFixture, calls: list[dict], answer: str, status: 
         calls_ok
         and not forbidden_hit
         and contains_ok
+        and points_ok
         and any_ok
+        and any_tools_ok
         and count_ok
         and status_ok
     )
@@ -217,7 +229,11 @@ def score_fixture(fixture: TaskFixture, calls: list[dict], answer: str, status: 
         "missing_calls": missing,
         "forbidden_calls": forbidden_hit,
         "answer_contains_ok": contains_ok,
+        "points_ok": points_ok,
+        "coverage": round(coverage, 4),
+        "matched_points": matched_points,
         "answer_any_ok": any_ok,
+        "any_tools_ok": any_tools_ok,
         "call_count_ok": count_ok,
         "answer": answer,
     }
@@ -226,11 +242,18 @@ def score_fixture(fixture: TaskFixture, calls: list[dict], answer: str, status: 
 def run_fixture(fixture: TaskFixture, model=None) -> dict[str, Any]:
     """跑一条 fixture；permission 夹具会处理一次 HITL 中断。"""
     for tool in fixture.tools:
-        tool.calls.clear()
+        if isinstance(tool, ToolStub):
+            tool.calls.clear()
     try:
         scenario = fixture.to_scenario(model)
         agent = FrameworkAgent(scenario)
-        result = agent.invoke(fixture.instruction)
+        thread_id = f"fixture-{fixture.id}"
+        if fixture.turns:
+            result: dict[str, Any] = {}
+            for turn in fixture.turns:
+                result = agent.invoke(turn, thread_id=thread_id)
+        else:
+            result = agent.invoke(fixture.instruction, thread_id=thread_id)
         interrupt = result.get("__interrupt__") if isinstance(result, dict) else None
         status = "interrupted" if interrupt else "ok"
 
@@ -248,12 +271,15 @@ def run_fixture(fixture: TaskFixture, model=None) -> dict[str, Any]:
         messages = result.get("messages") or []
         proposed = extract_tool_calls(messages)
         # 审批被拒绝时，AIMessage 里仍有 tool_call，但工具没有真正执行；
-        # 判分看 stub 的实际调用，避免把“提议”当成“执行”。
-        executed = [
-            {"name": tool.name, "args": dict(args)}
-            for tool in fixture.tools
-            for args in tool.calls
-        ]
+        # stub 夹具看实际调用；真实工具夹具没有 stub 记录，看消息里的调用。
+        if all(isinstance(tool, ToolStub) for tool in fixture.tools):
+            executed = [
+                {"name": tool.name, "args": dict(args)}
+                for tool in fixture.tools
+                for args in tool.calls
+            ]
+        else:
+            executed = proposed
         answer = extract_final_answer(messages)
         scored = score_fixture(fixture, executed, answer, status)
         scored["id"] = fixture.id
@@ -468,13 +494,86 @@ def build_permission_fixtures() -> list[TaskFixture]:
     ]
 
 
-def load_fixtures(family: str, *, limit: int = 5, distractors: int = 3) -> list[TaskFixture]:
+def build_selfbuilt_fixtures(
+    *,
+    scenario: str = "robot_vacuum",
+    kinds: tuple[str, ...] = ("single_turn", "multi_turn"),
+    limit: int = 0,
+) -> list[TaskFixture]:
+    """把 selfbuilt 的单轮/多轮任务变成按任务配工具的 fixture。
+
+    工具仍用产品工具箱里的实现（它们已经能跑），但 prompt、中间件、业务 case
+    不再来自产品场景；这就是“任务归任务，产品归产品”。
+    """
+    from core.scenarios import pools
+
+    path = DATASETS_DIR / "selfbuilt" / "tasks.jsonl"
+    tasks = [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    tasks = [
+        task for task in tasks
+        if task.get("scenario") == scenario and task.get("kind") in kinds
+    ]
+    if limit:
+        tasks = tasks[:limit]
+
+    box = pools.toolbox(scenario)
+    available = {str(getattr(tool, "name", "")): tool for tool in box.tools}
+
+    fixtures: list[TaskFixture] = []
+    for task in tasks:
+        required = list(dict.fromkeys(task.get("expected_tools") or []))
+        any_tools = list(dict.fromkeys(task.get("expected_tools_any") or []))
+        tools = [
+            available[name]
+            for name in required + any_tools
+            if name in available
+        ]
+        expected: dict[str, Any] = {
+            "calls": [{"name": name, "args": {}} for name in required],
+            "expected_points": task.get("expected_points") or [],
+        }
+        if any_tools:
+            expected["any_tools"] = any_tools
+        if task.get("should_refuse"):
+            expected["answer_any"] = ["无法", "不能", "没有", "不知道", "未提供"]
+        fixtures.append(TaskFixture(
+            id=f"selfbuilt-{task['id']}",
+            family="selfbuilt",
+            variant="clean",
+            instruction=task.get("question") or (task.get("turns") or [""])[0],
+            turns=task.get("turns") or [],
+            tools=tools,
+            expected=expected,
+            metadata={
+                "source_id": task["id"],
+                "scenario": scenario,
+                "kind": task["kind"],
+                "eval_scope": "scenario_tool",
+                "missing_tools": [name for name in required + any_tools if name not in available],
+            },
+        ))
+    return fixtures
+
+
+def load_fixtures(
+    family: str,
+    *,
+    limit: int = 5,
+    distractors: int = 3,
+    scenario: str = "robot_vacuum",
+) -> list[TaskFixture]:
     if family == "permission":
         return build_permission_fixtures()
     if family == "bfcl":
         from core.benchmarks.adapters import get_adapter
 
         return build_bfcl_fixtures(get_adapter("bfcl-v4").load(), limit=limit, distractors=distractors)
+    if family == "selfbuilt":
+        return build_selfbuilt_fixtures(scenario=scenario, limit=limit)
     if family == "all":
         from core.benchmarks.adapters import get_adapter
 
@@ -483,6 +582,7 @@ def load_fixtures(family: str, *, limit: int = 5, distractors: int = 3) -> list[
             + build_bfcl_fixtures(
                 get_adapter("bfcl-v4").load(), limit=limit, distractors=distractors
             )
+            + build_selfbuilt_fixtures(scenario=scenario, limit=limit)
         )
     raise KeyError(f"未知 fixture family：{family}")
 
@@ -551,16 +651,22 @@ def render_markdown(summary: dict[str, Any], family: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="任务级评测夹具")
-    parser.add_argument("--family", default="bfcl", choices=["bfcl", "permission", "all"])
+    parser.add_argument("--family", default="bfcl", choices=["bfcl", "permission", "selfbuilt", "all"])
     parser.add_argument("--limit", type=int, default=5)
     parser.add_argument("--distractors", type=int, default=3)
     parser.add_argument("--variants", default="", help="逗号分隔；空表示全部")
     parser.add_argument("--case", default="", help="按 id 子串过滤，便于复跑单条")
+    parser.add_argument("--scenario", default="robot_vacuum", help="selfbuilt 只跑该场景")
     parser.add_argument("--dry-run", action="store_true", help="只打印夹具，不调模型")
     parser.add_argument("--out", default=str(OUT_DIR))
     args = parser.parse_args(argv)
 
-    fixtures = load_fixtures(args.family, limit=args.limit, distractors=args.distractors)
+    fixtures = load_fixtures(
+        args.family,
+        limit=args.limit,
+        distractors=args.distractors,
+        scenario=args.scenario,
+    )
     if args.variants:
         wanted = {item.strip() for item in args.variants.split(",") if item.strip()}
         fixtures = [fixture for fixture in fixtures if fixture.variant in wanted]

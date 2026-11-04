@@ -13,7 +13,9 @@
 
 **后果**：任务实际跑的是产品的完整 prompt、工具池、意图路由和 13 条业务 case 的上下文。测的是“任务能不能塞进 robot_vacuum”，不是“这条任务在合适工具下能不能做对”。跨场景数字（22/26）也不能区分“任务难”还是“场景不匹配”。
 
-**下一步**：`core/quality/fixtures.py` 的 `TaskFixture`；先迁 BFCL POC，再逐条迁 selfbuilt。产品场景保留做端到端回归，不再冒充任务级评测。
+**下一步**：`core/quality/fixtures.py` 的 `TaskFixture`；已迁 `robot_vacuum` 的 8 条单轮/多轮（8/8），
+10 条 retrieval 留在能力层；`research_assistant` / `coding_demo` / `router` / `workspace_assistant`
+的任务定义还缺前置工具，先不硬迁。产品场景保留做端到端回归，不再冒充任务级评测。
 
 ### 2. 质量页的 benchmark 目录是旧快照
 
@@ -135,13 +137,14 @@ if judged is not None:
 2. **permission 用真实 HITL**：`reset_device` 的 approve / deny 两条路径，不伪造。
 3. **审计文档就是这份**；P0/P1 不在一晚全修，但不再假装它们不存在。
 
-## 本次已落地（2026-11-04）
+## 本次已落地（2026-11-05）
 
 - `core/quality/fixtures.py` + `docs/design/eval-fixtures.md`；
 - BFCL POC：10 条任务 × 4 变体 = 40 条，32/40；clean/distractor/failure 均 10/10，
   失败集中在 `missing` 2/10（无工具时模型直接心算，不说明“工具不可用”）——这是要抓的幻觉；
 - permission：approve ✅、reject ✅（真实 HITL 中断 + resume）；
-- 测试：381 passed。
+- selfbuilt 迁移：`robot_vacuum` 8 条单轮/多轮 fixture **8/8**；
+- 测试：382 passed。
 
 ## 仍未修
 

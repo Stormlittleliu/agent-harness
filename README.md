@@ -152,6 +152,7 @@ python -m core.quality.runner bfcl --simple 2 --irrelevance 2
 python -m core.quality.fixtures --family bfcl --limit 3 --dry-run
 python -m core.quality.fixtures --family bfcl --limit 3
 python -m core.quality.fixtures --family permission
+python -m core.quality.fixtures --family selfbuilt --limit 8
 
 # 兼容旧入口
 python test_entry.py rag retrieval
