@@ -297,12 +297,15 @@ def save_spec(
     target = directory / f"v{version}.json"
     payload = json.dumps(spec_to_dict(spec), ensure_ascii=False, indent=2)
     tmp = directory / f"v{version}.json.tmp"
-    tmp.write_text(payload, encoding="utf-8")
+    # 固定 LF：spec 是给人和 git 看的文本，不该因为平台不同产生假 diff。
+    tmp.write_text(payload, encoding="utf-8", newline="\n")
     tmp.replace(target)
     if make_active:
         pointer = {"version": version, "file": target.name}
         (directory / ACTIVE_FILE).write_text(
-            json.dumps(pointer, ensure_ascii=False, indent=2), encoding="utf-8"
+            json.dumps(pointer, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+            newline="\n",
         )
     return target
 

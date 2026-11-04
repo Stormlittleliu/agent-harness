@@ -89,6 +89,7 @@ def save_state(state: ScenarioState, root: Path | str = SPEC_ROOT) -> Path:
     tmp.write_text(
         json.dumps(state.to_dict(), ensure_ascii=False, indent=2),
         encoding="utf-8",
+        newline="\n",
     )
     tmp.replace(path)
     return path
