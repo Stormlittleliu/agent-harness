@@ -51,24 +51,23 @@ def _library() -> None:
         empty_state("场景库是空的。")
         return
 
-    columns = st.columns(3, gap="medium")
-    for index, info in enumerate(items):
+    header = st.columns([3.2, 5.8, 1.2], vertical_alignment="bottom")
+    header[0].caption("场景")
+    header[1].caption("说明 / 状态")
+    for info in items:
         item = entries.load_entry(info.name)
-        with columns[index % 3]:
-            with st.container(border=True):
-                st.markdown(f"#### {info.icon} {info.label}")
-                st.caption(info.description or "（没有描述）")
-                badges = [info.badge]
-                badges.append("已发布" if item.name in published else "未发布")
-                st.caption(f"`{info.name}` · " + " · ".join(badges) + f" · 用例 {info.cases}")
-                if info.issue:
-                    st.caption(f"⚠ {info.issue}")
-                if st.button(
-                    "打开",
-                    key=f"build-open-{info.name}",
-                    use_container_width=True,
-                ):
-                    routes.navigate("build", info.name)
+        row = st.columns([3.2, 5.8, 1.2], vertical_alignment="center")
+        row[0].markdown(f"**{info.icon} {info.label}**  \n`{info.name}`")
+        row[1].caption(info.description or "（没有描述）")
+        badges = [
+            info.badge,
+            "已发布" if item.name in published else "未发布",
+            f"用例 {info.cases}",
+        ]
+        row[1].caption(" · ".join(badges))
+        if row[2].button("打开", key=f"build-open-{info.name}", use_container_width=True):
+            routes.navigate("build", info.name)
+        st.divider()
 
     _create_form()
 

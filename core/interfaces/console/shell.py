@@ -38,8 +38,12 @@ def current_route() -> routes.Route:
 
 
 def _product_bar(route: routes.Route) -> None:
-    """一行产品切换；当前产品是实心按钮。"""
-    brand, *buttons = st.columns([3.4, 1, 1, 1], vertical_alignment="center")
+    """品牌 + 左对齐的三个产品按钮；当前产品实心。
+
+    注意：页面顶部的 Streamlit header 是固定定位的透明层，按钮如果压在它下面
+    会"看得见但点不动"——所以全局 CSS 把 header 隐藏了（见 layout._CSS）。
+    """
+    brand, *buttons, _spacer = st.columns([2.4, 1, 1, 1, 4.2], vertical_alignment="center")
     brand.markdown("#### 🛠 Agent Harness")
     for column, product in zip(buttons, routes.PRODUCTS):
         active = product == route.product
@@ -56,9 +60,15 @@ def _product_bar(route: routes.Route) -> None:
 
 
 def run() -> None:
-    st.set_page_config(page_title="Agent Harness 控制台", page_icon="🛠", layout="wide")
-    inject_css()
     route = current_route()
+    # 对话页需要左栏放入口列表；构建 / 质量不需要侧边栏，收起来更干净。
+    st.set_page_config(
+        page_title="Agent Harness 控制台",
+        page_icon="🛠",
+        layout="wide",
+        initial_sidebar_state="expanded" if route.product == "chat" else "collapsed",
+    )
+    inject_css()
     _product_bar(route)
     if route.product == "build":
         build.render(route)

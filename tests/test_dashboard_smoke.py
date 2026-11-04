@@ -33,19 +33,21 @@ def _radio(app: AppTest, label: str):
     return next(radio for radio in app.radio if radio.label == label)
 
 
-def test_default_lands_on_chat_gallery():
+def test_default_opens_first_published_entry():
     app = _app()
     _ok(app)
     published = entries.published_names()
     assert published, "至少要有已发布入口，否则对话页只剩空状态"
-    assert [button.label for button in app.button].count("开始对话") == len(published)
-    assert any("已发布" in str(caption.value) for caption in app.caption)
+    # 常规对话页：直接就是会话，不是一排"开始对话"卡片
+    assert len(app.chat_input) == 1
+    assert "开始对话" not in [button.label for button in app.button]
+    first = entries.load_entry(published[0])
+    assert any(first.display_title in str(markdown.value) for markdown in app.markdown)
 
 
-def test_chat_gallery_lists_published_only():
+def test_sidebar_lists_only_published_entries():
     app = _app()
     keys = [str(button.key) for button in app.button if str(button.key or "").startswith("chat-open-")]
-    # 卡片按列排布，DOM 顺序不等于入口顺序；比集合即可
     assert sorted(keys) == sorted(f"chat-open-{name}" for name in entries.published_names())
 
 
@@ -76,6 +78,16 @@ def test_closed_or_missing_entry_is_explained():
     app = _app(routes.Route("chat", "flow_demo"))
     _ok(app)
     assert any("入口" in str(warning.value) for warning in app.warning)
+
+
+def test_product_switch_uses_top_nav():
+    app = _app()
+    _ok(app)
+    next(button for button in app.button if button.key == "console-nav-build").click()
+    app.run()
+    _ok(app, "switch")
+    assert app.session_state["console:route"].product == "build"
+    assert any("场景库" in str(markdown.value) for markdown in app.markdown)
 
 
 def test_build_library_lists_every_scenario():
@@ -115,8 +127,7 @@ def test_switching_chat_entry_keeps_other_threads():
         },
     )
     _ok(app)
-    picker = next(box for box in app.selectbox if box.label == "切换入口")
-    picker.set_value("workspace_assistant")
+    next(button for button in app.button if button.key == "chat-open-workspace_assistant").click()
     app.run()
     _ok(app, "switch")
     assert app.session_state["chat:thread:router"] == "web-router"

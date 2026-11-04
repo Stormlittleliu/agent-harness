@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 """对话端：用户面。只有"已发布"的场景会出现在这里。
 
-和旧「任务执行」的区别：
+形态是常规对话页，不是入口大厅：左边一列入口（像会话列表），右边直接是对话。
+没有选场景时落在第一个入口上，所以打开 `/chat` 就能直接说话。
 
-- 这是**多轮**会话：同一个 thread_id 连续对话，记忆由 checkpointer 保留；
-- 每次运行都能展开"这次怎么答的"：调用链 + 每个模型/工具步骤属于哪个节点；
-- 每个场景一条独立会话，换场景 = 换 thread，不会把上一个场景的记忆带过来；
-- 页面自己的状态都带 ``chat:`` 前缀，构建页 / 质量页各自独立。
-
-入口页（没选场景）只读 entry.yml，不加载任何 Agent，所以打开很快。
+每次运行都能展开"这次怎么答的"：调用链 + 每个模型/工具步骤属于哪个节点。
+每个入口一条独立 thread，换入口 = 换会话，不会把上一个场景的记忆带过来。
+页面状态都带 ``chat:`` 前缀，构建页 / 质量页各自独立。
 """
 from __future__ import annotations
 
@@ -19,7 +17,6 @@ import streamlit as st
 from core.interfaces.console import routes
 from core.interfaces.dashboard.chain import call_chain_dot
 from core.interfaces.dashboard.common import load_agent
-from core.interfaces.dashboard.layout import page_header
 from core.interfaces.dashboard.traces import get_trace_events, render_trace_timeline
 from core.quality.agent_eval import extract_final_answer
 from core.scenarios import entry as entries
@@ -27,47 +24,55 @@ from core.scenarios import library
 
 
 def render(route: routes.Route) -> None:
-    if not route.scenario:
-        _gallery()
-    else:
-        _conversation(route.scenario)
-
-
-# ---------------------------------------------------------------- 入口页
-
-
-def _gallery() -> None:
     published = entries.published_entries()
-    page_header(
-        "对话",
-        "选一个入口开始。这里只显示已发布的场景——场景在「构建 → 发布」里开放，"
-        "没发布的东西不会出现在用户面前。",
-        meta=f"已发布 {len(published)} 个",
-    )
     if not published:
-        st.info("还没有发布任何入口。去「构建」打开一个场景，在「发布」页签把它开放出来。")
-        if st.button("去构建", type="primary"):
-            routes.navigate("build")
+        _no_entries()
         return
+    names = [item.name for item in published]
+    requested = route.scenario
+    if requested and requested not in names:
+        _closed(requested)
+        return
+    current = requested or names[0]
+    _entry_rail(published, current)
+    _conversation(current)
 
-    columns = st.columns(3, gap="medium")
-    for index, item in enumerate(published):
-        info = library.entry(item.name)
-        icon = info.icon if info else "💬"
-        description = item.tagline or (info.description if info else "")
-        with columns[index % 3]:
-            with st.container(border=True):
-                st.markdown(f"#### {icon} {item.display_title}")
-                st.caption(description)
-                if item.starters:
-                    st.caption("试试：" + " ｜ ".join(item.starters[:2]))
-                if st.button(
-                    "开始对话",
-                    key=f"chat-open-{item.name}",
-                    type="primary",
-                    use_container_width=True,
-                ):
+
+# ---------------------------------------------------------------- 入口与兜底
+
+
+def _entry_rail(published: list[entries.ChatEntry], current: str) -> None:
+    """左栏：已发布入口列表；当前入口实心，点其它入口切过去。"""
+    with st.sidebar:
+        st.markdown("**对话入口**")
+        for item in published:
+            info = library.entry(item.name)
+            icon = info.icon if info else "💬"
+            active = item.name == current
+            if st.button(
+                f"{icon} {item.display_title}",
+                key=f"chat-open-{item.name}",
+                type="primary" if active else "secondary",
+                use_container_width=True,
+            ):
+                if not active:
                     routes.navigate("chat", item.name)
+        st.divider()
+        st.caption("只列已发布的入口；在「构建 → 发布」里开放或撤回。")
+
+
+def _no_entries() -> None:
+    st.markdown("#### 💬 对话")
+    st.info("还没有发布任何入口。")
+    if st.button("去构建页发布", type="primary"):
+        routes.navigate("build")
+
+
+def _closed(name: str) -> None:
+    st.markdown("#### 💬 对话")
+    st.warning(f"入口 `{name}` 已关闭或不存在。")
+    if st.button("回到默认入口", type="primary"):
+        routes.navigate("chat")
 
 
 # ---------------------------------------------------------------- 会话页
@@ -98,9 +103,7 @@ def _conversation(name: str) -> None:
     item = entries.load_entry(name)
     info = library.entry(name)
     if info is None or not item.enabled:
-        st.warning(f"入口 `{name}` 已关闭或不存在。")
-        if st.button("返回对话入口", type="primary"):
-            routes.navigate("chat")
+        _closed(name)
         return
 
     _header(item, info)
@@ -116,7 +119,7 @@ def _conversation(name: str) -> None:
         return
 
     if not _messages(name) and item.starters:
-        st.caption("可以从这些开始：")
+        st.caption("可以这样开始：")
         starter_cols = st.columns(min(3, len(item.starters)))
         for index, starter in enumerate(item.starters[:3]):
             if starter_cols[index].button(
@@ -125,6 +128,8 @@ def _conversation(name: str) -> None:
                 use_container_width=True,
             ):
                 st.session_state[f"chat:pending:{name}"] = starter
+    elif not _messages(name):
+        st.caption("直接输入问题开始；回答下面可以展开「这次怎么答的」。")
 
     prompt = st.session_state.pop(f"chat:pending:{name}", None) or st.chat_input(
         "输入消息（Enter 发送）"
@@ -135,29 +140,16 @@ def _conversation(name: str) -> None:
 
 
 def _header(item: entries.ChatEntry, info: library.ScenarioEntry) -> None:
-    left, right = st.columns([3.2, 2.4], vertical_alignment="center")
+    left, right = st.columns([3.6, 2.4], vertical_alignment="center")
     with left:
         st.markdown(f"#### {info.icon} {item.display_title}")
         st.caption(item.tagline or info.description)
-    with right:
-        published = entries.published_names()
-        current = published.index(item.name) if item.name in published else 0
-        picked = st.selectbox(
-            "切换入口",
-            published,
-            index=current,
-            format_func=lambda value: entries.load_entry(value).display_title,
-            key=f"chat:pick:{item.name}",
-            label_visibility="collapsed",
-        )
-        if picked != item.name:
-            routes.navigate("chat", picked)
-        buttons = st.columns(2)
-        if buttons[0].button("新会话", key=f"chat-new:{item.name}", use_container_width=True):
-            _new_thread(item.name)
-            st.rerun()
-        if buttons[1].button("返回入口", key=f"chat-back:{item.name}", use_container_width=True):
-            routes.navigate("chat")
+    buttons = right.columns(2)
+    if buttons[0].button("新会话", key=f"chat-new:{item.name}", use_container_width=True):
+        _new_thread(item.name)
+        st.rerun()
+    if buttons[1].button("在构建页打开", key=f"chat-edit:{item.name}", use_container_width=True):
+        routes.navigate("build", item.name)
 
 
 def _submit(name: str, prompt: str) -> None:

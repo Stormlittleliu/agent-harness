@@ -7,3 +7,11 @@
 # 这些日志不代表运行失败；关闭监视器即可消除。
 # 需要边改代码边自动重载时，可临时改为 "auto"。
 fileWatcherType = "none"
+
+[theme]
+# 中性一点的主色：原来的默认红太像营销页 CTA。
+primaryColor = "#4C7DF0"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F5F6F8"
+textColor = "#1F2328"
+font = "sans serif"

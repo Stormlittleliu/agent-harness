@@ -26,7 +26,7 @@ KPI_COLUMNS = 4
 _CSS = """
 <style>
 .block-container {
-    padding-top: 1.1rem;
+    padding-top: 3.6rem;
     padding-bottom: 2rem;
     max-width: 1500px;
     margin: 0 auto;
@@ -80,7 +80,31 @@ div[data-testid="stDataFrame"] {
 .stGraphVizChart svg { width: 100% !important; height: auto !important; min-height: 120px; }
 #MainMenu { visibility: hidden; }
 [data-testid="stToolbar"] { visibility: hidden; }
+[data-testid="stAppDeployButton"] { display: none; }
+[data-testid="stDecoration"] { display: none; }
 header[data-testid="stHeader"] { background: transparent; }
+[data-testid="stSidebar"] {
+    background: #FAFBFC;
+    border-right: 1px solid rgba(128,128,128,.12);
+}
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: .35rem; }
+[data-testid="stSidebar"] [data-testid="stButton"] button {
+    justify-content: flex-start;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: .3rem .55rem;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button:hover {
+    background: rgba(76,125,240,.08) !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button[data-testid="stBaseButton-primary"] {
+    color: #2F5BD3 !important;
+    background: rgba(76,125,240,.14) !important;
+    font-weight: 600;
+}
+[data-testid="stBaseButton-secondary"] { border-color: rgba(128,128,128,.26); }
+div[data-testid="stButton"] > button { border-radius: 8px; font-weight: 500; }
 </style>
 """
 
