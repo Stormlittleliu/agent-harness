@@ -24,6 +24,8 @@ CITATION_PATTERN = r"\[[^\]]+\]"
 NodeFn = Callable[..., dict[str, Any]]
 NODE_REGISTRY: dict[str, NodeFn] = {}
 NODE_PARAMS: dict[str, tuple["ParamSpec", ...]] = {}
+NODE_LABELS: dict[str, str] = {}
+NODE_DESCS: dict[str, str] = {}
 
 
 @dataclass(frozen=True)
@@ -43,14 +45,20 @@ class ParamSpec:
 def register_node(
     name: str,
     params: tuple[ParamSpec, ...] | list[ParamSpec] = (),
+    *,
+    label: str = "",
+    desc: str = "",
 ) -> Callable[[NodeFn], NodeFn]:
-    """把函数登记为 spec 可引用的块，并附上参数契约。"""
+    """把函数登记为 spec 可引用的块，并附上中文名、说明与参数契约。"""
 
     def _wrap(fn: NodeFn) -> NodeFn:
         if name in NODE_REGISTRY:
             raise ValueError(f"块重复注册：{name}")
         NODE_REGISTRY[name] = fn
         NODE_PARAMS[name] = tuple(params)
+        NODE_LABELS[name] = label or name
+        first_doc_line = (fn.__doc__ or "").strip().splitlines()[0] if (fn.__doc__ or "").strip() else ""
+        NODE_DESCS[name] = desc or first_doc_line
         return fn
 
     return _wrap
@@ -58,6 +66,30 @@ def register_node(
 
 def registered_nodes() -> list[str]:
     return sorted(NODE_REGISTRY)
+
+
+def block_label(name: str) -> str:
+    """块的中文短名，例如 ``require_citation`` -> 引用校验。"""
+    return NODE_LABELS.get(name, name)
+
+
+def block_desc(name: str) -> str:
+    """块的一句话说明。"""
+    return NODE_DESCS.get(name, "")
+
+
+def block_catalog() -> list[dict[str, Any]]:
+    """块清单，供编辑器渲染下拉框与说明。"""
+    return [
+        {
+            "fn": name,
+            "label": block_label(name),
+            "desc": block_desc(name),
+            "params": [param.name for param in block_params(name)],
+        }
+        for name in registered_nodes()
+    ]
+
 
 
 def block_params(name: str) -> tuple[ParamSpec, ...]:
@@ -187,6 +219,8 @@ def _invoke_tool(scenario: Any, name: str, args: dict[str, Any]) -> str:
 
 @register_node(
     "retrieve",
+    label="检索",
+    desc="调用一个检索类工具，把结果写进 tool_result",
     params=(
         ParamSpec("tool", "str", required=True, help="要调用的检索类工具名"),
         ParamSpec("limit", "int", default=5, minimum=1, maximum=20, help="返回条数"),
@@ -218,6 +252,8 @@ def retrieve(
 
 @register_node(
     "llm_answer",
+    label="生成回答",
+    desc="用问题 + 检索材料生成回答，写进 answer",
     params=(
         ParamSpec("prompt", "str", default="", help="回答指令；留空用默认指令"),
     ),
@@ -248,6 +284,8 @@ def llm_answer(
 
 @register_node(
     "require_citation",
+    label="引用校验",
+    desc="回答里没有 [来源id] 就在 scratch.error 里记一笔",
     params=(
         ParamSpec("pattern", "str", default=CITATION_PATTERN, help="引用正则，默认匹配 [id]"),
     ),
@@ -267,6 +305,8 @@ def require_citation(
 
 @register_node(
     "summarize",
+    label="材料截断",
+    desc="确定性截断材料，不调模型；为了可测、可复现，也不额外烧 token",
     params=(
         ParamSpec("max_chars", "int", default=1200, minimum=100, maximum=8000, help="截断长度"),
     ),
@@ -286,6 +326,8 @@ def summarize(
 
 @register_node(
     "write_report",
+    label="写报告文件",
+    desc="把 answer 写进 data/runtime/spec_reports，越界路径直接拒绝",
     params=(
         ParamSpec("path", "str", default="report.md", help="相对 data/runtime/spec_reports 的路径"),
     ),
@@ -308,6 +350,8 @@ def write_report(
 
 @register_node(
     "react_loop",
+    label="ReAct 循环",
+    desc="复合块：内部是一个完整 ReAct 循环，对外只暴露参数",
     params=(
         ParamSpec("prompt", "str", default="", help="系统提示词；留空用场景提示词"),
         ParamSpec("tools", "tool_list", required=True, help="可用工具白名单"),

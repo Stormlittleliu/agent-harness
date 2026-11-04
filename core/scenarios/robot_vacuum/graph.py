@@ -13,8 +13,20 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.graph import END, START, StateGraph
 
 from core.llm.factory import chat_model
+from core.scenarios.node_docs import NodeDoc, register_node_docs
 
 REFUSAL_MARKERS = ("没有相关信息", "资料不足", "未提及", "无法确定")
+
+# 节点说明：调用链 / 轨迹页用它回答"这一步是哪个节点、为什么存在"。
+NODE_DOCS = (
+    NodeDoc("answer", "机器人问答", "调 rag_summarize：检索知识库并生成带引用的回答", "rag_qa"),
+    NodeDoc("verify", "复核", "只根据检索到的资料判断回答有没有依据，不引入外部知识", "rag_qa"),
+    NodeDoc("get_user_id", "取用户 ID", "调工具拿当前用户 ID，作为报告流程的输入", "report"),
+    NodeDoc("get_current_month", "取当前月份", "调工具拿当前月份，作为使用记录的查询条件", "report"),
+    NodeDoc("fetch_external_data", "拉使用记录", "按用户 ID 和月份拉外部使用记录", "report"),
+    NodeDoc("write_report", "写使用报告", "根据使用记录生成中文使用报告与保养建议", "report"),
+)
+register_node_docs("robot_vacuum", NODE_DOCS)
 
 
 class WorkflowState(TypedDict, total=False):

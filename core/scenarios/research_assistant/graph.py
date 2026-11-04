@@ -12,6 +12,16 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.graph import END, START, StateGraph
 
 from core.llm.factory import chat_model
+from core.scenarios.node_docs import NodeDoc, register_node_docs
+
+NODE_DOCS = (
+    NodeDoc("plan", "拆子问题", "把研究问题拆成最多 3 个能独立回答的子问题", "deep_research"),
+    NodeDoc("fan_out", "并跑子 Agent", "用 subagent 并发读资料回答每个子问题，单点失败不影响整体", "deep_research"),
+    NodeDoc("synthesize", "汇总对比", "把子结论合成对比总结，指出一致点、差异点与仍不确定的地方", "deep_research"),
+    NodeDoc("cite", "补来源", "总结里没有资料 id 时追加来源列表", "deep_research"),
+    NodeDoc("report", "写报告", "把总结写进报告文件并返回路径", "deep_research"),
+)
+register_node_docs("research_assistant", NODE_DOCS)
 
 
 class ResearchState(TypedDict, total=False):

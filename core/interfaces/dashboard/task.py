@@ -19,8 +19,9 @@ from core.interfaces.dashboard.layout import (
     text_block,
 )
 from core.interfaces.dashboard.objects import build_object_index, render_case_object_panel
-from core.interfaces.dashboard.traces import get_trace_events, render_trace_timeline
+from core.interfaces.dashboard.traces import get_trace_events, render_node_legend, render_trace_timeline
 from core.quality.agent_eval import extract_final_answer, extract_tool_calls
+from core.scenarios.node_docs import describe_node
 
 
 def _tool_rows(messages, events: list[dict], index) -> list[dict]:
@@ -47,18 +48,39 @@ def _dot_escape(text: str) -> str:
     return str(text).replace("\\", "\\\\").replace('"', "'").replace("\n", "\\n")
 
 
-def _call_chain_dot(events: list[dict], messages: list, interrupted: bool = False) -> str:
+def _node_tag(scenario: str | None, event: dict) -> tuple[str, str]:
+    """返回 ``(展示名, 悬停说明)``：这一步属于哪个工作流节点。"""
+    node = event.get("node")
+    if not node:
+        return "", ""
+    try:
+        doc = describe_node(scenario, str(node))
+    except Exception:  # noqa: BLE001 - 说明是辅助信息
+        doc = None
+    if doc is None:
+        return f"节点 {node}", ""
+    return doc.title, doc.desc
+
+
+def _call_chain_dot(
+    events: list[dict],
+    messages: list,
+    interrupted: bool = False,
+    scenario: str | None = None,
+) -> str:
     """把 trace 事件画成 用户问题 → 模型/工具 → 最终回答 的调用链。
 
     优先用 trace 的时序；没有 trace 时退回 messages 里的 tool_calls。
     工具节点在 `tool_start` 时创建，`tool_end/tool_error` 时补状态和耗时。
+    每个模型/工具节点都会标上它所属的 LangGraph 节点（如"复核 · verify"），
+    悬停显示该节点的中文说明。
     """
-    nodes: list[list[str]] = []
+    nodes: list[list[str]] = []  # [id, label, kind, tooltip]
     edges: list[tuple[str, str]] = []
 
-    def add(label: str, kind: str) -> int:
+    def add(label: str, kind: str, tooltip: str = "") -> int:
         node_id = f"n{len(nodes)}"
-        nodes.append([node_id, label, kind])
+        nodes.append([node_id, label, kind, tooltip])
         if len(nodes) > 1:
             edges.append((nodes[-2][0], node_id))
         return len(nodes) - 1
@@ -82,6 +104,7 @@ def _call_chain_dot(events: list[dict], messages: list, interrupted: bool = Fals
             model_no += 1
             if not can_add():
                 break
+            tag, tooltip = _node_tag(scenario, event)
             label = f"模型 #{model_no}"
             meta = []
             tokens = event.get("total_tokens")
@@ -92,34 +115,45 @@ def _call_chain_dot(events: list[dict], messages: list, interrupted: bool = Fals
                 meta.append(f"{float(latency):.0f} ms")
             if meta:
                 label += "\n" + " · ".join(meta)
-            add(label, "model")
+            if tag:
+                label += f"\n{tag}"
+            add(label, "model", tooltip)
             processed = True
         elif name == "tool_start":
             if not can_add():
                 break
             tool = str(event.get("tool") or "tool")
-            index = add(f"工具: {tool}\n运行中", "tool")
+            tag, tooltip = _node_tag(scenario, event)
+            label = f"工具: {tool}\n运行中"
+            if tag:
+                label += f"\n{tag}"
+            index = add(label, "tool", tooltip)
             tool_starts.setdefault(tool, []).append(index)
             processed = True
         elif name in {"tool_end", "tool_error"}:
             tool = str(event.get("tool") or "tool")
             status = str(event.get("status") or ("error" if name == "tool_error" else "完成"))
+            tag, tooltip = _node_tag(scenario, event)
             label = f"工具: {tool}\n{status}"
             latency = event.get("latency_ms")
             if latency is not None:
                 label += f" · {float(latency):.0f} ms"
+            if tag:
+                label += f"\n{tag}"
             kind = "tool_error" if name == "tool_error" or status == "error" else "tool"
             stack = tool_starts.get(tool) or []
             if stack:
                 index = stack.pop()
                 nodes[index][1] = label
                 nodes[index][2] = kind
+                nodes[index][3] = tooltip
             elif can_add():
-                add(label, kind)
+                add(label, kind, tooltip)
             processed = True
         elif name == "model_error":
             if can_add():
-                add("模型错误", "error")
+                tag, tooltip = _node_tag(scenario, event)
+                add("模型错误" + (f"\n{tag}" if tag else ""), "error", tooltip)
             processed = True
 
     if not processed:
@@ -162,11 +196,12 @@ def _call_chain_dot(events: list[dict], messages: list, interrupted: bool = Fals
         "graph [nodesep=0.25, ranksep=0.35];",
         'node [shape=box, style="rounded,filled", fontsize=10, fontname="Microsoft YaHei"];',
     ]
-    for node_id, label, kind in nodes:
+    for node_id, label, kind, tooltip in nodes:
         shape = "oval" if kind in {"start", "end"} else "box"
         fill = colors.get(kind, "#F5F5F5")
+        extra = f', tooltip="{_dot_escape(tooltip)}"' if tooltip else ""
         lines.append(
-            f'"{node_id}" [label="{_dot_escape(label)}", shape={shape}, fillcolor="{fill}"];'
+            f'"{node_id}" [label="{_dot_escape(label)}", shape={shape}, fillcolor="{fill}"{extra}];'
         )
     for source, target in edges:
         lines.append(f'"{source}" -> "{target}";')
@@ -272,14 +307,20 @@ def render_task(agent: FrameworkAgent, examples: list[str] | None = None) -> Non
     if trace_issue:
         st.caption(f"trace：{trace_issue}")
 
-    section("可视化调用链", "用户问题 → 模型 / 工具步骤 → 最终回答；红色表示错误，橙色表示等待审批。")
+    section(
+        "可视化调用链",
+        "用户问题 → 模型 / 工具步骤 → 最终回答；每个节点标注它属于哪个工作流节点，"
+        "鼠标悬停看该节点在做什么。红色表示错误，橙色表示等待审批。",
+    )
     chain = _call_chain_dot(
         events,
         messages,
         interrupted=bool(state.get("__interrupt__")),
+        scenario=agent.scenario.name,
     )
     with st.container(border=True):
         st.graphviz_chart(chain, use_container_width=True)
+    render_node_legend(agent.scenario.name, events)
 
     left, right = master_detail(0.62)
     with left:

@@ -61,6 +61,9 @@ class TraceCallbackHandler(BaseCallbackHandler):
         self._model_start: dict[str, float] = {}
         self._tool_start: dict[str, float] = {}
         self._tool_names: dict[str, str] = {}
+        # 结束事件拿不到 metadata，所以开始事件里先把节点名记住。
+        self._model_node: dict[str, str | None] = {}
+        self._tool_node: dict[str, str | None] = {}
         self._last_model = "unknown"
         self._finalized = False
 
@@ -94,16 +97,20 @@ class TraceCallbackHandler(BaseCallbackHandler):
         self._model_start[str(run_id)] = time.time()
         model = self._model_name(serialized, kwargs)
         self._last_model = model
+        node = self._node_of(kwargs)
+        self._model_node[str(run_id)] = node
         self._write(
             "model_start",
             run_id=str(run_id),
             parent_run_id=str(parent_run_id) if parent_run_id else None,
             model=model,
             messages=len(messages or []),
+            node=node,
         )
 
     def on_llm_end(self, response, *, run_id, parent_run_id=None, **kwargs):
         start = self._model_start.pop(str(run_id), None)
+        node = self._model_node.pop(str(run_id), None) or self._node_of(kwargs)
         latency_ms = int((time.time() - start) * 1000) if start else None
         prompt, completion, total = self._extract_usage(response)
         self.prompt_tokens += prompt
@@ -128,10 +135,12 @@ class TraceCallbackHandler(BaseCallbackHandler):
             completion_tokens=completion,
             total_tokens=total,
             cost_est=round(cost, 6),
+            node=node,
         )
 
     def on_llm_error(self, error, *, run_id, parent_run_id=None, **kwargs):
         start = self._model_start.pop(str(run_id), None)
+        node = self._model_node.pop(str(run_id), None) or self._node_of(kwargs)
         latency_ms = int((time.time() - start) * 1000) if start else None
         self._write(
             "model_error",
@@ -140,6 +149,7 @@ class TraceCallbackHandler(BaseCallbackHandler):
             model=self._last_model,
             latency_ms=latency_ms,
             error=str(error),
+            node=node,
         )
 
     # ===================== 工具事件 =====================
@@ -148,17 +158,21 @@ class TraceCallbackHandler(BaseCallbackHandler):
         name = (serialized or {}).get("name", "unknown")
         self._tool_names[str(run_id)] = name
         self._tool_start[str(run_id)] = time.time()
+        node = self._node_of(kwargs)
+        self._tool_node[str(run_id)] = node
         self._write(
             "tool_start",
             run_id=str(run_id),
             parent_run_id=str(parent_run_id) if parent_run_id else None,
             tool=name,
             input=input_str,
+            node=node,
         )
 
     def on_tool_end(self, output, *, run_id, parent_run_id=None, **kwargs):
         name = self._tool_names.pop(str(run_id), "unknown")
         start = self._tool_start.pop(str(run_id), None)
+        node = self._tool_node.pop(str(run_id), None) or self._node_of(kwargs)
         latency_ms = int((time.time() - start) * 1000) if start else None
         status = getattr(output, "status", "success") or "success"
         self._write(
@@ -168,11 +182,13 @@ class TraceCallbackHandler(BaseCallbackHandler):
             tool=name,
             latency_ms=latency_ms,
             status=status,
+            node=node,
         )
 
     def on_tool_error(self, error, *, run_id, parent_run_id=None, **kwargs):
         name = self._tool_names.pop(str(run_id), "unknown")
         start = self._tool_start.pop(str(run_id), None)
+        node = self._tool_node.pop(str(run_id), None) or self._node_of(kwargs)
         latency_ms = int((time.time() - start) * 1000) if start else None
         self._write(
             "tool_error",
@@ -181,6 +197,7 @@ class TraceCallbackHandler(BaseCallbackHandler):
             tool=name,
             latency_ms=latency_ms,
             error=str(error),
+            node=node,
         )
 
     # ===================== run 结束 =====================
@@ -220,6 +237,17 @@ class TraceCallbackHandler(BaseCallbackHandler):
         self.finalize("unknown")
 
     # ===================== 解析辅助 =====================
+    @staticmethod
+    def _node_of(kwargs: dict) -> str | None:
+        """从回调 metadata 里取 LangGraph 节点名。
+
+        LangGraph 会给节点内的每个 run 打上 ``langgraph_node``；拿不到时返回
+        ``None``（例如直接调 agent 之外的模型），界面会显示"—"而不是瞎猜。
+        """
+        metadata = kwargs.get("metadata") or {}
+        node = metadata.get("langgraph_node") if isinstance(metadata, dict) else None
+        return str(node) if node else None
+
     @staticmethod
     def _model_name(serialized, kwargs: dict) -> str:
         params = kwargs.get("invocation_params") or {}

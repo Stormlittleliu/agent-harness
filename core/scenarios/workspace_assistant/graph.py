@@ -12,8 +12,21 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.graph import END, START, StateGraph
 
 from core.llm.factory import chat_model
+from core.scenarios.node_docs import NodeDoc, register_node_docs
 
 REFUSAL = "资料中没有找到足够信息，无法确定。"
+
+NODE_DOCS = (
+    NodeDoc("retrieve", "检索笔记", "用 search_notes 按问题检索笔记，拿到 id / 标题 / 正文", "document_qa"),
+    NodeDoc("answer", "生成回答", "用检索到的笔记生成带 [笔记id] 引用的回答", "document_qa"),
+    NodeDoc("refuse", "拒答", "检索不到资料时直接给固定拒答，不编造", "document_qa"),
+    NodeDoc("cite", "补引用", "回答里缺 [笔记id] 时在末尾补上来源列表", "document_qa"),
+    NodeDoc("outline", "列大纲", "按主题和资料先列学习笔记大纲", "study_notes"),
+    NodeDoc("write", "写笔记", "按大纲和资料写出 Markdown 学习笔记", "study_notes"),
+    NodeDoc("detect", "判断语言", "按问题里有没有中文字符，决定用中文还是英文回答", "cross_lingual"),
+    NodeDoc("review", "审阅定稿", "检查草稿的事实一致性、结构和语气，输出定稿", "content_draft"),
+)
+register_node_docs("workspace_assistant", NODE_DOCS)
 
 
 class WorkspaceState(TypedDict, total=False):

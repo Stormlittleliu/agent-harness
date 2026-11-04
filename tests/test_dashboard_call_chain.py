@@ -40,3 +40,21 @@ def test_call_chain_stops_at_hitl():
     dot = _call_chain_dot(events, [], interrupted=True)
     assert "等待人工审批" in dot
     assert "最终回答" not in dot
+
+
+def test_call_chain_marks_langgraph_node():
+    """每一步都要说清它属于哪个工作流节点，并带上悬停说明。"""
+    events = [
+        {"event": "model_end", "total_tokens": 10, "latency_ms": 100, "node": "verify"},
+        {"event": "tool_start", "tool": "list_notes", "node": "verify"},
+        {"event": "tool_end", "tool": "list_notes", "status": "completed", "latency_ms": 5, "node": "verify"},
+    ]
+    dot = _call_chain_dot(events, [], scenario="robot_vacuum")
+    assert "复核 · verify" in dot
+    assert "tooltip=" in dot
+
+
+def test_call_chain_falls_back_for_unknown_node():
+    events = [{"event": "model_end", "total_tokens": 10, "node": "mystery_step"}]
+    dot = _call_chain_dot(events, [], scenario="robot_vacuum")
+    assert "节点 mystery_step" in dot

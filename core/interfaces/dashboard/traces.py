@@ -3,9 +3,13 @@
 
 trace 文件按天写入 ``outputs/traces/trace_*.jsonl``。这里按文件路径 + mtime
 缓存 trace_id 索引，页面加载时只解析一次；文件更新后缓存自动失效。
+
+每条事件都带 ``node``（LangGraph 节点名），所以时间线能回答"这一步是哪个
+节点做的"——例如机器人场景的"复核 · verify"。
 """
 from __future__ import annotations
 
+import html
 import json
 from pathlib import Path
 from typing import Any
@@ -13,6 +17,7 @@ from typing import Any
 import streamlit as st
 
 from core.interfaces.dashboard.common import ROOT, file_mtime
+from core.scenarios.node_docs import describe_node, node_label
 
 TRACE_DIR = ROOT / "outputs" / "traces"
 
@@ -110,13 +115,26 @@ def _total_tokens(event: dict) -> int | None:
     return int((prompt or 0) + (completion or 0))
 
 
-def _timeline_rows(events: list[dict]) -> list[dict]:
-    rows: list[dict] = []
+def _scenario_of(events: list[dict]) -> str | None:
+    """从事件里取场景名；旧 trace 没有这个字段时返回 None。"""
     for event in events:
+        name = event.get("scenario")
+        if name:
+            return str(name)
+    return None
+
+
+def _timeline_rows(events: list[dict], scenario: str | None = None) -> list[dict]:
+    rows: list[dict] = []
+    scenario = scenario or _scenario_of(events)
+    for event in events:
+        node = event.get("node")
+        where = node_label(scenario, node) if node else "—"
         name = event.get("event")
         if name == "model_end":
             rows.append({
                 "时间": _time_text(event.get("ts")),
+                "节点": where,
                 "事件": "模型结束",
                 "工具 / 模型": event.get("model") or "—",
                 "状态": "—",
@@ -126,6 +144,7 @@ def _timeline_rows(events: list[dict]) -> list[dict]:
         elif name == "tool_start":
             rows.append({
                 "时间": _time_text(event.get("ts")),
+                "节点": where,
                 "事件": "工具开始",
                 "工具 / 模型": event.get("tool") or "—",
                 "状态": "开始",
@@ -135,6 +154,7 @@ def _timeline_rows(events: list[dict]) -> list[dict]:
         elif name == "tool_end":
             rows.append({
                 "时间": _time_text(event.get("ts")),
+                "节点": where,
                 "事件": "工具结束",
                 "工具 / 模型": event.get("tool") or "—",
                 "状态": event.get("status") or "—",
@@ -144,6 +164,7 @@ def _timeline_rows(events: list[dict]) -> list[dict]:
         elif name == "run_end":
             rows.append({
                 "时间": _time_text(event.get("ts")),
+                "节点": "—",
                 "事件": "运行结束",
                 "工具 / 模型": "—",
                 "状态": event.get("status") or "—",
@@ -151,6 +172,39 @@ def _timeline_rows(events: list[dict]) -> list[dict]:
                 "Token": _total_tokens(event),
             })
     return rows
+
+
+def _nodes_in_order(events: list[dict]) -> list[str]:
+    seen: list[str] = []
+    for event in events:
+        node = event.get("node")
+        if node and str(node) not in seen:
+            seen.append(str(node))
+    return seen
+
+
+def render_node_legend(scenario: str | None, events: list[dict] | None, label: str = "本次 run 经过的节点") -> None:
+    """一行节点说明：从左到右就是执行顺序，悬停看每个节点在做什么。"""
+    nodes = _nodes_in_order(events or [])
+    if not nodes:
+        return
+    chips: list[str] = []
+    for node in nodes:
+        doc = describe_node(scenario, node)
+        title = doc.title if doc is not None else node
+        desc = doc.desc if doc is not None else "该节点还没有登记说明"
+        tooltip = f"{title}\n{desc}"
+        chips.append(
+            f'<span class="ah-chain" title="{html.escape(tooltip, quote=True)}">'
+            f"{html.escape(title)}</span>"
+        )
+    st.markdown(
+        '<div class="ah-chain-wrap">'
+        + '<span class="ah-arrow">→</span>'.join(chips)
+        + "</div>",
+        unsafe_allow_html=True,
+    )
+    st.caption(f"{label}（从左到右）；鼠标悬停看每个节点的职责。")
 
 
 def render_trace_timeline(trace_id: str | None) -> None:
@@ -172,19 +226,30 @@ def render_trace_timeline(trace_id: str | None) -> None:
         return
 
     events = events or []
-    rows = _timeline_rows(events)
+    scenario = _scenario_of(events)
+    rows = _timeline_rows(events, scenario)
     if not rows:
         st.caption("该 trace 中没有模型 / 工具 / 运行结束事件。")
         return
 
     model_calls = sum(1 for event in events if event.get("event") == "model_end")
     tool_calls = sum(1 for event in events if event.get("event") == "tool_end")
+    scenario_text = f" · 场景 `{scenario}`" if scenario else ""
     st.caption(
-        f"`{trace_id}` ｜ 模型 {model_calls} 次 · 工具 {tool_calls} 次"
+        f"`{trace_id}`{scenario_text} ｜ 模型 {model_calls} 次 · 工具 {tool_calls} 次"
     )
+    render_node_legend(scenario, events)
     st.dataframe(
         rows,
         use_container_width=True,
         hide_index=True,
         height=min(320, max(120, 38 + 32 * len(rows))),
+        column_order=["时间", "节点", "事件", "工具 / 模型", "状态", "耗时(ms)", "Token"],
+        column_config={
+            "节点": st.column_config.TextColumn(
+                "节点",
+                width="medium",
+                help="这一条事件发生在哪个 LangGraph 节点里；悬停节点看它的职责",
+            ),
+        },
     )

@@ -104,16 +104,17 @@ def print_trace(events: list[dict], trace_id: str) -> None:
         return
     for event in rows:
         event_name = event.get("event")
-        detail = ""
+        node = event.get("node")
+        detail = f"[{node}] " if node else ""
         if event_name == "model_end":
-            detail = (f"model={event.get('model')} latency={event.get('latency_ms')}ms "
-                      f"tokens={event.get('prompt_tokens')}/{event.get('completion_tokens')}")
+            detail += (f"model={event.get('model')} latency={event.get('latency_ms')}ms "
+                       f"tokens={event.get('prompt_tokens')}/{event.get('completion_tokens')}")
         elif event_name in {"tool_start", "tool_end", "tool_error"}:
-            detail = f"tool={event.get('tool')} {event.get('status') or event.get('error') or ''}"
+            detail += f"tool={event.get('tool')} {event.get('status') or event.get('error') or ''}"
         elif event_name == "run_end":
-            detail = (f"status={event.get('status')} duration={event.get('duration_ms')}ms "
-                      f"models={event.get('model_calls')} tools={event.get('tool_calls')} "
-                      f"tokens={event.get('prompt_tokens')}/{event.get('completion_tokens')}")
+            detail += (f"status={event.get('status')} duration={event.get('duration_ms')}ms "
+                       f"models={event.get('model_calls')} tools={event.get('tool_calls')} "
+                       f"tokens={event.get('prompt_tokens')}/{event.get('completion_tokens')}")
         print(f"{event.get('ts')}  {event_name:<12} {detail}")
 
 
