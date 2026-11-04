@@ -18,6 +18,7 @@ from pathlib import Path
 
 from core.agent.contracts import Scenario
 from core.llm.factory import chat_model
+from core.prompts.blocks import load_book
 from core.scenarios import pools
 from core.scenarios.ownership import OWNER_CODE, ensure_spec_editable, load_state
 from core.scenarios.spec import SpecError, build_from_spec, load_active_spec, resolve_cases_path
@@ -77,6 +78,7 @@ def build_generic_spec_scenario(
             f"spec 引用了工具箱 {box.name} 里没有的工具：{', '.join(missing)}；"
             f"可用：{', '.join(sorted(available)) or '（空）'}"
         ])
+    book = load_book(Path(root) / name / "prompt.yml")
     return build_from_spec(
         spec,
         tools=list(box.tools),
@@ -87,4 +89,5 @@ def build_generic_spec_scenario(
         runtime=box.runtime,
         response_format=resolve_schema(spec.response_format),
         defaults=box.defaults,
+        prompt_book=book,
     )

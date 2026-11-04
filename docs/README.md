@@ -6,6 +6,7 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 分层与运行时结构 |
 | [design/](design/) | 设计说明：中间件流水线、场景可编排与 eject、低代码范围、控制台场景编辑器 |
 | [design/scenario-editor.md](design/scenario-editor.md) | 「🎛 场景编辑」的边界、数据流与演示脚本 |
+| [design/prompt-blocks.md](design/prompt-blocks.md) | 系统提示词分块：块、条件加载、拼接与界面 |
 | [benchmarks/current-results.md](benchmarks/current-results.md) | 评测结果入口（其余为复盘与历史） |
 | [interview/](interview/) | 面试材料（面试前统一重写，当前多份并存） |
 | [CHANGELOG-2026-11-03.md](CHANGELOG-2026-11-03.md) | 2026-11-03 改动归档 |

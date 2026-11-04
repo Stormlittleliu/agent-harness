@@ -26,6 +26,8 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from core.agent.pipeline import available_policies
+from core.prompts.blocks import PromptBook, validate_book
+from core.prompts.assemble import context_from_scenario, get_assembled
 from core.scenarios.spec_nodes import NODE_REGISTRY, validate_args, validate_tool_refs
 
 SPEC_VERSION = 1
@@ -103,6 +105,15 @@ class PolicySpecModel(BaseModel):
     reason: str | None = None
 
 
+class PromptSpec(BaseModel):
+    """系统提示词的分块引用：块本身在 ``data/specs/<name>/prompt.yml``。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    blocks: list[str] = Field(default_factory=list)
+    overrides: dict[str, str] = Field(default_factory=dict)
+
+
 class ScenarioSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -113,6 +124,8 @@ class ScenarioSpec(BaseModel):
     kind: str = "agent"
     tools: list[str] = Field(default_factory=list)
     system_prompt: str = ""
+    # 分块提示词：给了 blocks 就按块拼接（覆盖 system_prompt）；否则用 system_prompt 原文。
+    prompt: PromptSpec | None = None
     # 行为用例文件（相对仓库根）；留空则找 data/specs/<name>/cases.jsonl。
     # 仿造现有场景时指向原来的 cases，保证两边是同一把尺子。
     cases_path: str | None = None
@@ -205,13 +218,19 @@ def _validate_workflow(name: str, workflow: WorkflowSpec, tool_names: set[str] |
     return errors
 
 
-def validate_spec(spec: ScenarioSpec, tool_names: set[str] | None = None) -> list[str]:
+def validate_spec(
+    spec: ScenarioSpec,
+    tool_names: set[str] | None = None,
+    prompt_book: PromptBook | None = None,
+) -> list[str]:
     errors: list[str] = []
     if spec.schema_version != SPEC_VERSION:
         errors.append(f"schema_version 必须是 {SPEC_VERSION}，收到 {spec.schema_version}")
     if not spec.name.strip():
         errors.append("scenario.name 不能为空")
     # 允许没有 workflow：纯 ReAct 场景（general / coding / router…）只有一个 agent 循环。
+    if spec.prompt is not None and spec.prompt.blocks and prompt_book is not None:
+        errors.extend(validate_book(list(spec.prompt.blocks), prompt_book))
     known_policies = set(available_policies())
     if spec.response_format:
         from core.scenarios.schemas import SCHEMAS
@@ -290,6 +309,7 @@ def build_from_spec(
     runtime: Any = None,
     response_format: Any = None,
     defaults: dict[str, Any] | None = None,
+    prompt_book: PromptBook | None = None,
 ) -> Any:
     """用 spec 组装一个 ``Scenario``；工具按 ``spec.tools`` 白名单过滤。
 
@@ -341,7 +361,20 @@ def build_from_spec(
     })
     options.setdefault("checkpoint_backend", checkpoint_backend)
     options.setdefault("checkpoint_path", checkpoint_path)
-    return Scenario(**options)
+    scenario = Scenario(**options)
+    # 分块提示词：块能引用 {tools} / {workflows}，所以要等 Scenario 建好再拼。
+    if spec.prompt is not None and spec.prompt.blocks:
+        book = prompt_book or PromptBook()
+        block_errors = validate_book(list(spec.prompt.blocks), book)
+        if block_errors:
+            raise SpecError(block_errors)
+        context = context_from_scenario(scenario)
+        text = get_assembled(
+            list(spec.prompt.blocks), book, context, dict(spec.prompt.overrides)
+        )
+        if text.strip():
+            scenario.system_prompt = text
+    return scenario
 
 
 def resolve_cases_path(spec: ScenarioSpec, root: Path | str = SPEC_ROOT) -> Path | None:

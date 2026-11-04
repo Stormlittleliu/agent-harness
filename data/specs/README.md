@@ -1,7 +1,7 @@
 # data/specs：场景的"数据层"
 
 一个目录 = 一个场景。`active.json` 指向当前版本，`state.json` 记归属（`owner` 只能是
-`spec` 或 `code`）。**只要这个目录里有 `active.json`，同名场景就由 spec 构建**；
+`spec` 或 `code`），`prompt.yml` 是这个场景的系统提示词分块（见 docs/design/prompt-blocks.md）。**只要这个目录里有 `active.json`，同名场景就由 spec 构建**；
 删掉目录即回退到 `core/scenarios/<name>/` 的代码实现。
 
 ## 接管现状（2026-11-04）

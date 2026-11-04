@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "name": "router",
+  "description": "总路由：从对话式前台分流到各子场景",
+  "kind": "router",
+  "tools": [
+    "route_to_workspace",
+    "route_to_coding",
+    "route_to_robot",
+    "route_to_research"
+  ],
+  "system_prompt": "你是总路由 / 前台，不直接处理专业任务。\n先判断用户意图，调用对应的 route_to_* 工具：\n- 办公 / 学习 / 内容 -> route_to_workspace\n- 编码 / 文件 / 测试 -> route_to_coding\n- 扫地机器人 -> route_to_robot\n- 研究调研 -> route_to_research\n调用后，把目标场景的最终答案用用户的语言返回，并说明“已路由到哪个场景”。不要编造目标场景没有给出的内容；如果目标场景返回错误，如实说明。",
+  "prompt": {
+    "blocks": [
+      "p01",
+      "p02",
+      "p03",
+      "p04",
+      "p05"
+    ],
+    "overrides": {}
+  },
+  "cases_path": "core/scenarios/router/cases.jsonl",
+  "response_format": null,
+  "harness": {
+    "enable_todo": false,
+    "enable_summarization": true,
+    "tool_call_limit": 4,
+    "token_budget": 40000
+  },
+  "policies": null,
+  "workflows": {}
+}

@@ -100,7 +100,7 @@ def _rows_of(table) -> list[dict]:
     return [dict(row) for row in (table or [])]
 
 
-def _render_basics(draft: dict, prefix: str, tools: list[str]) -> None:
+def _render_basics(name: str, draft: dict, prefix: str, tools: list[str]) -> None:
     draft["description"] = st.text_input(
         "场景描述",
         value=str(draft.get("description") or ""),
@@ -113,6 +113,7 @@ def _render_basics(draft: dict, prefix: str, tools: list[str]) -> None:
         key=f"{prefix}-prompt",
         help="会原样交给 Agent；把「必须引用来源」「不许编造」这类硬约束写进去。",
     )
+    _render_prompt_blocks(name, draft, prefix)
     selected = st.multiselect(
         "工具白名单",
         tools,
@@ -154,6 +155,69 @@ def _render_basics(draft: dict, prefix: str, tools: list[str]) -> None:
     ))
     harness["token_budget"] = budget or None
     right.caption("工具白名单决定 Agent 能看见哪些工具；节点参数里的 tool 也只能选这里面的。")
+
+
+def _render_prompt_blocks(name: str, draft: dict, prefix: str) -> None:
+    """提示词分块：列出块、看拼接结果、按场景覆盖某一块。"""
+    from core.prompts.assemble import PromptContext, assemble
+    from core.prompts.blocks import load_book
+
+    prompt = draft.get("prompt") or {}
+    block_ids = [str(item) for item in (prompt.get("blocks") or [])]
+    if not block_ids:
+        return
+    book = load_book(SPEC_ROOT / name / "prompt.yml")
+    missing = [block_id for block_id in block_ids if book.get(block_id) is None]
+    overrides = dict(prompt.get("overrides") or {})
+
+    context = PromptContext(
+        name=name,
+        kind=str(draft.get("kind") or "agent"),
+        tools=tuple(str(item) for item in (draft.get("tools") or [])),
+        workflows=tuple((draft.get("workflows") or {}).keys()),
+        has_cases=bool(draft.get("cases_path")),
+    )
+    assembly = assemble(block_ids, book, context, overrides)
+
+    with st.expander(f"提示词分块（{len(block_ids)} 块 · 拼接后 {len(assembly.text)} 字）", expanded=False):
+        rows = []
+        for index, block_id in enumerate(block_ids, 1):
+            block = book.get(block_id)
+            rows.append({
+                "#": index,
+                "块": block_id,
+                "标题": block.title if block else "（缺块）",
+                "字数": len((overrides.get(block_id) or (block.body if block else "")) or ""),
+                "覆盖": "是" if block_id in overrides else "",
+            })
+        compact_table(rows, height=170, key=f"{prefix}-prompt-blocks", column_order=["#", "块", "标题", "字数", "覆盖"])
+        if missing:
+            st.error(f"prompt.yml 里缺少这些块：{'、'.join(missing)}")
+
+        picked = st.selectbox(
+            "选中一块", [item for item in block_ids if book.get(item) is not None],
+            key=f"{prefix}-prompt-block-pick",
+        ) if any(book.get(item) for item in block_ids) else None
+        if picked:
+            block = book.get(picked)
+            current = overrides.get(picked, block.body if block else "")
+            text = st.text_area("块内容（保存后写入本场景的 overrides）", value=current, height=160,
+                                key=f"{prefix}-prompt-block-body-{picked}")
+            col_save, col_reset = st.columns([1, 1])
+            if col_save.button("保存覆盖", key=f"{prefix}-prompt-block-save"):
+                overrides[picked] = text
+                draft.setdefault("prompt", {}).setdefault("blocks", block_ids)
+                draft["prompt"]["overrides"] = overrides
+                _bump_generation()
+                st.rerun()
+            if col_reset.button("清除覆盖", key=f"{prefix}-prompt-block-reset", disabled=picked not in overrides):
+                overrides.pop(picked, None)
+                draft["prompt"]["overrides"] = overrides
+                _bump_generation()
+                st.rerun()
+        st.caption("拼接结果（含条件判断与 {tools} 等插值）：")
+        with st.container(height=220):
+            st.code(assembly.text or "（空）", language="text")
 
 
 def _render_params(fn: str, args: dict, prefix: str, tools: list[str]) -> dict:
@@ -594,7 +658,7 @@ def render_editor(current: str | None = None) -> None:
 
     tools = spec_tool_names()
     section("基本信息", "这一层直接决定 Agent 的行为边界。")
-    _render_basics(draft, prefix, tools)
+    _render_basics(choice, draft, prefix, tools)
 
     section("工作流", "节点只能引用已注册的块；删节点不会自动重连，悬空边会被校验拦下。")
     workflow_names = list((draft.get("workflows") or {}).keys())

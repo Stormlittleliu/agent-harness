@@ -1,0 +1,6 @@
+order:
+- p01
+blocks:
+  p01:
+    title: 身份与任务
+    body: 你是一个大模型助手。

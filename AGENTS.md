@@ -5,7 +5,7 @@
 ## 环境
 
 - Python 用 conda 环境 **`langchain`**；裸 `python` 是 3.8，跑不了测试。
-- 测试：`python -m pytest -q`（当前 259 passed）。
+- 测试：`python -m pytest -q`（当前 268 passed）。
 
 ## 场景归属（硬约束）
 
@@ -52,6 +52,8 @@ python -m core.scenarios.eject <name> --status
 - `core/quality/selfbuilt.py` — 自建跨分类任务集评测（检索 / 单轮 / 多轮），任务在 `data/evals/datasets/selfbuilt/tasks.jsonl`；
 - `core/scenarios/spec.py` — spec schema、校验、编译、版本化读写；
 - `core/scenarios/spec_nodes.py` — 块库、`ParamSpec` 参数契约、块的中文名与说明（`label` / `desc`）；
+- `core/prompts/` — 系统提示词分块：块读写（`data/specs/<name>/prompt.yml`）、按真实状态拼接、缓存；
+- [docs/design/prompt-blocks.md](docs/design/prompt-blocks.md) — 为什么拆块、怎么拼、界面怎么改；
 - `core/scenarios/spec_edit.py` — 编辑器背后的纯逻辑（草稿 ↔ spec、加删节点、校验、存版本）；
 - `core/scenarios/generic.py` — 通用 spec 场景：`data/specs/<name>/` + 固定工具池就能构建，不写代码；
 - `core/scenarios/node_docs.py` — 节点说明注册表（调用链 / 轨迹页用它回答"这一步是哪个节点"）；
