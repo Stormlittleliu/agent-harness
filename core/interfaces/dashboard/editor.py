@@ -422,6 +422,7 @@ def _render_canvas_editor(
     from core.interfaces.dashboard.canvas import render_canvas
 
     errors = st.session_state.get("editor-errors") or []
+    selection_key = f"editor-selection:{name}:{workflow}"
     payload = spec_edit.canvas_payload(
         name,
         workflow,
@@ -429,8 +430,11 @@ def _render_canvas_editor(
         errors,
         selected=st.session_state.get("editor-selected"),
         include_blocks=False,
+        selection=st.session_state.get(selection_key),
     )
-    result = render_canvas(payload, key=f"{prefix}-canvas-{workflow}")
+    # 画布 key 不跟 generation 走：撤销/保存会换一套表单 widget，但不该重挂画布，
+    # 否则 iframe 一重建就把缩放/平移视角拉回默认。
+    result = render_canvas(payload, key=f"ed-canvas-{name}-{workflow}")
     command_key = f"editor-canvas-command:{workflow}"
     if (
         isinstance(result, dict)
@@ -438,6 +442,7 @@ def _render_canvas_editor(
         and result.get("version") != st.session_state.get(command_key)
     ):
         st.session_state[command_key] = result.get("version")
+        st.session_state["editor-canvas-version"] = result.get("version")
         changed = _undo(name) if result.get("command") == "undo" else _redo(name)
         if changed:
             _bump_generation()
@@ -463,11 +468,18 @@ def _render_canvas_editor(
             # 结构变了，之前那次校验的结论就过期了。
             st.session_state["editor-errors"] = []
         st.session_state["editor-selected"] = result.get("selected")
+        saved_selection = result.get("selection")
+        if isinstance(saved_selection, list):
+            st.session_state[selection_key] = [str(item) for item in saved_selection]
+        elif result.get("selected"):
+            st.session_state[selection_key] = [str(result.get("selected"))]
+        else:
+            st.session_state[selection_key] = []
         st.rerun()
 
     header = st.columns([2.2, 1], vertical_alignment="center")
     header[0].caption(
-        "拖节点移动 · Shift+点/拖空白框选 · Ctrl+C/X/V 复制剪切粘贴 · "
+        "拖节点移动 · Shift/Alt+点或拖空白多选 · Ctrl+C/X/V 复制剪切粘贴 · "
         "Ctrl+Z/Y 撤销重做 · Delete 删除 · 滚轮缩放 / 空白拖动平移"
     )
     if header[1].button("重新自动排版", key=f"{prefix}-canvas-relayout"):

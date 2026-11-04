@@ -504,6 +504,7 @@ def canvas_payload(
     root: str | Path | None = None,
     selected: str | None = None,
     include_blocks: bool = True,
+    selection: list[str] | None = None,
 ) -> dict[str, Any]:
     """给前端画布的完整输入：节点（含中文名与坐标）、边、块库、标红节点。
 
@@ -549,6 +550,7 @@ def canvas_payload(
         "show_palette": bool(include_blocks),
         "errors": bad_node_ids(list(errors or []), nodes),
         "selected": selected if selected and selected not in {START, END} else None,
+        "selection": [str(item) for item in (selection or []) if str(item)],
         "workflow": workflow,
     }
 

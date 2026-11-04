@@ -91,9 +91,10 @@ outputs/runs/<run_id>/
 
 ### 已落地的编辑器 P1（多选与快捷键）
 
-- Shift+点 / Shift+拖空白框选；多选整体拖动、Delete、方向键微调
-- `Ctrl+C/X/V/D` 复制 / 剪切 / 粘贴 / 副本；参数按 `copy_of` 从源节点复制
-- `Ctrl+Z/Y` 走 Python 撤销/重做栈
+- Shift/Alt+点、Shift/Alt+拖空白框选；多选整体拖动、Delete、方向键微调
+- 单击节点即刷新右侧检查器（不再需要先拖动）
+- `Ctrl+C/X/V/D` 复制 / 剪切 / 粘贴 / 副本；参数按 `copy_of` 或 session 剪贴板恢复
+- `Ctrl+Z/Y` 走 Python 撤销/重做栈；画布 key 稳定 + localStorage 视角，撤销不拉回视角
 - 节点 184×64；画布右下角拖拽调高；状态栏「宽屏 / 还原宽度」
 - START/END 位置不再被夹回画布内（修复拖拽回弹）
 - 仍待做：连线端点重连、保存前 diff、保存并跑一条 case

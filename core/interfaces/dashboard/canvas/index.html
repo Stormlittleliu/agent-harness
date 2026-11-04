@@ -75,7 +75,7 @@
 <div class="wrap">
   <div class="palette" id="palette"><h4>块库（拖到画布）</h4></div>
   <div class="board">
-    <div class="hint">拖节点移动 · 从右侧圆点拖到目标节点左侧圆点连线 · 点连线删除 · Delete 删节点 · 滚轮缩放 · 空白处拖动平移</div>
+    <div class="hint">拖节点移动 · Shift/Alt+拖空白框选 · 右侧圆点连线 · Delete 删节点 · 滚轮缩放 · 空白拖动平移</div>
     <div class="zoombar">
       <button type="button" data-zoom="out" title="缩小">−</button>
       <button type="button" data-zoom="reset" title="恢复 100%">100%</button>
@@ -103,6 +103,13 @@
   var resize = null;    // { cy, h }
   var boardH = 470;
   var view = { x: 0, y: 0, w: BOARD_W, h: BOARD_H };
+  try {
+    var savedView = JSON.parse(localStorage.getItem("ah-canvas-view") || "null");
+    if (savedView && Number(savedView.w) > 0 && Number(savedView.h) > 0) {
+      view = { x: Number(savedView.x) || 0, y: Number(savedView.y) || 0, w: Number(savedView.w), h: Number(savedView.h) };
+    }
+  } catch (err) {}
+  var viewTimer = null;
   var version = 0;
   var svg = document.getElementById("board");
   var palette = document.getElementById("palette");
@@ -144,9 +151,12 @@
     var keep = args.selected || null;
     if (keep && !findNode(keep)) { keep = null; }
     model.selected = keep;
-    model.selection = (model.selection || []).filter(function (id) { return !!findNode(id); });
+    var saved = Array.isArray(args.selection) ? args.selection : [];
+    model.selection = saved.filter(function (id) { return !!findNode(id); });
+    if (!model.selection.length && keep) { model.selection = [keep]; }
     if (keep && model.selection.indexOf(keep) < 0) { model.selection = [keep]; }
-    if (!keep) { model.selection = []; }
+    // keep 为空时不要清空 selection：Python 回传第一帧可能还没拿到新的主选中，
+    // 清空会把刚框选的多选状态吃掉。真正的空白点击在 JS 侧已经主动清空。
     if (wrap) { wrap.classList.toggle("palette-off", !model.showPalette); }
     svg.style.height = boardH + "px";
     renderPalette();
@@ -180,8 +190,15 @@
     if (flashTimer) { clearTimeout(flashTimer); }
     flashTimer = setTimeout(function () { flashBox.classList.remove("on"); }, 1400);
   }
+  function saveView() {
+    if (viewTimer) { clearTimeout(viewTimer); }
+    viewTimer = setTimeout(function () {
+      try { localStorage.setItem("ah-canvas-view", JSON.stringify(view)); } catch (err) {}
+    }, 160);
+  }
   function applyView() {
     svg.setAttribute("viewBox", view.x + " " + view.y + " " + view.w + " " + view.h);
+    saveView();
   }
   function toBoard(event) {
     var rect = svg.getBoundingClientRect();
@@ -239,6 +256,7 @@
       edges: model.edges,
       anchors: anchors,
       selected: model.selected,
+      selection: model.selection.slice(),
       version: version
     }, extra || {}));
   }
@@ -341,11 +359,20 @@
     draw();
     emit();
   }
+  function primaryOf(ids) {
+    // START/END 不能作为 Python 侧的主选中（检查器只认普通节点）；
+    // 多选里带了锚点时，主选中取最后一个非锚点。
+    for (var i = ids.length - 1; i >= 0; i--) {
+      var node = findNode(ids[i]);
+      if (node && !isAnchor(node)) { return ids[i]; }
+    }
+    return ids.length ? ids[ids.length - 1] : null;
+  }
   function toggleSelect(id) {
     var index = model.selection.indexOf(id);
     if (index >= 0) { model.selection.splice(index, 1); }
     else { model.selection.push(id); }
-    model.selected = model.selection.length ? model.selection[model.selection.length - 1] : null;
+    model.selected = primaryOf(model.selection);
     draw();
     emit();
   }
@@ -434,11 +461,12 @@
       var node = findNode(nodeEl.getAttribute("data-node"));
       if (!node) { return; }
       event.preventDefault();
-      if (event.shiftKey) {
+      if (event.shiftKey || event.altKey) {
         toggleSelect(node.id);
         return;
       }
-      if (model.selection.indexOf(node.id) < 0) {
+      var selectionChanged = model.selection.indexOf(node.id) < 0;
+      if (selectionChanged) {
         model.selection = [node.id];
         model.selected = node.id;
         draw();
@@ -449,7 +477,10 @@
         var item = findNode(id);
         if (item) { origins[id] = [item.x, item.y]; }
       });
-      drag = { id: node.id, start: start, origins: origins, moved: false };
+      drag = {
+        id: node.id, start: start, origins: origins,
+        moved: false, selectionChanged: selectionChanged
+      };
       return;
     }
     var edgeEl = event.target.closest && event.target.closest("[data-edge]");
@@ -463,10 +494,10 @@
       }
       return;
     }
-    // 空白处：Shift+拖 = 框选；普通拖 = 平移画布。
+    // 空白处：Shift/Alt+拖 = 框选；普通拖 = 平移画布。
     event.preventDefault();
     var blank = toBoard(event);
-    if (event.shiftKey) {
+    if (event.shiftKey || event.altKey) {
       box = { sx: blank.x, sy: blank.y, x: blank.x, y: blank.y };
       return;
     }
@@ -539,7 +570,7 @@
       }
       box = null;
       model.selection = picked;
-      model.selected = picked.length ? picked[picked.length - 1] : null;
+      model.selected = primaryOf(picked);
       draw();
       emit();
       return;
@@ -557,8 +588,10 @@
     }
     if (drag) {
       var moved = drag.moved;
+      var selectionChanged = drag.selectionChanged;
       drag = null;
-      if (moved) { emit(); }
+      // 单击也要 emit：否则 Python 不知道选中变了，右侧检查器要等到下一次拖动才刷新。
+      if (moved || selectionChanged) { emit(); }
       return;
     }
     if (!link) { return; }
