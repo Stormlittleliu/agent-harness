@@ -85,6 +85,30 @@ class DataOnlyRunner(BenchmarkRunner):
         )
 
 
+class SandboxRunner(BenchmarkRunner):
+    """代码题需要执行沙箱；本仓库还没有，所以明确拒绝而不是假装跑过。"""
+
+    def run(self, task: BenchTask, execute: bool = False) -> RunnerResult:
+        return RunnerResult(
+            task_id=task.id,
+            status="sandbox_required",
+            error="需要 Python 执行沙箱（子进程 + 超时 + 禁网）；当前未接。",
+            metadata=task.environment,
+        )
+
+
+class JudgeRunner(BenchmarkRunner):
+    """约束遵循题需要逐条 judge；judge 未接时明确返回，不冒充已评分。"""
+
+    def run(self, task: BenchTask, execute: bool = False) -> RunnerResult:
+        return RunnerResult(
+            task_id=task.id,
+            status="judge_required",
+            error="需要 LLM judge 逐条判约束；当前未接。",
+            metadata=task.environment,
+        )
+
+
 RUNNERS = {
     "tau2": ExternalRunner(),
     "bfcl": ExternalRunner(),
@@ -94,6 +118,9 @@ RUNNERS = {
     "rgb": NativeRunner(),
     "multihop": NativeRunner(),
     "gaia": NativeRunner(),
+    "cfbench": JudgeRunner(),
+    "humaneval": SandboxRunner(),
+    "mbpp": SandboxRunner(),
 }
 
 

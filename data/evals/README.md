@@ -87,12 +87,16 @@ python test_entry.py bfcl --simple 2 --irrelevance 2
 - MultiHop-RAG：<https://github.com/yixuantt/MultiHop-RAG>，**ODC-BY 1.0**。
 - BFCL：<https://github.com/ShishirPatil/gorilla>，**Apache-2.0**；原抽样为 simple_python + irrelevance，简化评分。
 - τ²-bench：<https://github.com/sierra-research/tau2-bench>，**MIT**。
+- CFBench：<https://github.com/PKU-Baichuan-MLSystemLab/CFBench>，本地未附 LICENSE，商用前回上游确认。
+- HumanEval：<https://github.com/openai/human-eval>，**MIT**。
+- MBPP：<https://github.com/google-research/google-research/tree/master/mbpp>，**Apache-2.0**。
 
 公开 benchmark 为抽样评测，不是官方完整榜单成绩。
 
 `stratified/` 的原始样本由本地 benchmark 源生成，**不随仓库分发**（RGB 是
 CC BY-NC-SA，不能直接复制进 MIT 仓库）。仓库只保留 `selections.jsonl` /
-`selections.md` / `manifest.json` 作为出处记录；重新生成命令：
+`selections.md` / `manifest.json` 作为出处记录；当前 11 个源、381 条。
+重新生成命令：
 
 ```powershell
 python -m core.quality.stratified --per-category 5 --seed 42

@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-11-04T22:44:04",
+  "generated_at": "2026-11-04T23:05:39",
   "seed": 42,
   "per_category": 5,
   "note": "平衡抽样，不是官方 benchmark 成绩；类别/源规模见 sets。",
   "selection_record": {
     "jsonl": "selections.jsonl",
     "markdown": "selections.md",
-    "count": 350
+    "count": 381
   },
   "sets": {
     "bfcl": {
@@ -150,6 +150,29 @@
       },
       "note": "null_query 也保留；全量评测另有 outputs/public/multihop_full.json。"
     },
+    "cfbench": {
+      "file": "cfbench_5per_split.jsonl",
+      "source": "E:/CODE/benchmarks/CFBench/data/cfbench_data.json",
+      "source_file": "cfbench_data.json",
+      "counts": {
+        "easy_answerable": 5,
+        "easy_unanswerable": 5,
+        "hard_answerable": 5,
+        "hard_unanswerable": 5,
+        "hard_unknown": 1
+      },
+      "source_sizes": {
+        "easy_answerable": 60,
+        "easy_unanswerable": 440,
+        "hard_answerable": 83,
+        "hard_unanswerable": 416,
+        "hard_unknown": 1
+      },
+      "source_sha256": {
+        "cfbench_data.json": "fc91bccb987128a5"
+      },
+      "note": "按 split × 是否可回答 分组；1 条缺 isanswer 单独成组。判分靠 LLM judge。"
+    },
     "gaia": {
       "file": "gaia_5per_level.jsonl",
       "source": "E:/CODE/benchmarks/GAIA/gaia_validation.jsonl",
@@ -165,6 +188,36 @@
         "level_3": 26
       },
       "note": "来自现有 BenchTask 适配器；溯源用 source_id（task id），source_index 为空。"
+    },
+    "humaneval": {
+      "file": "humaneval_5per_task.jsonl",
+      "source": "E:/CODE/benchmarks/human-eval/data/HumanEval.jsonl.gz",
+      "source_file": "HumanEval.jsonl.gz",
+      "counts": {
+        "function_completion": 5
+      },
+      "source_sizes": {
+        "function_completion": 164
+      },
+      "source_sha256": {
+        "HumanEval.jsonl.gz": "b796127e635a67f9"
+      },
+      "note": "无官方类别，单组 5 条；unit_test 判分，执行沙箱未接。"
+    },
+    "mbpp": {
+      "file": "mbpp_5per_task.jsonl",
+      "source": "E:/CODE/benchmarks/mbpp/mbpp.jsonl",
+      "source_file": "mbpp.jsonl",
+      "counts": {
+        "function_generation": 5
+      },
+      "source_sizes": {
+        "function_generation": 974
+      },
+      "source_sha256": {
+        "mbpp.jsonl": "ccf64ceae9c5403b"
+      },
+      "note": "无官方类别，单组 5 条；unit_test 判分，执行沙箱未接。"
     },
     "swebench": {
       "file": "swebench_5per_repo.jsonl",

@@ -55,7 +55,23 @@ def _read_rows(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _read_gz_jsonl(path: Path) -> list[dict[str, Any]]:
+    """HumanEval 的题面在 .jsonl.gz 里；逐行读，保留原始行号。"""
+    import gzip
+
+    rows: list[dict[str, Any]] = []
+    with gzip.open(path, "rt", encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if line:
+                item = json.loads(line)
+                if isinstance(item, dict):
+                    rows.append(item)
+    return rows
+
+
 def _row_id(row: dict[str, Any]) -> str:
+    """源 id 的稳定字符串；保持既有口径，不在这次扩源时重排旧样本。"""
     return str(row.get("id") or row.get("task_id") or row.get("query") or "")
 
 
@@ -84,6 +100,21 @@ def sample_with_index(
         return indexed
     rng = random.Random(f"{seed}:{category}")
     return sorted(rng.sample(indexed, per_category), key=lambda pair: _row_id(pair[1]))
+
+
+def _sample_indexed(
+    pairs: list[tuple[int, dict[str, Any]]],
+    *,
+    per_category: int,
+    seed: int | str,
+    category: str,
+) -> list[tuple[int, dict[str, Any]]]:
+    """和 sample_with_index 同样的规则，但接受带原始行号的 (index, row)。"""
+    ordered = sorted(pairs, key=lambda pair: _row_id(pair[1]))
+    if per_category <= 0 or len(ordered) <= per_category:
+        return ordered
+    rng = random.Random(f"{seed}:{category}")
+    return sorted(rng.sample(ordered, per_category), key=lambda pair: _row_id(pair[1]))
 
 
 def select_row(
@@ -482,6 +513,161 @@ def build_osworld(
     )
 
 
+def build_cfbench(
+    root: Path, out_dir: Path, *, per_category: int, seed: int
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """CFBench：按 split(easy/hard) × 是否可回答 分组。
+
+    CFBench 的 ``doamin`` 混了领域和任务类型（200+ 个值），不适合当分层键；
+    ``scenario`` 又有 102 条“其他”。真正影响判分的是难度和“这题有没有答案”，
+    所以用这两条轴。
+    """
+    from core.benchmarks.adapters.cfbench import answerability
+
+    path = root / "CFBench" / "data" / "cfbench_data.json"
+    rows = _read_rows(path)
+    source_sha = _sha256(path)
+    grouped: dict[str, list[tuple[int, dict[str, Any]]]] = {}
+    for index, row in enumerate(rows):
+        key = f"{row.get('split') or 'unknown'}_{answerability(str(row.get('isanswer') or ''))}"
+        grouped.setdefault(key, []).append((index, row))
+
+    picked_rows: list[dict[str, Any]] = []
+    selections: list[dict[str, Any]] = []
+    counts: dict[str, int] = {}
+    sources: dict[str, int] = {}
+    for category, items in sorted(grouped.items()):
+        sources[category] = len(items)
+        picked = _sample_indexed(
+            items, per_category=per_category, seed=seed, category=f"cfbench:{category}"
+        )
+        counts[category] = len(picked)
+        for index, row in picked:
+            # CFBench 上游没有 id，只有 idx；补一个稳定 id 供抽样排序与溯源。
+            source_row = {"id": f"cfbench-{index}", **row}
+            picked_rows.append({"benchmark": "CFBench", "category": category, **source_row})
+            selections.append(select_row(
+                benchmark="CFBench",
+                category=category,
+                source_path=path,
+                source_index=index,
+                source_row=source_row,
+                seed=seed,
+                per_category=per_category,
+                source_sha=source_sha,
+                source_size=len(items),
+            ))
+    _write_jsonl(out_dir / "cfbench_5per_split.jsonl", picked_rows)
+    return (
+        {
+            "file": "cfbench_5per_split.jsonl",
+            "source": path.as_posix(),
+            "source_file": path.name,
+            "counts": counts,
+            "source_sizes": sources,
+            "source_sha256": {path.name: source_sha},
+            "note": "按 split × 是否可回答 分组；1 条缺 isanswer 单独成组。判分靠 LLM judge。",
+        },
+        selections,
+    )
+
+
+def build_humaneval(
+    root: Path, out_dir: Path, *, per_category: int, seed: int
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """HumanEval：没有官方类别，单组抽 5 条；判分要执行单测。"""
+    path = root / "human-eval" / "data" / "HumanEval.jsonl.gz"
+    rows = _read_gz_jsonl(path)
+    source_sha = _sha256(path)
+    category = "function_completion"
+    picked = sample_with_index(
+        rows, per_category=per_category, seed=seed, category=f"humaneval:{category}"
+    )
+    picked_rows: list[dict[str, Any]] = []
+    selections: list[dict[str, Any]] = []
+    for index, item in picked:
+        picked_rows.append({
+            "benchmark": "HumanEval",
+            "category": category,
+            "task_id": item.get("task_id"),
+            "prompt": item.get("prompt"),
+            "entry_point": item.get("entry_point"),
+            "test": item.get("test"),
+        })
+        selections.append(select_row(
+            benchmark="HumanEval",
+            category=category,
+            source_path=path,
+            source_index=index,
+            source_row=item,
+            seed=seed,
+            per_category=per_category,
+            source_sha=source_sha,
+            source_size=len(rows),
+        ))
+    _write_jsonl(out_dir / "humaneval_5per_task.jsonl", picked_rows)
+    return (
+        {
+            "file": "humaneval_5per_task.jsonl",
+            "source": path.as_posix(),
+            "source_file": path.name,
+            "counts": {category: len(picked)},
+            "source_sizes": {category: len(rows)},
+            "source_sha256": {path.name: source_sha},
+            "note": "无官方类别，单组 5 条；unit_test 判分，执行沙箱未接。",
+        },
+        selections,
+    )
+
+
+def build_mbpp(
+    root: Path, out_dir: Path, *, per_category: int, seed: int
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """MBPP：没有官方类别，单组抽 5 条；判分要执行单测。"""
+    path = root / "mbpp" / "mbpp.jsonl"
+    rows = _read_rows(path)
+    source_sha = _sha256(path)
+    category = "function_generation"
+    picked = sample_with_index(
+        rows, per_category=per_category, seed=seed, category=f"mbpp:{category}"
+    )
+    picked_rows: list[dict[str, Any]] = []
+    selections: list[dict[str, Any]] = []
+    for index, item in picked:
+        picked_rows.append({
+            "benchmark": "MBPP",
+            "category": category,
+            "task_id": item.get("task_id"),
+            "text": item.get("text"),
+            "test_list": item.get("test_list"),
+            "test_setup_code": item.get("test_setup_code"),
+        })
+        selections.append(select_row(
+            benchmark="MBPP",
+            category=category,
+            source_path=path,
+            source_index=index,
+            source_row=item,
+            seed=seed,
+            per_category=per_category,
+            source_sha=source_sha,
+            source_size=len(rows),
+        ))
+    _write_jsonl(out_dir / "mbpp_5per_task.jsonl", picked_rows)
+    return (
+        {
+            "file": "mbpp_5per_task.jsonl",
+            "source": path.as_posix(),
+            "source_file": path.name,
+            "counts": {category: len(picked)},
+            "source_sizes": {category: len(rows)},
+            "source_sha256": {path.name: source_sha},
+            "note": "无官方类别，单组 5 条；unit_test 判分，执行沙箱未接。",
+        },
+        selections,
+    )
+
+
 def _write_selection_record(
     out_dir: Path,
     selections: list[dict[str, Any]],
@@ -534,7 +720,10 @@ def build_all(
         "rgb": build_rgb,
         "tau2": build_tau2,
         "multihop": build_multihop,
+        "cfbench": build_cfbench,
         "gaia": build_gaia,
+        "humaneval": build_humaneval,
+        "mbpp": build_mbpp,
         "swebench": build_swebench,
         "webarena": build_webarena,
         "osworld": build_osworld,

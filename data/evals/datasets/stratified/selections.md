@@ -1,6 +1,6 @@
 # 分层抽样出处记录
 
-- 生成时间：2026-11-04T22:44:04
+- 生成时间：2026-11-04T23:05:39
 - seed：42；每类目标：5 条
 - 产物是平衡抽样，不是官方 benchmark 完整成绩。
 - 每条样本的源文件、源文件 hash、源行号、源 id 见 `selections.jsonl`。
@@ -26,9 +26,16 @@
 | BFCL-v4 | simple_javascript | `BFCL_v4_simple_javascript.json` | 50 | 5 |
 | BFCL-v4 | simple_python | `BFCL_v4_simple_python.json` | 400 | 5 |
 | BFCL-v4 | web_search | `BFCL_v4_web_search.json` | 100 | 5 |
+| CFBench | easy_answerable | `cfbench_data.json` | 60 | 5 |
+| CFBench | easy_unanswerable | `cfbench_data.json` | 440 | 5 |
+| CFBench | hard_answerable | `cfbench_data.json` | 83 | 5 |
+| CFBench | hard_unanswerable | `cfbench_data.json` | 416 | 5 |
+| CFBench | hard_unknown | `cfbench_data.json` | 1 | 1 |
 | GAIA | level_1 | `gaia_validation.jsonl` | 53 | 5 |
 | GAIA | level_2 | `gaia_validation.jsonl` | 86 | 5 |
 | GAIA | level_3 | `gaia_validation.jsonl` | 26 | 5 |
+| HumanEval | function_completion | `HumanEval.jsonl.gz` | 164 | 5 |
+| MBPP | function_generation | `mbpp.jsonl` | 974 | 5 |
 | MultiHop-RAG | comparison_query | `MultiHopRAG.json` | 856 | 5 |
 | MultiHop-RAG | inference_query | `MultiHopRAG.json` | 816 | 5 |
 | MultiHop-RAG | null_query | `MultiHopRAG.json` | 301 | 5 |
