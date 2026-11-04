@@ -169,3 +169,122 @@ def test_get_scenario_dispatches_to_generic(monkeypatch):
 def test_unknown_scenario_still_fails():
     with pytest.raises(ValueError):
         get_scenario("no_such_scenario")
+
+
+# ---------------------------------------------------------------- 画布：布局与合并
+
+
+def _draft() -> dict:
+    return spec_edit.new_draft("demo", tools=["search_notes"])
+
+
+def test_auto_layout_puts_layers_left_to_right():
+    draft = _draft()
+    nodes = draft["workflows"]["qa"]["nodes"]
+    edges = draft["workflows"]["qa"]["edges"]
+    positions = spec_edit.auto_layout(nodes, edges)
+    assert positions["search"][0] < positions["answer"][0] < positions["verify"][0]
+    assert positions["search"][1] == positions["answer"][1]
+
+
+def test_canvas_payload_keeps_anchors_inside_board():
+    payload = spec_edit.canvas_payload("demo", "qa", _draft())
+    by_id = {node["id"]: node for node in payload["nodes"]}
+    assert by_id["__start__"]["kind"] == "start"
+    assert by_id["__end__"]["kind"] == "end"
+    for node in payload["nodes"]:
+        assert 0 <= node["x"] <= 1180
+        assert 0 <= node["y"] <= 470
+
+
+def test_merge_canvas_accepts_known_blocks():
+    draft = _draft()
+    payload = {
+        "nodes": [
+            {"id": "search", "fn": "retrieve", "x": 10, "y": 10},
+            {"id": "answer", "fn": "llm_answer", "x": 200, "y": 10},
+            {"id": "verify", "fn": "require_citation", "x": 400, "y": 10},
+        ],
+        "edges": [["__start__", "search"], ["search", "answer"], ["answer", "verify"], ["verify", "__end__"]],
+    }
+    assert spec_edit.merge_canvas(draft, "qa", payload) is False  # 与模板等价
+    assert [node["id"] for node in draft["workflows"]["qa"]["nodes"]] == ["search", "answer", "verify"]
+
+
+def test_merge_canvas_drops_unknown_block_and_dangling_edge():
+    draft = _draft()
+    payload = {
+        "nodes": [
+            {"id": "search", "fn": "retrieve", "x": 0, "y": 0},
+            {"id": "ghost", "fn": "no_such_block", "x": 0, "y": 0},
+        ],
+        "edges": [["__start__", "search"], ["search", "ghost"], ["ghost", "__end__"]],
+    }
+    assert spec_edit.merge_canvas(draft, "qa", payload) is True
+    workflow = draft["workflows"]["qa"]
+    assert [node["id"] for node in workflow["nodes"]] == ["search"]
+    assert workflow["edges"] == [["__start__", "search"]]
+
+
+def test_merge_canvas_refuses_to_empty_the_workflow():
+    draft = _draft()
+    before = [node["id"] for node in draft["workflows"]["qa"]["nodes"]]
+    assert spec_edit.merge_canvas(draft, "qa", {"nodes": [], "edges": []}) is False
+    assert [node["id"] for node in draft["workflows"]["qa"]["nodes"]] == before
+
+
+def test_merge_canvas_keeps_args_when_block_unchanged():
+    draft = _draft()
+    draft["workflows"]["qa"]["nodes"][0]["args"] = {"tool": "search_notes", "limit": 9}
+    payload = {
+        "nodes": [{"id": node["id"], "fn": node["fn"], "x": 0, "y": 0} for node in draft["workflows"]["qa"]["nodes"]],
+        "edges": draft["workflows"]["qa"]["edges"],
+    }
+    spec_edit.merge_canvas(draft, "qa", payload)
+    assert draft["workflows"]["qa"]["nodes"][0]["args"] == {"tool": "search_notes", "limit": 9}
+
+
+def test_absorb_canvas_remembers_positions(tmp_path: Path):
+    draft = _draft()
+    payload = {
+        "nodes": [
+            {"id": "search", "fn": "retrieve", "x": 300, "y": 120},
+            {"id": "answer", "fn": "llm_answer", "x": 500, "y": 120},
+            {"id": "verify", "fn": "require_citation", "x": 700, "y": 120},
+        ],
+        "edges": draft["workflows"]["qa"]["edges"],
+        "anchors": {"__start__": [40, 120], "__end__": [930, 120]},
+    }
+    spec_edit.absorb_canvas("demo", "qa", draft, payload, root=tmp_path)
+    saved = spec_edit.load_layout("demo", tmp_path)
+    assert saved["qa"]["search"] == [300, 120]
+    assert saved["qa"]["__start__"] == [40, 120]
+
+    payload2 = spec_edit.canvas_payload("demo", "qa", draft, root=tmp_path)
+    by_id = {node["id"]: node for node in payload2["nodes"]}
+    assert by_id["search"]["x"] == 300
+    assert by_id["__end__"]["x"] == 930
+
+    spec_edit.clear_layout("demo", "qa", tmp_path)
+    assert spec_edit.load_layout("demo", tmp_path) == {}
+
+
+def test_bad_node_ids_marks_only_broken_nodes():
+    errors = [
+        "workflow[qa].answer 从 START 不可达",
+        "workflow[qa] 缺少指向 END 的边",
+        "workflow[qa].verify：require_citation.args.pattern 必须是字符串",
+    ]
+    nodes = [{"id": "search"}, {"id": "answer"}, {"id": "verify"}]
+    assert spec_edit.bad_node_ids(errors, nodes) == ["answer", "verify"]
+
+
+def test_rename_node_updates_edges():
+    draft = _draft()
+    spec_edit.rename_node(draft, "qa", "answer", "write_answer")
+    workflow = draft["workflows"]["qa"]
+    assert [node["id"] for node in workflow["nodes"]] == ["search", "write_answer", "verify"]
+    assert ["search", "write_answer"] in workflow["edges"]
+    assert ["write_answer", "verify"] in workflow["edges"]
+    with pytest.raises(SpecError):
+        spec_edit.rename_node(draft, "qa", "verify", "write_answer")

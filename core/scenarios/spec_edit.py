@@ -10,6 +10,7 @@ Streamlit 只负责摆控件；所有会改结构、会写盘的判断都在这�
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -26,9 +27,16 @@ from core.scenarios.spec import (
     spec_to_dict,
     validate_spec,
 )
-from core.scenarios.spec_nodes import NODE_REGISTRY, block_params
+from core.scenarios.spec_nodes import NODE_REGISTRY, block_params, block_label
 
 DEFAULT_WORKFLOW = "qa"
+LAYOUT_ROOT = Path("data/runtime/spec_layout")
+NODE_W = 156
+NODE_H = 58
+COL_GAP = 210
+ROW_GAP = 96
+# 第一个节点往右挪一点，给 START 留出位置（否则 START 会被画到画布外面）。
+ORIGIN = (216, 40)
 
 
 def new_draft(
@@ -171,6 +179,27 @@ def remove_node(draft: dict[str, Any], workflow: str, index: int) -> None:
     ]
 
 
+def rename_node(draft: dict[str, Any], workflow: str, old: str, new: str) -> str:
+    """改节点 id，并把引用它的边一起改；返回最终 id。"""
+    new = (new or "").strip()
+    workflow_draft = draft["workflows"][workflow]
+    nodes = workflow_draft["nodes"]
+    existing = {str(node.get("id")) for node in nodes}
+    if not new or new in {START, END}:
+        raise SpecError([f"节点 id 不合法：{new!r}"])
+    if new != old and new in existing:
+        raise SpecError([f"节点 id 已存在：{new}"])
+    for node in nodes:
+        if str(node.get("id")) == old:
+            node["id"] = new
+            break
+    workflow_draft["edges"] = [
+        [new if str(edge[0]) == old else str(edge[0]), new if str(edge[1]) == old else str(edge[1])]
+        for edge in workflow_draft["edges"]
+    ]
+    return new
+
+
 def set_edge(draft: dict[str, Any], workflow: str, source: str, target: str) -> None:
     """加一条边；重复的边不重复加。"""
     edges = draft["workflows"][workflow]["edges"]
@@ -256,3 +285,283 @@ def load_version(name: str, filename: str, root: str | None = None) -> dict[str,
     directory = (SPEC_ROOT if root is None else Path(root)) / name
     spec = load_spec(directory / filename)
     return draft_from_spec(spec)
+
+
+# ---------------------------------------------------------------- 画布：布局与合并
+#
+# 画布只负责"拓扑 + 位置"，节点身份与参数仍在草稿里：
+# - 位置不进 spec（会被 schema 拒绝），放 data/runtime/spec_layout/<name>.json；
+# - 画布回传的状态先过 merge_canvas 才落进草稿，非法节点 / 悬空边直接丢掉。
+
+
+def _levels(nodes: list[dict], edges: list[list[str]]) -> dict[str, int]:
+    """按"从 START 出发的最长路径"给节点分层；有环也能收敛（重复访问返回 0）。"""
+    ids = [str(node.get("id")) for node in nodes]
+    parents: dict[str, list[str]] = {node_id: [] for node_id in ids}
+    for edge in edges:
+        if len(edge) != 2:
+            continue
+        source, target = str(edge[0]), str(edge[1])
+        if source in parents and target in parents:
+            parents[target].append(source)
+    levels: dict[str, int] = {}
+
+    def depth(node: str, seen: set[str]) -> int:
+        if node in levels:
+            return levels[node]
+        if node in seen:
+            return 0
+        seen.add(node)
+        found = [depth(parent, seen) + 1 for parent in parents.get(node, [])]
+        levels[node] = max(found) if found else 0
+        return levels[node]
+
+    for node_id in ids:
+        depth(node_id, set())
+    return levels
+
+
+def auto_layout(nodes: list[dict], edges: list[list[str]]) -> dict[str, list[int]]:
+    """没有历史位置时用的自动布局：按层从左到右，同层从上到下。"""
+    levels = _levels(nodes, edges)
+    rows: dict[int, int] = {}
+    positions: dict[str, list[int]] = {}
+    for node in nodes:
+        node_id = str(node.get("id"))
+        level = levels.get(node_id, 0)
+        row = rows.get(level, 0)
+        rows[level] = row + 1
+        positions[node_id] = [
+            ORIGIN[0] + level * COL_GAP,
+            ORIGIN[1] + row * ROW_GAP,
+        ]
+    return positions
+
+
+def layout_path(name: str, root: str | Path | None = None) -> Path:
+    base = LAYOUT_ROOT if root is None else Path(root)
+    return base / f"{name}.json"
+
+
+def load_layout(name: str, root: str | Path | None = None) -> dict[str, dict[str, list[int]]]:
+    """读回上次拖动的位置；文件缺失或坏了都返回空。"""
+    path = layout_path(name, root)
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    cleaned: dict[str, dict[str, list[int]]] = {}
+    for workflow, positions in data.items():
+        if not isinstance(positions, dict):
+            continue
+        cleaned[str(workflow)] = {
+            str(node_id): [int(value[0]), int(value[1])]
+            for node_id, value in positions.items()
+            if isinstance(value, (list, tuple)) and len(value) == 2
+        }
+    return cleaned
+
+
+def save_layout(
+    name: str,
+    workflow: str,
+    positions: dict[str, list[int]],
+    root: str | Path | None = None,
+) -> Path:
+    """把某个工作流的节点位置写盘（其余工作流保留）。"""
+    path = layout_path(name, root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = load_layout(name, root)
+    data[workflow] = {
+        str(node_id): [int(value[0]), int(value[1])]
+        for node_id, value in positions.items()
+    }
+    path.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8", newline="\n"
+    )
+    return path
+
+
+def node_positions(
+    name: str,
+    workflow: str,
+    nodes: list[dict],
+    edges: list[list[str]],
+    root: str | Path | None = None,
+) -> dict[str, list[int]]:
+    """历史位置优先，缺的节点用自动布局补。"""
+    saved = load_layout(name, root).get(workflow, {})
+    auto = auto_layout(nodes, edges)
+    return {
+        str(node.get("id")): list(saved.get(str(node.get("id"))) or auto.get(str(node.get("id")), list(ORIGIN)))
+        for node in nodes
+    }
+
+
+def merge_canvas(draft: dict[str, Any], workflow: str, payload: Any) -> bool:
+    """把画布回传的状态并进草稿；返回是否真的改了结构。
+
+    画布是"不可信输入"：未知块、重复 id、悬空边、空节点列表全部丢掉，
+    只接受 ``{nodes: [{id, fn, x, y}], edges: [[from, to]]}``。
+    """
+    if not isinstance(payload, dict):
+        return False
+    raw_nodes = payload.get("nodes")
+    if not isinstance(raw_nodes, list) or not raw_nodes:
+        return False
+    current = {
+        str(node.get("id")): node
+        for node in draft["workflows"][workflow]["nodes"]
+    }
+    merged: list[dict[str, Any]] = []
+    used: set[str] = set()
+    for item in raw_nodes:
+        if not isinstance(item, dict):
+            continue
+        node_id = str(item.get("id") or "").strip()
+        fn = str(item.get("fn") or "")
+        if not node_id or node_id in used or fn not in NODE_REGISTRY:
+            continue
+        previous = current.get(node_id)
+        if previous is not None and str(previous.get("fn")) == fn:
+            args = dict(previous.get("args") or {})
+        else:
+            args = block_defaults(fn)
+        merged.append({"id": node_id, "fn": fn, "args": args})
+        used.add(node_id)
+    if not merged:
+        return False
+
+    known = used | {START, END}
+    raw_edges = payload.get("edges")
+    edges: list[list[str]] = []
+    for edge in raw_edges if isinstance(raw_edges, list) else []:
+        if not isinstance(edge, (list, tuple)) or len(edge) != 2:
+            continue
+        source, target = str(edge[0]), str(edge[1])
+        if source in known and target in known and [source, target] not in edges:
+            edges.append([source, target])
+
+    changed = (
+        merged != draft["workflows"][workflow]["nodes"]
+        or edges != draft["workflows"][workflow]["edges"]
+    )
+    if changed:
+        draft["workflows"][workflow]["nodes"] = merged
+        draft["workflows"][workflow]["edges"] = edges
+    return changed
+
+
+def bad_node_ids(errors: list[str], nodes: list[dict]) -> list[str]:
+    """从校验错误里挑出"这条错属于哪个节点"，给画布标红用。"""
+    ids = [str(node.get("id")) for node in nodes if str(node.get("id") or "").strip()]
+    bad: list[str] = []
+    for error in errors or ():
+        text = str(error)
+        for node_id in ids:
+            if node_id in bad:
+                continue
+            pattern = rf"(?:\.|：){re.escape(node_id)}(?![0-9A-Za-z_])"
+            if re.search(pattern, text):
+                bad.append(node_id)
+    return bad
+
+
+def canvas_payload(
+    name: str,
+    workflow: str,
+    draft: dict[str, Any],
+    errors: list[str] | None = None,
+    root: str | Path | None = None,
+    selected: str | None = None,
+) -> dict[str, Any]:
+    """给前端画布的完整输入：节点（含中文名与坐标）、边、块库、标红节点。"""
+    workflow_draft = draft["workflows"][workflow]
+    nodes = list(workflow_draft["nodes"])
+    edges = [list(edge) for edge in workflow_draft["edges"]]
+    positions = node_positions(name, workflow, nodes, edges, root)
+
+    canvas_nodes = [
+        {
+            "id": str(node.get("id")),
+            "fn": str(node.get("fn")),
+            "label": block_label(str(node.get("fn"))),
+            "x": positions[str(node.get("id"))][0],
+            "y": positions[str(node.get("id"))][1],
+        }
+        for node in nodes
+    ]
+    xs = [item["x"] for item in canvas_nodes] or [0]
+    ys = [item["y"] for item in canvas_nodes] or [0]
+    saved = load_layout(name, root).get(workflow, {})
+    start_pos = saved.get(START) or [min(xs) - NODE_W - 40, int(sum(ys) / len(ys))]
+    end_pos = saved.get(END) or [max(xs) + NODE_W + 40, int(sum(ys) / len(ys))]
+    canvas_nodes.insert(0, {
+        "id": START, "fn": "", "label": "START",
+        "x": max(4, int(start_pos[0])), "y": max(4, int(start_pos[1])), "kind": "start",
+    })
+    canvas_nodes.append({
+        "id": END, "fn": "", "label": "END",
+        "x": min(1000, max(4, int(end_pos[0]))), "y": max(4, int(end_pos[1])), "kind": "end",
+    })
+
+    return {
+        "nodes": canvas_nodes,
+        "edges": edges,
+        "blocks": [
+            {"fn": fn, "label": block_label(fn)}
+            for fn in NODE_REGISTRY
+        ],
+        "errors": bad_node_ids(list(errors or []), nodes),
+        "selected": selected if selected and selected not in {START, END} else None,
+        "workflow": workflow,
+    }
+
+
+def absorb_canvas(
+    name: str,
+    workflow: str,
+    draft: dict[str, Any],
+    payload: Any,
+    root: str | Path | None = None,
+) -> bool:
+    """吸收一次画布回传：合并结构 + 记住位置；返回结构是否变化。"""
+    changed = merge_canvas(draft, workflow, payload)
+    if not isinstance(payload, dict):
+        return changed
+    positions: dict[str, list[int]] = {}
+    for item in payload.get("nodes") or []:
+        if not isinstance(item, dict):
+            continue
+        node_id = str(item.get("id") or "")
+        if not node_id:
+            continue
+        try:
+            positions[node_id] = [int(item.get("x")), int(item.get("y"))]
+        except (TypeError, ValueError):
+            continue
+    anchors = payload.get("anchors")
+    if isinstance(anchors, dict):
+        for node_id, value in anchors.items():
+            if isinstance(value, (list, tuple)) and len(value) == 2:
+                positions[str(node_id)] = [int(value[0]), int(value[1])]
+    if positions:
+        save_layout(name, workflow, positions, root)
+    return changed
+
+
+def clear_layout(name: str, workflow: str, root: str | Path | None = None) -> None:
+    """清掉某工作流的位置缓存，下次渲染回到自动布局。"""
+    data = load_layout(name, root)
+    if workflow in data:
+        data.pop(workflow, None)
+        path = layout_path(name, root)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8", newline="\n"
+        )
+

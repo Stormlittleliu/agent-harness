@@ -5,7 +5,7 @@
 ## 环境
 
 - Python 用 conda 环境 **`langchain`**；裸 `python` 是 3.8，跑不了测试。
-- 测试：`python -m pytest -q`（当前 223 passed）。
+- 测试：`python -m pytest -q`（当前 235 passed）。
 
 ## 场景归属（硬约束）
 
@@ -57,7 +57,11 @@ python -m core.scenarios.eject <name> --status
 - `core/scenarios/ownership.py` — 归属状态机（唯一写 state 的地方）；
 - `core/scenarios/eject.py` — 归属 CLI；
 - `core/observability/tracer.py` — 本地 trace；每条模型/工具事件带 `node`（LangGraph 节点名）；
-- `core/interfaces/dashboard/editor.py` — 控制台的「🎛 场景编辑」视图；
+- `core/interfaces/dashboard/editor.py` — 控制台的「🎛 场景编辑」视图（画布 + 表单）；
+- `core/interfaces/dashboard/canvas/index.html` — 画布前端：单文件原生 JS，
+  只通过 Streamlit 静态组件协议收发 JSON；**画布回传一律当不可信输入**，
+  结构必须过 `spec_edit.merge_canvas` 才进草稿；
+- `core/interfaces/dashboard/canvas.py` — 画布组件的 Python 包装；
 - [docs/design/middleware-pipeline.md](docs/design/middleware-pipeline.md) — 中间件为什么这么排；
 - [docs/design/visual-scenario-roundtrip.md](docs/design/visual-scenario-roundtrip.md) — 设计说明与演示脚本；
 - [docs/design/scenario-editor.md](docs/design/scenario-editor.md) — 控制台里那个编辑器的边界与数据流。

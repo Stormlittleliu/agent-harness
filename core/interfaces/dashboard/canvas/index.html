@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 12px;
+    color: #1f2733;
+    background: #ffffff;
+  }
+  .wrap { display: flex; border: 1px solid rgba(128,128,128,.28); border-radius: 10px; overflow: hidden; }
+  .palette {
+    width: 152px;
+    flex: 0 0 152px;
+    background: #f7f9fc;
+    border-right: 1px solid rgba(128,128,128,.18);
+    padding: 8px;
+    max-height: 470px;
+    overflow-y: auto;
+  }
+  .palette h4 { margin: 0 0 6px; font-size: 11px; color: #5b6b82; font-weight: 600; }
+  .block {
+    cursor: grab;
+    background: #ffffff;
+    border: 1px solid rgba(76,125,240,.35);
+    border-radius: 8px;
+    padding: 4px 6px;
+    margin-bottom: 5px;
+    line-height: 1.3;
+  }
+  .block b { font-weight: 600; color: #2b3a55; }
+  .block span { color: #8a97a8; font-size: 10px; display: block; }
+  .block:active { cursor: grabbing; }
+  .board { flex: 1 1 auto; position: relative; background:
+      linear-gradient(#eef2f8 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(90deg, #eef2f8 1px, transparent 1px) 0 0 / 24px 24px,
+      #ffffff; }
+  svg { display: block; width: 100%; height: 470px; user-select: none; }
+  .hint {
+    position: absolute; left: 10px; top: 8px; right: 10px;
+    color: #7a8798; font-size: 11px; pointer-events: none;
+  }
+  .flash {
+    position: absolute; right: 10px; bottom: 8px;
+    background: rgba(31,39,51,.86); color: #fff; border-radius: 6px;
+    padding: 3px 8px; font-size: 11px; opacity: 0; transition: opacity .25s;
+    pointer-events: none;
+  }
+  .flash.on { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="palette" id="palette"><h4>块库（拖到画布）</h4></div>
+  <div class="board">
+    <div class="hint">拖节点移动 · 从右侧圆点拖到目标节点左侧圆点连线 · 点连线删除 · 选中后右上角 × 删节点</div>
+    <svg id="board" viewBox="0 0 1180 470" preserveAspectRatio="xMinYMin meet"></svg>
+    <div class="flash" id="flash"></div>
+  </div>
+</div>
+<script>
+(function () {
+  var NODE_W = 156, NODE_H = 58, PORT_R = 5, BOARD_W = 1180, BOARD_H = 470;
+  var START = "__start__", END = "__end__";
+
+  var model = { nodes: [], edges: [], blocks: [], errors: [], selected: null };
+  var drag = null;      // { id, dx, dy, moved }
+  var link = null;      // { from, x, y }
+  var version = 0;
+  var svg = document.getElementById("board");
+  var palette = document.getElementById("palette");
+  var flashBox = document.getElementById("flash");
+  var flashTimer = null;
+
+  // ---------------- Streamlit 静态组件协议 ----------------
+  function send(type, data) {
+    var message = Object.assign({ isStreamlitMessage: true, type: type }, data || {});
+    window.parent.postMessage(message, "*");
+  }
+  function setValue(value) {
+    send("streamlit:setComponentValue", { value: value, dataType: "json" });
+  }
+  function setHeight(height) {
+    send("streamlit:setFrameHeight", { height: height });
+  }
+  window.addEventListener("message", function (event) {
+    if (!event.data || event.data.type !== "streamlit:render") { return; }
+    applyArgs(event.data.args || {});
+  });
+
+  function applyArgs(rawArgs) {
+    // Python 侧统一用 payload={...} 传参，这里兼容两种形状。
+    var args = (rawArgs && rawArgs.payload) || rawArgs || {};
+    model.blocks = Array.isArray(args.blocks) ? args.blocks : [];
+    model.nodes = (Array.isArray(args.nodes) ? args.nodes : []).map(function (node) {
+      return Object.assign({}, node, { x: Number(node.x) || 0, y: Number(node.y) || 0 });
+    });
+    model.edges = (Array.isArray(args.edges) ? args.edges : []).map(function (edge) {
+      return [String(edge[0]), String(edge[1])];
+    });
+    model.errors = Array.isArray(args.errors) ? args.errors : [];
+    var keep = args.selected || null;
+    if (keep && !findNode(keep)) { keep = null; }
+    model.selected = keep;
+    renderPalette();
+    draw();
+    setHeight(510);
+  }
+
+  // ---------------- 小工具 ----------------
+  function esc(text) {
+    return String(text === undefined || text === null ? "" : text)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+  function findNode(id) {
+    for (var i = 0; i < model.nodes.length; i++) {
+      if (model.nodes[i].id === id) { return model.nodes[i]; }
+    }
+    return null;
+  }
+  function isAnchor(node) {
+    return node && (node.kind === "start" || node.kind === "end");
+  }
+  function clip(text, limit) {
+    var value = String(text || "");
+    return value.length > limit ? value.slice(0, limit - 1) + "…" : value;
+  }
+  function flash(text) {
+    flashBox.textContent = text;
+    flashBox.classList.add("on");
+    if (flashTimer) { clearTimeout(flashTimer); }
+    flashTimer = setTimeout(function () { flashBox.classList.remove("on"); }, 1400);
+  }
+  function toBoard(event) {
+    var rect = svg.getBoundingClientRect();
+    var scaleX = BOARD_W / (rect.width || 1);
+    var scaleY = BOARD_H / (rect.height || 1);
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY
+    };
+  }
+  function uniqueId(fn) {
+    var base = String(fn || "step");
+    var index = 1;
+    while (findNode(base + index)) { index += 1; }
+    return base + index;
+  }
+  function emit() {
+    version += 1;
+    var anchors = {};
+    model.nodes.forEach(function (node) {
+      if (isAnchor(node)) { anchors[node.id] = [Math.round(node.x), Math.round(node.y)]; }
+    });
+    setValue({
+      nodes: model.nodes.filter(function (node) { return !isAnchor(node); }).map(function (node) {
+        return { id: node.id, fn: node.fn, x: Math.round(node.x), y: Math.round(node.y) };
+      }),
+      edges: model.edges,
+      anchors: anchors,
+      selected: model.selected,
+      version: version
+    });
+  }
+
+  // ---------------- 绘制 ----------------
+  function renderPalette() {
+    var html = "<h4>块库（拖到画布）</h4>";
+    model.blocks.forEach(function (block) {
+      html += '<div class="block" draggable="true" data-block="' + esc(block.fn) + '">' +
+        "<b>" + esc(block.label) + "</b><span>" + esc(block.fn) + "</span></div>";
+    });
+    palette.innerHTML = html;
+    var chips = palette.querySelectorAll("[data-block]");
+    for (var i = 0; i < chips.length; i++) {
+      chips[i].addEventListener("dragstart", function (event) {
+        event.dataTransfer.setData("text/plain", this.getAttribute("data-block"));
+        event.dataTransfer.effectAllowed = "copy";
+      });
+    }
+  }
+
+  function nodeSvg(node) {
+    var selected = model.selected === node.id;
+    var broken = model.errors.indexOf(node.id) >= 0;
+    var anchor = isAnchor(node);
+    var stroke = broken ? "#e5484d" : (selected ? "#4c7df0" : "#c3cddd");
+    var fill = broken ? "#fff1f0" : (selected ? "#eef4ff" : (anchor ? "#e8f5e9" : "#ffffff"));
+    var width = broken || selected ? 2 : 1;
+    var out = '<g data-node="' + esc(node.id) + '" style="cursor:grab">';
+    out += '<rect x="' + node.x + '" y="' + node.y + '" width="' + NODE_W + '" height="' + NODE_H +
+      '" rx="' + (anchor ? NODE_H / 2 : 10) + '" fill="' + fill + '" stroke="' + stroke +
+      '" stroke-width="' + width + '"/>';
+    var title = anchor ? node.label : clip(node.label || node.id, 11);
+    var subtitle = anchor ? "" : clip(node.id + " · " + node.fn, 20);
+    out += '<text x="' + (node.x + 10) + '" y="' + (node.y + (subtitle ? 23 : 34)) +
+      '" font-size="12.5" font-weight="600" fill="#25324a">' + esc(title) + "</text>";
+    if (subtitle) {
+      out += '<text x="' + (node.x + 10) + '" y="' + (node.y + 41) +
+        '" font-size="10" fill="#7a8798">' + esc(subtitle) + "</text>";
+    }
+    if (node.kind !== "start") {
+      out += '<circle data-port="in" data-node="' + esc(node.id) + '" cx="' + node.x + '" cy="' +
+        (node.y + NODE_H / 2) + '" r="' + PORT_R + '" fill="#4c7df0" style="cursor:crosshair"/>';
+    }
+    if (node.kind !== "end") {
+      out += '<circle data-port="out" data-node="' + esc(node.id) + '" cx="' + (node.x + NODE_W) +
+        '" cy="' + (node.y + NODE_H / 2) + '" r="' + PORT_R + '" fill="#4c7df0" style="cursor:crosshair"/>';
+    }
+    if (selected && !anchor) {
+      out += '<g data-del="' + esc(node.id) + '" style="cursor:pointer">' +
+        '<circle cx="' + (node.x + NODE_W - 10) + '" cy="' + (node.y + 10) + '" r="9" fill="#e5484d"/>' +
+        '<text x="' + (node.x + NODE_W - 13.5) + '" y="' + (node.y + 14) +
+        '" font-size="11" fill="#ffffff">×</text></g>';
+    }
+    out += "</g>";
+    return out;
+  }
+
+  function edgePath(source, target) {
+    var x1 = source.x + NODE_W, y1 = source.y + NODE_H / 2;
+    var x2 = target.x, y2 = target.y + NODE_H / 2;
+    var dx = Math.max(40, Math.abs(x2 - x1) * 0.45);
+    return "M" + x1 + "," + y1 + " C" + (x1 + dx) + "," + y1 + " " + (x2 - dx) + "," + y2 +
+      " " + x2 + "," + y2;
+  }
+
+  function draw() {
+    var parts = [];
+    parts.push('<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" ' +
+      'markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8fa2c0"/></marker></defs>');
+    model.edges.forEach(function (edge, index) {
+      var source = findNode(edge[0]), target = findNode(edge[1]);
+      if (!source || !target) { return; }
+      var d = edgePath(source, target);
+      parts.push('<path d="' + d + '" fill="none" stroke="#8fa2c0" stroke-width="1.6" marker-end="url(#arrow)"/>');
+      parts.push('<path data-edge="' + index + '" d="' + d + '" fill="none" stroke="transparent" ' +
+        'stroke-width="12" style="cursor:pointer"><title>点击删除这条连线</title></path>');
+    });
+    if (link) {
+      var from = findNode(link.from);
+      if (from) {
+        parts.push('<path d="M' + (from.x + NODE_W) + "," + (from.y + NODE_H / 2) + " L" + link.x + "," +
+          link.y + '" fill="none" stroke="#4c7df0" stroke-width="1.6" stroke-dasharray="4 3"/>');
+      }
+    }
+    model.nodes.forEach(function (node) { parts.push(nodeSvg(node)); });
+    svg.innerHTML = parts.join("");
+  }
+
+  // ---------------- 交互 ----------------
+  function pick(node) {
+    model.selected = node ? node.id : null;
+    draw();
+    emit();
+  }
+
+  svg.addEventListener("mousedown", function (event) {
+    var port = event.target.closest && event.target.closest("[data-port]");
+    if (port) {
+      var portNode = port.getAttribute("data-node");
+      if (port.getAttribute("data-port") === "out") {
+        event.preventDefault();
+        var point = toBoard(event);
+        link = { from: portNode, x: point.x, y: point.y };
+        draw();
+        return;
+      }
+    }
+    var nodeEl = event.target.closest && event.target.closest("[data-node]");
+    if (nodeEl) {
+      var node = findNode(nodeEl.getAttribute("data-node"));
+      if (!node) { return; }
+      event.preventDefault();
+      var start = toBoard(event);
+      drag = { id: node.id, dx: start.x - node.x, dy: start.y - node.y, moved: false };
+      if (model.selected !== node.id) { pick(node); }
+      return;
+    }
+    var edgeEl = event.target.closest && event.target.closest("[data-edge]");
+    if (edgeEl) {
+      var index = Number(edgeEl.getAttribute("data-edge"));
+      if (model.edges[index]) {
+        model.edges.splice(index, 1);
+        draw();
+        emit();
+        flash("已删除连线");
+      }
+    }
+  });
+
+  window.addEventListener("mousemove", function (event) {
+    if (drag) {
+      var node = findNode(drag.id);
+      if (!node) { drag = null; return; }
+      var point = toBoard(event);
+      node.x = Math.max(0, Math.min(920, point.x - drag.dx));
+      node.y = Math.max(0, Math.min(BOARD_H - NODE_H, point.y - drag.dy));
+      drag.moved = true;
+      draw();
+    } else if (link) {
+      var here = toBoard(event);
+      link.x = here.x;
+      link.y = here.y;
+      draw();
+    }
+  });
+
+  window.addEventListener("mouseup", function (event) {
+    if (drag) {
+      var moved = drag.moved;
+      drag = null;
+      if (moved) { emit(); }
+      return;
+    }
+    if (!link) { return; }
+    var from = link.from;
+    link = null;
+    var hit = document.elementFromPoint(event.clientX, event.clientY);
+    var targetEl = hit && hit.closest ? hit.closest("[data-node]") : null;
+    var targetId = targetEl ? targetEl.getAttribute("data-node") : null;
+    if (targetId && targetId !== from) {
+      var pair = [from, targetId];
+      var exists = model.edges.some(function (edge) {
+        return edge[0] === pair[0] && edge[1] === pair[1];
+      });
+      var fromNode = findNode(from);
+      if (exists) {
+        flash("这条连线已经存在");
+      } else if (fromNode && fromNode.kind === "end") {
+        flash("END 没有输出口");
+      } else {
+        var targetNode = findNode(targetId);
+        if (targetNode && targetNode.kind === "start") {
+          flash("START 没有输入口");
+        } else {
+          model.edges.push(pair);
+          emit();
+          flash("已连接 " + from + " → " + targetId);
+        }
+      }
+    }
+    draw();
+  });
+
+  svg.addEventListener("click", function (event) {
+    var del = event.target.closest && event.target.closest("[data-del]");
+    if (!del) { return; }
+    var id = del.getAttribute("data-del");
+    model.nodes = model.nodes.filter(function (node) { return node.id !== id; });
+    model.edges = model.edges.filter(function (edge) {
+      return edge[0] !== id && edge[1] !== id;
+    });
+    if (model.selected === id) { model.selected = null; }
+    draw();
+    emit();
+    flash("已删除节点 " + id);
+  });
+
+  svg.addEventListener("dragover", function (event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  });
+
+  svg.addEventListener("drop", function (event) {
+    event.preventDefault();
+    var fn = event.dataTransfer.getData("text/plain");
+    if (!fn) { return; }
+    var point = toBoard(event);
+    model.nodes.push({
+      id: uniqueId(fn),
+      fn: fn,
+      label: labelOf(fn),
+      kind: "",
+      x: Math.max(0, Math.min(920, point.x - NODE_W / 2)),
+      y: Math.max(0, Math.min(BOARD_H - NODE_H, point.y - NODE_H / 2))
+    });
+    draw();
+    emit();
+    flash("已添加节点 " + fn);
+  });
+
+  function labelOf(fn) {
+    for (var i = 0; i < model.blocks.length; i++) {
+      if (model.blocks[i].fn === fn) { return model.blocks[i].label; }
+    }
+    return fn;
+  }
+
+  draw();
+  send("streamlit:componentReady", { apiVersion: 1 });
+  setHeight(510);
+})();
+</script>
+</body>
+</html>

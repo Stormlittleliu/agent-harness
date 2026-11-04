@@ -422,7 +422,7 @@ python run_dashboard.py --port 8600
 页面右上角的“入口模式”可以在 **总路由** 和 **子场景** 之间切换，跟随页面滚动、不固定在侧边栏：总路由默认进入 `router`（办公学习 / 编码 / 智能硬件 / 研究调研自动分流）；子场景可以直接进入 `workspace_assistant`（办公 / 学习 / 内容 / 信息管理 / 跨语言）、`research_assistant`（多资料研究 / 只读 fan-out）、`coding_demo`（读写 / 编辑 / 搜索 / 命令 / Todo / 任务图 / hooks / subagent）、`general`（白板）、`mcp_demo`（Memory + Fetch）、`robot_vacuum`（扫地机器人）和 `structured_demo`（Pydantic 结构化输出）；不同场景可以配置不同的视图与示例任务。“页面”是单视图路由：总览是工作台入口（KPI + 快捷入口 + 能力矩阵），选择某个视图后只渲染当前页，不会一次性加载全部页面。**切换子场景时保留当前页面**；如果新场景不支持该页（例如运行窗口），会显示空状态而不是跳回总览。控制台基础视图为 8 个；`coding_demo` 额外有运行窗口：
 
 - **Agent 架构**：工具、风险等级、中间件链、LangGraph 工作流图；中间件链是一排中文胶囊（由外到内），**鼠标悬停**看每条策略的职责、分层（守卫 / 上下文 / 可靠性 / 成本）、slot 与源码位置；日志类合并成一行，展开可见配置；
-- **场景编辑**：受约束的低代码编辑器，把 `data/specs/<name>/` 变成可跑的场景——改基本信息 / 工具白名单 / harness 开关，增删工作流与节点（节点只能引用已注册的块，参数按 `ParamSpec` 自动渲染表单，复合块（如 `react_loop`）的内部参数也在同一张表单里），改边，**保存前先编译预览**，存成新版本 spec；支持载入历史版本、下载草稿 JSON 与单向 `eject`。在控制台里新建的场景不用写代码就能出现在子场景列表里（工具来自通用工具池）；
+- **场景编辑**：受约束的低代码编辑器，把 `data/specs/<name>/` 变成可跑的场景——**可视化画布**里从块库拖块、连线、移动节点（点连线删除，校验错误会把节点标红），下面的面板改节点 id 与参数（参数按 `ParamSpec` 自动渲染，复合块如 `react_loop` 的内部参数也在同一张表单里），也可切成表单模式逐节点展开；改基本信息 / 工具白名单 / harness 开关，**保存前先编译预览**，存成新版本 spec；支持载入历史版本、下载草稿 JSON 与单向 `eject`。在控制台里新建的场景不用写代码就能出现在子场景列表里（工具来自通用工具池）。画布是单文件原生 JS，无 npm、无外部 CDN；
 - **任务执行**：输入任务，查看工具调用、模型步数、token、时延，以及“用户问题 → 模型/工具 → 最终回答”的可视化调用链；**每个模型 / 工具节点都标注它属于哪个工作流节点**（如“复核 · verify”），悬停看该节点在做什么；
 - **测试用例**：直接运行 `cases.jsonl`，复用 `core.quality.agent_eval` 的评分与判定；支持按通过/失败、判定依据（关键词 / LLM judge）、类别筛选，并可点开单条查看要点命中、工具调用、完整回答与 trace；`structured_demo` 的严格 schema 评测走 `core.quality.structured_eval`；
 - **评测**：把场景行为/outcome 报告、成本/时延、公开基准、评测记录合到一个入口；场景报告按当前场景过滤，成本/时延按 trace 的 scenario 过滤，公开基准作为全局/模型级证据单独展示；
@@ -506,7 +506,7 @@ python -m streamlit run app_agent.py   # 场景选 coding_demo
 python -m pytest
 ```
 
-当前 **223 passed**。覆盖任务图依赖 / 持久化、workspace 读取 / 写入 / 编辑 / grep 与受保护目录拒绝、workspace / research 场景工具、总路由 / 子场景入口、场景 / MCP / LangGraph 边界、planning policy、outcome 断言、trials 聚合、metrics 的
+当前 **235 passed**。覆盖任务图依赖 / 持久化、workspace 读取 / 写入 / 编辑 / grep 与受保护目录拒绝、workspace / research 场景工具、总路由 / 子场景入口、场景 / MCP / LangGraph 边界、planning policy、outcome 断言、trials 聚合、metrics 的
 `expected_tools_any`、subagent 子上下文 / 工具白名单、hook 触发与异常隔离、结构化输出
 schema、成本报告聚合、评测门禁、故障注入（超时 / 权限 / 参数 / 空检索 / 拒答）、
 对象索引（工具 / 中间件源码定位）、完整报告选择、中间件中文说明与顺序不变量、

@@ -37,6 +37,8 @@ from core.scenarios.spec import SpecError, SPEC_ROOT, build_workflows
 from core.scenarios.spec_nodes import block_desc, block_label, block_params, registered_nodes
 
 NAME_HINT = "只用小写字母、数字和下划线，例如 note_qa"
+MODE_CANVAS = "🎨 可视化画布"
+MODE_FORM = "📝 表单"
 
 
 def _status_rows() -> list[dict]:
@@ -211,6 +213,105 @@ def _render_params(fn: str, args: dict, prefix: str, tools: list[str]) -> dict:
                     label, value=text_value, help=help_text, key=key,
                 )
     return spec_edit.normalize_args(fn, values)
+
+
+def _render_canvas_editor(
+    name: str,
+    draft: dict,
+    workflow: str,
+    prefix: str,
+    tools: list[str],
+) -> None:
+    """可视化画布：拓扑与位置在画布上改，身份与参数在下面的面板改。"""
+    from core.interfaces.dashboard.canvas import render_canvas
+
+    errors = st.session_state.get("editor-errors") or []
+    payload = spec_edit.canvas_payload(
+        name,
+        workflow,
+        draft,
+        errors,
+        selected=st.session_state.get("editor-selected"),
+    )
+    result = render_canvas(payload, key=f"{prefix}-canvas-{workflow}")
+    if isinstance(result, dict) and result.get("version") != st.session_state.get("editor-canvas-version"):
+        st.session_state["editor-canvas-version"] = result.get("version")
+        changed = spec_edit.absorb_canvas(name, workflow, draft, result)
+        st.session_state["editor-selected"] = result.get("selected")
+        if changed:
+            # 结构变了，之前那次校验的结论就过期了。
+            st.session_state["editor-errors"] = []
+        st.rerun()
+
+    header = st.columns([1.6, 1], vertical_alignment="center")
+    header[0].caption("拖节点移动 · 从右侧圆点连到下一个节点 · 点连线删除 · 选中后右上角 × 删节点")
+    if header[1].button("重新自动排版", key=f"{prefix}-canvas-relayout"):
+        spec_edit.clear_layout(name, workflow)
+        _bump_generation()
+        st.rerun()
+
+    _render_selected_node(draft, workflow, prefix, tools, "画布上点一个节点，这里改它的 id 与参数。")
+
+
+def _render_selected_node(
+    draft: dict,
+    workflow: str,
+    prefix: str,
+    tools: list[str],
+    empty_hint: str,
+) -> None:
+    """选中节点的身份 + 参数面板（画布与表单两种模式共用）。"""
+    nodes = draft["workflows"][workflow]["nodes"]
+    selected = st.session_state.get("editor-selected")
+    node = next((item for item in nodes if str(item.get("id")) == selected), None)
+    if node is None:
+        st.info(empty_hint)
+        return
+
+    fn = str(node.get("fn"))
+    options = registered_nodes()
+    col_id, col_fn, col_del = st.columns([1.1, 1.5, 0.5], vertical_alignment="bottom")
+    new_id = col_id.text_input(
+        "节点 id", value=str(node.get("id")), key=f"{prefix}-sel-id"
+    ).strip()
+    new_fn = col_fn.selectbox(
+        "块",
+        options,
+        index=options.index(fn) if fn in options else 0,
+        format_func=lambda option: f"{block_label(option)}（{option}）",
+        key=f"{prefix}-sel-fn",
+        help=block_desc(fn),
+    )
+    if col_del.button("删除节点", key=f"{prefix}-sel-del"):
+        index = next(
+            (position for position, item in enumerate(nodes) if str(item.get("id")) == selected),
+            None,
+        )
+        if index is not None:
+            spec_edit.remove_node(draft, workflow, index)
+        st.session_state["editor-selected"] = None
+        _bump_generation()
+        st.rerun()
+
+    if new_fn != fn:
+        node["fn"] = new_fn
+        node["args"] = spec_edit.block_defaults(new_fn)
+        _bump_generation()
+        st.rerun()
+    if new_id and new_id != node.get("id"):
+        try:
+            spec_edit.rename_node(draft, workflow, str(node.get("id")), new_id)
+        except SpecError as exc:
+            st.error("；".join(exc.errors))
+        else:
+            st.session_state["editor-selected"] = new_id
+            _bump_generation()
+            st.rerun()
+
+    st.caption(block_desc(fn) or "该块没有说明。")
+    node["args"] = _render_params(
+        str(node.get("fn")), node.get("args") or {}, f"{prefix}-sel-{node.get('id')}", tools
+    )
 
 
 def _render_nodes(draft: dict, workflow: str, prefix: str, tools: list[str]) -> None:
@@ -498,6 +599,9 @@ def render_editor() -> None:
     workflow = control_left.selectbox(
         "工作流", workflow_names, key=f"{prefix}-workflow"
     ) if workflow_names else ""
+    if st.session_state.get("editor-workflow-current") != workflow:
+        st.session_state["editor-workflow-current"] = workflow
+        st.session_state["editor-selected"] = None
     with control_right:
         with st.form(f"{prefix}-workflow-new", clear_on_submit=True):
             workflow_name = st.text_input("新增工作流名", placeholder="report")
@@ -511,9 +615,19 @@ def render_editor() -> None:
                     st.rerun()
 
     if workflow:
-        _render_nodes(draft, workflow, prefix, tools)
-        st.markdown("**边**（从 → 到；`__start__` / `__end__` 是入口与出口）")
-        _render_edges(draft, workflow, prefix)
+        mode = st.radio(
+            "编辑方式",
+            [MODE_CANVAS, MODE_FORM],
+            horizontal=True,
+            key=f"{prefix}-mode",
+            help="画布：拖块、连线、移动；表单：逐节点展开，适合同屏改多个参数。",
+        )
+        if mode == MODE_CANVAS:
+            _render_canvas_editor(choice, draft, workflow, prefix, tools)
+        else:
+            _render_nodes(draft, workflow, prefix, tools)
+            st.markdown("**边**（从 → 到；`__start__` / `__end__` 是入口与出口）")
+            _render_edges(draft, workflow, prefix)
         if len(workflow_names) > 1:
             if st.button(f"删除工作流 {workflow}", key=f"{prefix}-workflow-del"):
                 try:

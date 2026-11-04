@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-"""场景编辑视图的界面级冒烟：能列场景、能渲染 flow_demo 的草稿、校验不写盘。"""
+"""场景编辑视图的界面级冒烟：能列场景、能渲染画布与表单、校验不写盘。"""
 from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
+
+from core.interfaces.dashboard.editor import MODE_CANVAS, MODE_FORM
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -29,6 +31,13 @@ def _button(app: AppTest, label: str):
     raise AssertionError(f"按钮不存在：{label}；实际有 {_labels(app.button)}")
 
 
+def _mode_radio(app: AppTest):
+    for radio in app.radio:
+        if str(getattr(radio, "label", "")) == "编辑方式":
+            return radio
+    raise AssertionError(f"编辑方式 radio 不存在：{_labels(app.radio)}")
+
+
 def _spec_files() -> list[Path]:
     return sorted((ROOT / "data" / "specs" / "flow_demo").glob("v*.json"))
 
@@ -40,8 +49,18 @@ def test_editor_lists_spec_scenarios():
     assert any("flow_demo" in table for table in tables), tables
 
 
-def test_editor_renders_draft_widgets():
+def test_editor_defaults_to_canvas_mode():
     app = _editor_app()
+    assert not app.exception, [item.value for item in app.exception]
+    assert _mode_radio(app).value == MODE_CANVAS
+    assert "重新自动排版" in _labels(app.button)
+
+
+def test_editor_form_mode_shows_node_widgets():
+    app = _editor_app()
+    _mode_radio(app).set_value(MODE_FORM)
+    app.run()
+    assert not app.exception, [item.value for item in app.exception]
     labels = _labels(app.text_input) + _labels(app.text_area)
     assert "场景描述" in labels
     assert "系统提示词" in labels
