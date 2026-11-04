@@ -10,7 +10,10 @@
 > 把 trace JSONL 读成 span；`agent_eval.run()` 写 `outputs/runs/<run_id>/`。
 > `core/quality/mining.py` 已实现序列/转移挖掘、门槛过滤、证据与范式卡，
 > 产物在 `outputs/patterns/<mining_id>/`；**只产出 candidate，不自动采纳**。
-> M2（pattern_to_spec + shadow）尚未开始。
+> M2 已实现：`core/scenarios/pattern_to_spec.py` 把线性范式编译成
+> `data/specs/<scenario>/candidates/` 候选 spec（不覆盖 active）；
+> `core/quality/shadow.py` 让 baseline/candidate 各跑一遍并只记录。
+> 采纳与 A/B 门槛（M3）尚未开始。
 
 ## 1. 为什么做这个
 
@@ -181,6 +184,22 @@ python -m core.quality.mining --scenario workspace_assistant --min-support 3 --t
 - 生成新的 `data/specs/<scenario>/vN.json` 或新的 workflow，**不覆盖 active**；
 - 走 `validate_spec` + `build_workflows`，失败就停在 candidate；
 - pattern id / run ids 写进 spec 的 `provenance` 字段（新增可选字段）。
+
+### 4.5.1 当前实现（M2）
+
+- `core/scenarios/pattern_to_spec.py`：
+  - 步骤优先按源 spec 节点 id 复用 `fn`/`args`，其次按块名、`tool:<name>`、`model` 映射；
+  - 只编译线性工作流，`branch` 明确拒绝；
+  - 候选写到 `data/specs/<scenario>/candidates/<pattern_id>.json`，
+    **不写 `active.json`、不产生 `vN.json`**；
+  - 过 `validate_spec`（含端口）并真的 `build_workflows` 一次；
+  - `ScenarioSpec.provenance` 记录 pattern id / scope / 指标 / evidence runs。
+- `core/quality/shadow.py`：
+  - 确定性划分 train / held_out；
+  - baseline 与 candidate 各跑一遍，记录回归/改进/held-out 通过率；
+  - 只写 `outputs/shadow/<shadow_id>/shadow.json`，`decision=pending`；
+  - runner 可注入，测试不需要模型。
+- 详细边界见 `docs/design/pattern-to-spec.md`。
 
 ### 4.6 A/B
 

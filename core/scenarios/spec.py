@@ -141,6 +141,9 @@ class ScenarioSpec(BaseModel):
     harness: HarnessSpec = Field(default_factory=HarnessSpec)
     policies: list[PolicySpecModel] | None = None
     workflows: dict[str, WorkflowSpec] = Field(default_factory=dict)
+    # 候选 spec 的来源（pattern id / run ids / mining id）；active spec 通常为空。
+    # 这是可选的，旧 spec 不需要补字段。
+    provenance: dict[str, Any] | None = None
 
 
 # ---------------------------------------------------------------- 校验
