@@ -42,14 +42,17 @@ def _build_router() -> Scenario:
     return build_scenario()
 
 
-def _build_flow_demo() -> Scenario:
+def _build_flow_demo_legacy() -> Scenario:
+    """旧入口：flow_demo 现在由 spec 接管（data/specs/flow_demo/active.json）。
+
+    保留这个模块当参考实现；要回退就把 spec 目录删掉，再把这里挂回 _BUILDERS。
+    """
     from core.scenarios.flow_demo.scenario import build_scenario
     return build_scenario()
 
 
 _BUILDERS = {
     "coding_demo": _build_coding_demo,
-    "flow_demo": _build_flow_demo,
     "general": _build_general,
     "mcp_demo": _build_mcp_demo,
     "research_assistant": _build_research_assistant,
@@ -66,13 +69,18 @@ def list_scenarios() -> list[str]:
 
 
 def get_scenario(name: str = "robot_vacuum") -> Scenario:
-    builder = _BUILDERS.get(name)
-    if builder is not None:
-        return builder()
+    """有 spec 就用 spec 构建（接管），否则用代码实现。
+
+    接管一个场景 = 往 ``data/specs/<name>/`` 放一份 active.json；
+    回退 = 删掉那个目录。不需要改这里的任何代码。
+    """
     if name in _spec_names():
         from core.scenarios.generic import build_generic_spec_scenario
 
         return build_generic_spec_scenario(name)
+    builder = _BUILDERS.get(name)
+    if builder is not None:
+        return builder()
     available = ", ".join(list_scenarios())
     raise ValueError(f"未知场景：{name}（可用：{available}）")
 

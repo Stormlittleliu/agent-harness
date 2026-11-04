@@ -92,8 +92,13 @@ class ScenarioSpec(BaseModel):
     schema_version: int = SPEC_VERSION
     name: str
     description: str = ""
+    # 场景类型：agent / router（router 靠 planning 规则分流，界面上多一个路由配置面板）
+    kind: str = "agent"
     tools: list[str] = Field(default_factory=list)
     system_prompt: str = ""
+    # 行为用例文件（相对仓库根）；留空则找 data/specs/<name>/cases.jsonl。
+    # 仿造现有场景时指向原来的 cases，保证两边是同一把尺子。
+    cases_path: str | None = None
     harness: HarnessSpec = Field(default_factory=HarnessSpec)
     policies: list[PolicySpecModel] | None = None
     workflows: dict[str, WorkflowSpec] = Field(default_factory=dict)
@@ -173,8 +178,7 @@ def validate_spec(spec: ScenarioSpec, tool_names: set[str] | None = None) -> lis
         errors.append(f"schema_version 必须是 {SPEC_VERSION}，收到 {spec.schema_version}")
     if not spec.name.strip():
         errors.append("scenario.name 不能为空")
-    if not spec.workflows:
-        errors.append("至少需要一个 workflow")
+    # 允许没有 workflow：纯 ReAct 场景（general / coding / router…）只有一个 agent 循环。
     known_policies = set(available_policies())
     for policy in spec.policies or []:
         if policy.name not in known_policies:
@@ -251,6 +255,7 @@ def build_from_spec(
         model=model,
         system_prompt=spec.system_prompt,
         tools=selected,
+        kind=spec.kind,
         middleware=[],
         policies=[policy.model_dump() for policy in spec.policies] if spec.policies is not None else None,
         context={},
@@ -262,8 +267,19 @@ def build_from_spec(
         checkpoint=True,
         checkpoint_backend=checkpoint_backend,
         checkpoint_path=checkpoint_path,
-        workflow_factory=lambda scenario: build_workflows(spec, scenario),
+        workflow_factory=(lambda scenario: build_workflows(spec, scenario)) if spec.workflows else None,
     )
+
+
+def resolve_cases_path(spec: ScenarioSpec, root: Path | str = SPEC_ROOT) -> Path | None:
+    """行为用例路径：spec 显式指定优先，否则找 spec 目录下的 cases.jsonl。"""
+    if spec.cases_path:
+        candidate = Path(spec.cases_path)
+        if not candidate.is_absolute():
+            candidate = Path.cwd() / candidate
+        return candidate if candidate.is_file() else None
+    fallback = Path(root) / spec.name / "cases.jsonl"
+    return fallback if fallback.is_file() else None
 
 
 # ---------------------------------------------------------------- 读写

@@ -17,6 +17,9 @@ class Scenario:
     model: Any
     system_prompt: str
     tools: list[Any]
+    # 场景类型：agent（普通 Agent）/ router（总路由，靠 planning 规则分流）。
+    # 只影响 UI 分组与"路由配置"面板，不影响运行时。
+    kind: str = "agent"
     middleware: list[Any] = field(default_factory=list)
     # 可选：策略覆盖层（core.agent.pipeline.PolicySpec 的 dict 形式）。
     # 为空时由 pipeline 从下面的字段推导默认策略；spec 场景用它增删/配参。

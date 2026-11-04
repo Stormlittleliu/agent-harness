@@ -18,7 +18,7 @@ from pathlib import Path
 from core.agent.contracts import Scenario
 from core.llm.factory import chat_model
 from core.scenarios.ownership import OWNER_CODE, ensure_spec_editable, load_state
-from core.scenarios.spec import SpecError, build_from_spec, load_active_spec
+from core.scenarios.spec import SpecError, build_from_spec, load_active_spec, resolve_cases_path
 from core.scenarios.workspace_assistant.tools import (
     MemoryStore,
     NoteStore,
@@ -71,11 +71,6 @@ def is_spec_scenario(name: str, root: Path | str = SPEC_ROOT) -> bool:
     return name in spec_scenario_names(root)
 
 
-def _cases_path(name: str, root: Path | str = SPEC_ROOT) -> Path | None:
-    candidate = Path(root) / name / "cases.jsonl"
-    return candidate if candidate.is_file() else None
-
-
 def build_generic_spec_scenario(
     name: str,
     root: Path | str = SPEC_ROOT,
@@ -95,7 +90,7 @@ def build_generic_spec_scenario(
         spec,
         tools=list(spec_tool_pool()),
         model=chat_model,
-        cases_path=_cases_path(name, root),
+        cases_path=resolve_cases_path(spec, root),
         checkpoint_backend="sqlite",
         checkpoint_path=f"data/runtime/spec_{name}_checkpoints.sqlite",
     )

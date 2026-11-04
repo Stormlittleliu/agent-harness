@@ -32,21 +32,8 @@ from core.interfaces.dashboard.review import render_review
 from core.interfaces.dashboard.runtime import render_runtime
 from core.interfaces.dashboard.task import render_task
 from core.interfaces.dashboard.tests import render_tests
-from core.scenarios.registry import list_scenarios
+from core.scenarios import library
 
-DEFAULT_SCENARIO = "router"
-ENTRY_ROUTER = "router · 总路由（自动分流）"
-ENTRY_CHILD = "子场景 · 直接进入"
-SCENARIO_LABELS = {
-    "coding_demo": "coding_demo · 编码运行时",
-    "general": "general · 白板",
-    "mcp_demo": "mcp_demo · Memory + Fetch",
-    "research_assistant": "research_assistant · 研究调研",
-    "robot_vacuum": "robot_vacuum · 扫地机器人",
-    "router": "router · 总路由",
-    "structured_demo": "structured_demo · 结构化输出",
-    "workspace_assistant": "workspace_assistant · 办公学习",
-}
 BASE_VIEWS = [
     "architecture",
     "editor",
@@ -57,87 +44,8 @@ BASE_VIEWS = [
     "optimization",
     "catalog",
 ]
-CODING_VIEWS = [
-    "architecture",
-    "editor",
-    "task",
-    "tests",
-    "runtime",
-    "evaluation",
-    "review",
-    "optimization",
-    "catalog",
-]
 
-DASHBOARD_PRESETS = {
-    "general": {
-        "views": BASE_VIEWS,
-        "examples": [
-            "你好，请用一句话介绍你自己。",
-            "1+1 等于几？",
-            "把“今天天气很好”翻译成英文。",
-        ],
-    },
-    "robot_vacuum": {
-        "views": BASE_VIEWS,
-        "examples": [
-            "小户型适合哪些扫地机器人？",
-            "给我生成我的使用报告",
-            "今天天气怎么样",
-        ],
-    },
-    "mcp_demo": {
-        "views": BASE_VIEWS,
-        "examples": [
-            "请记住：我喜欢小户型，家里有猫。",
-            "根据你记住的偏好，我喜欢什么户型？",
-            "读取 https://example.com 并告诉我页面标题。",
-        ],
-    },
-    "coding_demo": {
-        "views": CODING_VIEWS,
-        "examples": [
-            "读取 README.md，并告诉我这个工作区叫什么名字。",
-            "在工作区运行 echo hello，并告诉我输出。",
-            "创建一个任务：检查项目结构。",
-        ],
-    },
-    "structured_demo": {
-        "views": BASE_VIEWS,
-        "examples": [
-            "材料：接口联调延后到周五；测试环境不稳定。请生成结构化报告。",
-            "材料：Transformer 由多头注意力和前馈网络组成。请生成结构化报告。",
-            "Material: X1 supports 5000Pa suction and 180 minutes runtime. Please generate a structured report in Chinese.",
-        ],
-    },
-    "workspace_assistant": {
-        "views": BASE_VIEWS,
-        "examples": [
-            "根据笔记，Agent 评测应该关注哪些指标？",
-            "Summarize the product brief in Chinese.",
-            "把“Agent 评测要看 outcome”写成一条笔记。",
-            "请记住：我喜欢简洁的回答，并用要点列出。",
-        ],
-    },
-    "research_assistant": {
-        "views": BASE_VIEWS,
-        "examples": [
-            "列出当前有哪些研究资料。",
-            "对比三份资料对 Agent 评测的主要观点，并给出来源。",
-            "根据三份资料写一份简短的对比报告并保存。",
-        ],
-    },
-    "router": {
-        "views": BASE_VIEWS,
-        "examples": [
-            "帮我写一个输出 99 乘法表的 Python 脚本并运行验证。",
-            "根据笔记帮我整理一份 Agent 评测的学习计划。",
-            "扫地机器人回充失败怎么办？",
-            "对比三份资料，告诉我它们对 Agent 评测的主要差异。",
-        ],
-    },
-}
-DEFAULT_VIEWS = BASE_VIEWS
+
 VIEW_LABELS = {
     "architecture": "🧠 Agent 架构",
     "editor": "🎛 场景编辑",
@@ -160,10 +68,6 @@ def _nav_label(view: str) -> str:
     if view == "overview":
         return "🏠 总览"
     return VIEW_LABELS.get(view, view)
-
-
-def _entry_label(value: str) -> str:
-    return "总路由" if value == ENTRY_ROUTER else "子场景"
 
 
 def _clear_scenario_state() -> None:
@@ -280,68 +184,45 @@ def _render_view(
 def run() -> None:
     st.set_page_config(page_title="Agent 控制台", page_icon="🛠", layout="wide")
     inject_css()
-    names = list_scenarios()
+    entries = library.entries()
+    names = [item.name for item in entries]
     # 可选：`AH_DASHBOARD_SCENARIO` / `AH_DASHBOARD_VIEW` 让演示、截图和外部链接
-    # 从一个指定页面启动；只在首次 session 生效，之后仍由页面右上角控制。
+    # 从一个指定场景/页面启动；只影响首次渲染，之后仍由侧边栏控制。
     env_scenario = os.getenv("AH_DASHBOARD_SCENARIO", "").strip()
     env_view = os.getenv("AH_DASHBOARD_VIEW", "").strip()
-    child_names = [name for name in names if name != "router"]
-    start_child = env_scenario if env_scenario in child_names else (
-        "workspace_assistant" if "workspace_assistant" in child_names else child_names[0]
-    )
-    if env_scenario and "dashboard-entry" not in st.session_state:
-        st.session_state["dashboard-entry"] = (
-            ENTRY_ROUTER if env_scenario == "router" else ENTRY_CHILD
-        )
-    # 子场景的初值靠下面的 index=start_child，不写 session_state：
-    # 给带 key 的 widget 预置 state 再传 index 会触发 Streamlit 的冲突警告。
+    start_scenario = env_scenario if env_scenario in names else library.default_name()
 
-    # 入口模式 / 子场景放在主内容右上角，跟随页面滚动，不固定在侧边栏。
-    top_left, top_entry, top_child = st.columns(
-        [6.2, 1.8, 2.4], gap="small", vertical_alignment="bottom"
-    )
-    with top_left:
-        st.markdown("### 🛠 Agent Harness 控制台")
-        st.caption("场景 → 任务 / 用例 / 评测；只渲染当前视图，不触发模型调用，除非主动运行。")
-    with top_entry:
-        entry = st.selectbox(
-            "入口模式",
-            [ENTRY_ROUTER, ENTRY_CHILD],
-            format_func=_entry_label,
-            key="dashboard-entry",
-            label_visibility="collapsed",
-            help="总路由：由 router 自动判断目标场景；子场景：直接进入某个场景，不经过 router。",
+    # 场景选择放在侧边栏最上面：它是"一等对象"，页面只是场景的一个动作。
+    with st.sidebar:
+        st.header("场景")
+        scenario_name = st.selectbox(
+            "场景",
+            names,
+            index=names.index(start_scenario) if start_scenario in names else 0,
+            format_func=library.label,
+            key="dashboard-scenario-name",
+            help="场景库里的一项；总路由也是一种场景。换场景会保留当前页面。",
         )
-    with top_child:
-        if entry == ENTRY_CHILD:
-            scenario_name = st.selectbox(
-                "子场景",
-                child_names,
-                index=child_names.index(start_child),
-                format_func=lambda name: SCENARIO_LABELS.get(name, name),
-                key="dashboard-child-scenario",
-                label_visibility="collapsed",
-                help="直接进入子场景，不经过 router；工具和 checkpoint 仍按该场景隔离。",
-            )
-        else:
-            scenario_name = "router"
-            st.caption("总路由 · 自动分流到 workspace / coding / robot / research")
 
-    preset = DASHBOARD_PRESETS.get(scenario_name, {})
-    views = [
-        view
-        for view in preset.get("views", DEFAULT_VIEWS)
-        if view in VIEW_LABELS or view in CUSTOM_VIEWS
-    ]
-    if not views:
-        views = list(DEFAULT_VIEWS)
-    examples = preset.get("examples", [])
-    scenario_label = SCENARIO_LABELS.get(scenario_name, scenario_name)
+    entry = library.entry(scenario_name)
+    views = [view for view in BASE_VIEWS if view in VIEW_LABELS]
+    if entry is not None and entry.supports_runtime and "runtime" in VIEW_LABELS:
+        views.insert(views.index("tests") + 1, "runtime") if "tests" in views else views.append("runtime")
+    views = [view for view in views if view in VIEW_LABELS or view in CUSTOM_VIEWS] or list(DEFAULT_VIEWS)
+    examples = list(entry.examples) if entry is not None else []
 
     # 切换场景时清掉上一个场景的任务、测试与筛选状态，避免串台
     if st.session_state.get("dashboard_scenario") != scenario_name:
         _clear_scenario_state()
         st.session_state["dashboard_scenario"] = scenario_name
+
+    top_left, top_badge = st.columns([6.2, 2.4], gap="small", vertical_alignment="bottom")
+    with top_left:
+        st.markdown("### 🛠 Agent Harness 控制台")
+        st.caption("先在左侧选场景，再看它：结构 / 任务 / 用例 / 评测。只渲染当前视图，不触发模型调用，除非主动运行。")
+    with top_badge:
+        if entry is not None:
+            st.caption(f"{entry.title} · `{entry.badge}` · 用例 {entry.cases} 条")
 
     with st.sidebar:
         st.header("页面")
@@ -380,9 +261,9 @@ def run() -> None:
         st.session_state["_desired_view"] = nav
 
         st.divider()
-        st.markdown(f"**当前场景**：{scenario_label}")
-        st.caption(f"{len(views)} 个视图 · 切换场景保持当前页；数据视图只读已有文件，不触发模型调用。")
-        st.caption("工作台：架构 / 任务 / 用例 · 评测：场景报告 / 成本 / 基准 / 记录 · 数据：目录")
+        st.markdown(f"**当前场景**：{library.label(scenario_name)}")
+        st.caption(f"{len(views)} 个页面 · 切换场景保持当前页；数据视图只读已有文件，不触发模型调用。")
+        st.caption("编辑：场景 · 分析：架构 / 任务 / 用例 · 评测：报告 / 成本 / 基准 / 记录")
 
     # 总览不加载 Agent：首屏只读 KPI / 报告元数据，避免 RAG/Chroma 初始化拖慢。
     needs_agent = nav in AGENT_VIEWS or nav in CUSTOM_VIEWS
@@ -397,7 +278,7 @@ def run() -> None:
 
     page_label = _nav_label(nav)
     description = f" — {agent.scenario.description}" if agent is not None else ""
-    st.caption(f"当前场景：**{scenario_label}** · 当前页面：**{page_label}**{description}")
+    st.caption(f"当前场景：**{library.label(scenario_name)}** · 当前页面：**{page_label}**{description}")
 
     if nav == "overview":
         render_overview(scenario_name, views, VIEW_LABELS)
