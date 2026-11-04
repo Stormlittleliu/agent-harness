@@ -18,7 +18,7 @@ from core.interfaces.dashboard.common import load_agent
 from core.interfaces.dashboard.cost import render_cost
 from core.interfaces.dashboard.evaluation import render_evaluation
 from core.interfaces.dashboard.history import render_history
-from core.interfaces.dashboard.layout import page_header, sync_widget
+from core.interfaces.dashboard.layout import sync_widget
 from core.interfaces.dashboard.optimization import render_optimization
 from core.interfaces.dashboard.patterns import render_patterns
 from core.interfaces.dashboard.review import render_review
@@ -37,11 +37,10 @@ VIEW_KEY = "quality:view"
 
 def render(route: routes.Route) -> None:
     names = library.names()
-    page_header(
-        "质量",
-        "评测与复核：这一页的对象是「一次运行」，场景只是维度。"
-        "数据集的结构化改造还没做，先把已有视图接过来。",
-        meta=f"{len(names)} 个场景可选" if names else "还没有场景",
+    # 不在这里再放一个「质量」H4：视图自己已经有标题，两个标题摞在一起就是重复。
+    st.caption(
+        "这一页的对象是「一次运行」，场景只是维度；场景选择只影响质量页。"
+        + (f" · {len(names)} 个场景可选" if names else "")
     )
     if not names:
         st.info("场景库是空的。")

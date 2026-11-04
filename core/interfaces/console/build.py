@@ -72,7 +72,7 @@ def _library() -> None:
             f"用例 {info.cases}",
         ]
         row[1].caption(" · ".join(badges))
-        if row[2].button("打开", key=f"build-open-{info.name}", use_container_width=True):
+        if row[2].button("打开 →", key=f"build-open-{info.name}", use_container_width=True):
             routes.navigate("build", info.name)
         st.divider()
 

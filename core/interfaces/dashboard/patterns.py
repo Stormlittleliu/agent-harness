@@ -16,7 +16,7 @@ from pathlib import Path
 import streamlit as st
 
 from core.interfaces.dashboard.common import load_agent, load_cases_cached
-from core.interfaces.dashboard.layout import Kpi, empty_state, kpi_row, section
+from core.interfaces.dashboard.layout import Kpi, empty_state, kpi_row, page_header, section
 from core.quality.adoption import (
     AdoptionError,
     adopt_candidate,
@@ -154,7 +154,7 @@ def _run_shadow_for(scenario: str, pattern_id: str) -> dict:
 
 
 def render_patterns(scenario: str) -> None:
-    section(
+    page_header(
         "范式",
         "从成功轨迹挖出的候选。先编译成候选 spec，再用 shadow 拿证据；"
         "采纳要过门槛，且随时可以回退。",

@@ -160,6 +160,19 @@ header[data-testid="stHeader"] [data-testid="stAppDeployButton"] {
     background: rgba(76,125,240,.14) !important;
     font-weight: 600;
 }
+/* 构建库的行内「打开」：是一行文字动作，不是 9 个并排的按钮盒子 */
+[class*="st-key-build-open-"] [data-testid="stButton"] button {
+    justify-content: flex-end;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #2F5BD3 !important;
+    font-weight: 500;
+    padding: .2rem .35rem;
+}
+[class*="st-key-build-open-"] [data-testid="stButton"] button:hover {
+    background: rgba(76,125,240,.08) !important;
+}
 /* 开场白是小 chip，不是三张通栏大卡 */
 .st-key-chat-starters [data-testid="stButtonGroup"] button {
     border-radius: 999px !important;
