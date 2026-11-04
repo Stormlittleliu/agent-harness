@@ -173,12 +173,12 @@ def _chain_items(agent) -> list[dict]:
     return chain
 
 
-def _chip_html(item: dict, source: str) -> str:
+def _chip_html(item: dict, source: str, position: int) -> str:
     """一个策略胶囊：悬停显示中文说明、类名、slot 与来源。"""
     desc = item["desc"] or MIDDLEWARE_DESC.get(item["name"].split(":", 1)[-1], "")
     tooltip = "\n".join(
         part for part in (
-            f"{item['order']:02d}. {item['label']}",
+            f"{position:02d}. {item['label']}",
             desc,
             f"实现：{item['name']}  ·  分层：{item['layer']}"
             + (f"  ·  slot={item['slot']}" if item["slot"] is not None else ""),
@@ -188,19 +188,24 @@ def _chip_html(item: dict, source: str) -> str:
     )
     return (
         f'<span class="ah-chain" title="{html.escape(tooltip, quote=True)}">'
-        f'<b>{item["order"]:02d}</b> {html.escape(item["label"])}</span>'
+        f'<b>{position:02d}</b> {html.escape(item["label"])}</span>'
     )
 
 
 def _render_chain_html(chain: list[dict], index, query: str) -> int:
-    """按“从外到内”渲染一行胶囊；返回渲染条数。"""
+    """按“从外到内”渲染一行胶囊；返回渲染条数。
+
+    编号只数真正画出来的策略：日志类被折叠，不能让编号跳号看起来像丢了一层。
+    """
     chips: list[str] = []
+    position = 0
     for item in chain:
         source = _short_location(index.find("middleware", item["name"].split(":", 1)[-1]))
         haystack = f"{item['label']} {item['name']} {item['desc']} {item['layer']} {source}".casefold()
         if query and query not in haystack:
             continue
-        chips.append(_chip_html(item, source))
+        position += 1
+        chips.append(_chip_html(item, source, position))
     if not chips:
         return 0
     st.markdown(
@@ -209,7 +214,10 @@ def _render_chain_html(chain: list[dict], index, query: str) -> int:
         + "</div>",
         unsafe_allow_html=True,
     )
-    st.caption("从左到右由外到内：越靠左越先看到请求，越靠右越接近模型与工具。鼠标悬停每条看它的职责与来源。")
+    st.caption(
+        "从左到右由外到内：越靠左越先看到请求，越靠右越接近模型与工具。"
+        "编号是链路位置（日志类不占号）；鼠标悬停每条看它的职责与源码位置。"
+    )
     return len(chips)
 
 
@@ -234,27 +242,29 @@ def _render_middleware_chain(agent, index, query: str) -> None:
         names = "、".join(sorted({item["label"] for item in logging_entries}))
         st.caption(f"日志类（只记录，不改变执行）：{names}。")
 
-    groups: dict[str, list[dict]] = {}
+    groups: dict[str, list[tuple[int, dict]]] = {}
+    position = 0
     for item in visible:
-        groups.setdefault(item["name"].split(":", 1)[-1], []).append(item)
+        position += 1
+        groups.setdefault(item["name"].split(":", 1)[-1], []).append((position, item))
 
-    for cls, items in groups.items():
-        desc = items[0]["desc"] or MIDDLEWARE_DESC.get(cls, "")
+    for cls, entries in groups.items():
+        first_position, first = entries[0]
+        desc = first["desc"] or MIDDLEWARE_DESC.get(cls, "")
         source = _short_location(index.find("middleware", cls))
         configs = {
-            f"#{item['order']}": _middleware_config(agent.middleware[item["order"] - 1])
-            for item in items
+            f"#{position}": _middleware_config(agent.middleware[item["order"] - 1])
+            for position, item in entries
         }
-        title = f"{items[0]['order']:02d}. {items[0]['label']}（{cls}）"
-        if len(items) > 1:
-            title += f" ×{len(items)}"
+        title = f"{first_position:02d}. {first['label']}（{cls}）"
+        if len(entries) > 1:
+            title += f" ×{len(entries)}"
         with st.expander(f"{title} · {desc}", expanded=bool(query)):
-            st.caption(f"分层：{items[0]['layer']} ｜ 来源：`{source}`")
+            st.caption(f"分层：{first['layer']} ｜ 来源：`{source}`")
             st.code(
                 json.dumps(configs, ensure_ascii=False, indent=2, default=str),
                 language="json",
             )
-
 
 
 @st.cache_resource(show_spinner=False)
