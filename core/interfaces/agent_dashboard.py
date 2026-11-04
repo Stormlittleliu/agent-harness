@@ -293,8 +293,8 @@ def run() -> None:
         st.session_state["dashboard-entry"] = (
             ENTRY_ROUTER if env_scenario == "router" else ENTRY_CHILD
         )
-    if env_scenario in child_names and "dashboard-child-scenario" not in st.session_state:
-        st.session_state["dashboard-child-scenario"] = env_scenario
+    # 子场景的初值靠下面的 index=start_child，不写 session_state：
+    # 给带 key 的 widget 预置 state 再传 index 会触发 Streamlit 的冲突警告。
 
     # 入口模式 / 子场景放在主内容右上角，跟随页面滚动，不固定在侧边栏。
     top_left, top_entry, top_child = st.columns(
