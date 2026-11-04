@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """行为评测的 3-trial 聚合测试（不调用模型）。"""
-from core.quality.agent_eval import aggregate_trials, summarize_results
+from core.quality import agent_eval
+from core.quality.agent_eval import aggregate_trials, evaluate_cases, summarize_results
 
 
 def test_aggregate_trials_pass_k_and_mean():
@@ -29,3 +30,26 @@ def test_summarize_results_includes_trials_and_mean():
     assert summary["passed"] == 1
     assert summary["trials"] == 3
     assert summary["mean_pass_rate"] == 0.75
+
+
+def test_evaluate_cases_reports_each_trial(monkeypatch):
+    def fake_case(agent, case, judge_chain):
+        return {
+            "id": case["id"],
+            "category": "qa",
+            "passed": True,
+            "trace_id": "t",
+            "scores": [{"name": "behavior", "value": 1.0, "passed": True}],
+        }
+
+    monkeypatch.setattr(agent_eval, "evaluate_case", fake_case)
+    seen = []
+    results = evaluate_cases(
+        None,
+        [{"id": "case-1", "category": "qa"}],
+        trials=2,
+        on_trial=lambda row: seen.append(row["trial"]),
+    )
+    assert seen == [1, 2]
+    assert results[0]["pass_rate"] == 1.0
+    assert results[0]["scores"][0]["name"] == "behavior"

@@ -4,6 +4,12 @@
 > 从轨迹里挖出高频繁荣范式，编译成 spec 工作流，再用 held-out 评测决定
 > 能不能采纳。它是“评测 → 经验 → 工作流”的闭环。
 
+> **实现状态（M0 地基）**：`core/quality/records.py` 已提供
+> run/line/score/span + `RunStore`；`core/quality/scorers.py` 已提供
+> behavior/judge/outcome → Score 与 pass^k reducer；`core/quality/trace_spans.py`
+> 已把现有 trace JSONL 读成 span；`agent_eval.run()` 现在会写
+> `outputs/runs/<run_id>/`。M1 的序列挖掘尚未开始。
+
 ## 1. 为什么做这个
 
 现在评测的产出是：

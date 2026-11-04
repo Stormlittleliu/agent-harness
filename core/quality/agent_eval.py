@@ -16,9 +16,12 @@ if str(ROOT) not in sys.path:
 from langchain_core.messages import AIMessage  # noqa: E402
 
 from core.agent.framework import FrameworkAgent  # noqa: E402
+from core.quality import scorers  # noqa: E402
 from core.quality.judge import build_judge, judge_answer  # noqa: E402
 from core.quality.metrics import score_case  # noqa: E402
 from core.quality.paths import AGENT_OUT  # noqa: E402
+from core.quality.records import RunStore, new_run_id  # noqa: E402
+from core.quality.trace_spans import load_trace_spans  # noqa: E402
 from core.scenarios.registry import get_scenario  # noqa: E402
 
 try:
@@ -108,6 +111,11 @@ def evaluate_case(agent: FrameworkAgent, case: dict, judge_chain=None) -> dict:
     if judged is not None:
         passed = judged.get("verdict") == "pass"
 
+    score_values = [scorers.behavior_score(deterministic)]
+    judge_value = scorers.judge_score(judged)
+    if judge_value is not None:
+        score_values.append(judge_value)
+
     return {
         **case,
         "answer": answer,
@@ -122,6 +130,7 @@ def evaluate_case(agent: FrameworkAgent, case: dict, judge_chain=None) -> dict:
         "judge_used": judged is not None,
         "structured_used": structured is not None,
         "trace_id": getattr(agent, "last_trace_id", None),
+        "scores": [score.to_dict() for score in score_values],
     }
 
 
@@ -152,6 +161,7 @@ def evaluate_cases(
         judge: bool = False,
         progress=None,
         trials: int = 1,
+        on_trial=None,
 ) -> list[dict]:
     """顺序执行用例；每个 case 跑 trials 次并聚合 pass^k。
 
@@ -167,6 +177,8 @@ def evaluate_cases(
             row = evaluate_case(agent, case, judge_chain)
             row["trial"] = trial
             rows.append(row)
+            if on_trial is not None:
+                on_trial(row)
         result = aggregate_trials(case, rows)
         results.append(result)
         if progress is not None:
@@ -215,8 +227,40 @@ def run(scenario_name="robot_vacuum", case_id=None, limit=0, judge=False, trials
             f"pass^k={row['passed']} mean={row.get('pass_rate', 0):.2f}"
         )
 
-    results = evaluate_cases(agent, cases, judge=judge, progress=_print_result, trials=trials)
+    store = RunStore(
+        new_run_id("agent"),
+        scenario=scenario_name,
+        kind="agent",
+        trials=trials,
+        metadata={"judge": bool(judge), "case_filter": case_id, "limit": limit},
+    )
+
+    def _record_trial(row):
+        store.record_line(
+            case_id=row["id"],
+            trial=row["trial"],
+            scenario=scenario_name,
+            passed=bool(row["passed"]),
+            scores=row.get("scores"),
+            trace_id=row.get("trace_id"),
+            answer=row.get("answer", ""),
+            tool_names=row.get("tool_names"),
+            spans=load_trace_spans(row.get("trace_id")),
+            metadata={"category": row.get("category")},
+        )
+
+    results = evaluate_cases(
+        agent,
+        cases,
+        judge=judge,
+        progress=_print_result,
+        trials=trials,
+        on_trial=_record_trial,
+    )
     summary = summarize_results(scenario_name, results, judge=judge, trials=trials)
+    summary["run_id"] = store.run_id
+    summary["run_dir"] = store.run_dir.as_posix()
+    store.finalize(summary=summary)
 
     out_dir = AGENT_OUT
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -231,6 +275,7 @@ def run(scenario_name="robot_vacuum", case_id=None, limit=0, judge=False, trials
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     print(f"\nreport: {md_path}")
     print(f"details: {json_path}")
+    print(f"run: {store.run_dir}")
     return summary
 
 
