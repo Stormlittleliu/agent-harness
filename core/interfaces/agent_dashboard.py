@@ -22,6 +22,7 @@ from core.interfaces.dashboard.benchmarks import render_benchmarks
 from core.interfaces.dashboard.catalog import render_catalog
 from core.interfaces.dashboard.common import load_agent
 from core.interfaces.dashboard.cost import render_cost
+from core.interfaces.dashboard.editor import render_editor
 from core.interfaces.dashboard.evaluation import render_evaluation
 from core.interfaces.dashboard.history import render_history
 from core.interfaces.dashboard.layout import inject_css
@@ -46,8 +47,27 @@ SCENARIO_LABELS = {
     "structured_demo": "structured_demo · 结构化输出",
     "workspace_assistant": "workspace_assistant · 办公学习",
 }
-BASE_VIEWS = ["architecture", "task", "tests", "evaluation", "review", "optimization", "catalog"]
-CODING_VIEWS = ["architecture", "task", "tests", "runtime", "evaluation", "review", "optimization", "catalog"]
+BASE_VIEWS = [
+    "architecture",
+    "editor",
+    "task",
+    "tests",
+    "evaluation",
+    "review",
+    "optimization",
+    "catalog",
+]
+CODING_VIEWS = [
+    "architecture",
+    "editor",
+    "task",
+    "tests",
+    "runtime",
+    "evaluation",
+    "review",
+    "optimization",
+    "catalog",
+]
 
 DASHBOARD_PRESETS = {
     "general": {
@@ -120,6 +140,7 @@ DASHBOARD_PRESETS = {
 DEFAULT_VIEWS = BASE_VIEWS
 VIEW_LABELS = {
     "architecture": "🧠 Agent 架构",
+    "editor": "🎛 场景编辑",
     "task": "🔧 任务执行",
     "tests": "🧪 测试用例",
     "evaluation": "📈 评测",
@@ -171,6 +192,11 @@ def _clear_scenario_state() -> None:
         "architecture-tool-select",
         "architecture-object-select",
         "object-middleware-select",
+        "editor-current",
+        "editor-draft",
+        "editor-errors",
+        "editor-notice",
+        "editor-scenario",
         "runtime-status-filter",
         "runtime-selected-task",
         "runtime-log-select",
@@ -223,6 +249,8 @@ def _render_view(
         return
     if view == "architecture":
         render_architecture(agent)
+    elif view == "editor":
+        render_editor()
     elif view == "task":
         render_task(agent, examples)
     elif view == "tests":

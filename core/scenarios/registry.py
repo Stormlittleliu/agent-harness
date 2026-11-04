@@ -61,13 +61,24 @@ _BUILDERS = {
 
 
 def list_scenarios() -> list[str]:
-    return sorted(_BUILDERS)
+    """已注册场景 + 用 spec 构建的场景（控制台里新建的也算）。"""
+    return sorted(set(_BUILDERS) | set(_spec_names()))
 
 
 def get_scenario(name: str = "robot_vacuum") -> Scenario:
-    try:
-        builder = _BUILDERS[name]
-    except KeyError as exc:
-        available = ", ".join(list_scenarios())
-        raise ValueError(f"未知场景：{name}（可用：{available}）") from exc
-    return builder()
+    builder = _BUILDERS.get(name)
+    if builder is not None:
+        return builder()
+    if name in _spec_names():
+        from core.scenarios.generic import build_generic_spec_scenario
+
+        return build_generic_spec_scenario(name)
+    available = ", ".join(list_scenarios())
+    raise ValueError(f"未知场景：{name}（可用：{available}）")
+
+
+def _spec_names() -> list[str]:
+    """延迟 import：只读数据视图不该顺带加载工具链。"""
+    from core.scenarios.generic import spec_scenario_names
+
+    return spec_scenario_names()

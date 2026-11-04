@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # 合并评测页后的基础视图；runtime 只在 coding_demo 中出现，另行验证。
 VIEWS = [
     "architecture",
+    "editor",
     "task",
     "tests",
     "evaluation",
