@@ -12,8 +12,9 @@
 | `8cf8408` | `docs/design/workflow-mining.md`：评测轨迹 → 成功范式 → 工作流 |
 | `9f69f83` | `docs/design/open-source-borrowing.md`：LangGraph/Langflow/Promptflow/Rivet/Inspect 对标 |
 | `c6be957` | P0-1/P0-2：run/line/score/span 记录 + Scorer/Metric/Reducer + trace span |
+| `03461a1` | P0-3：块 `PortSpec` 输入/输出契约 + `block_ports` 动态端口 + `validate_port_flow` 静态数据流校验 |
 
-最近一次全量测试：**299 passed**。
+最近一次全量测试：**312 passed**。
 
 ### 已落地的质量地基
 
@@ -29,16 +30,16 @@ outputs/runs/<run_id>/
 - `core/quality/trace_spans.py`：现有 trace JSONL → `Span`
 - `core/quality/agent_eval.py`：`run()` 已按 trial 写入 run 目录，保留旧 JSON/Markdown 报告
 
+### 已落地的端口契约（P0-3）
+
+- `core/scenarios/spec_nodes.py`：`PortSpec` + `block_inputs` / `block_outputs` / `block_ports`
+- 参数层（`ParamSpec`）与端口层（`PortSpec`）分离；`save_to` / `queries_from` /
+  `field` / `query_key` / 模板占位符会解析成动态端口
+- `core/scenarios/spec.py`：`validate_port_flow` 从 `input:text` 求不动点，
+  报"必填输入缺失"与"类型不兼容"；**不改执行器**
+- 所有 active spec 仍零错误；说明见 `docs/design/node-ports.md`
+
 ## 2. 下一步队列（按顺序）
-
-### P0-3 · 节点输入/输出契约
-
-- 给 `core/scenarios/spec_nodes.py` 的块加 `inputs`/`outputs` 元数据
-  （name/type/required/default），保留现有 `ParamSpec` 作为参数层。
-- 分离：`params`（节点参数） vs `ports`（输入输出）。
-- 加纯函数 `types_compatible(source_type, target_type)`；边校验先只提示/校验，
-  **不改执行器**，避免一次改太大。
-- 测试：类型兼容、必填端口、非法边；现有 spec 场景全部仍能编译。
 
 ### M1 · 序列/转移挖掘（只读）
 
@@ -101,5 +102,5 @@ git log --oneline -10
 
 ## 5. 恢复时怎么说
 
-> 继续按 `docs/design/plan-status.md` 的顺序做，从 P0-3（节点输入/输出契约）开始；
-> 不要重做导航 A，不要整平台替换，不要自动采纳 pattern。
+> 继续按 `docs/design/plan-status.md` 的顺序做，从 M1（序列/转移挖掘，只读）开始；
+> 不要重做导航 A 和 P0-3，不要整平台替换，不要自动采纳 pattern。
