@@ -11,13 +11,8 @@ from core.llm.factory import chat_model
 from core.runtime.config import RuntimeConfig, SubagentConfig
 from core.runtime.task_tools import build_task_tools
 from core.runtime.tasks import TaskStore
-from core.runtime.workspace import (
-    DENY_COMMANDS,
-    DENY_WRITE_PARTS,
-    Workspace,
-    build_workspace_tools,
-)
-from core.utils.logger_handler import logger
+from core.runtime.workspace import Workspace, build_workspace_tools
+from core.scenarios.coding_demo.hooks import hooks as build_hooks
 from core.utils.path_tool import get_abs_path
 
 WORKSPACE = Path(get_abs_path("data/runtime/coding_workspace"))
@@ -37,56 +32,6 @@ def _ensure_demo_files(workspace: Workspace) -> None:
         hello.write_text('print("hello from demo workspace")\n', encoding="utf-8")
 
 
-def _prompt_hook(query: str):
-    logger.info(f"[hook:UserPromptSubmit] {query[:80]}")
-    return None
-
-
-def _pre_tool_hook(request):
-    tool_call = request.tool_call or {}
-    name = tool_call.get("name", "")
-    args = tool_call.get("args") or {}
-    logger.info(f"[hook:PreToolUse] {name} {str(args)[:120]}")
-    if name == "run_command":
-        command = str(args.get("command", "")).lower()
-        for pattern in DENY_COMMANDS:
-            if pattern in command:
-                return f"命令被 hook 拦截：包含危险模式 {pattern!r}"
-    if name in {"write_file", "edit_file"}:
-        raw_path = str(args.get("path", "")).replace("\\", "/")
-        parts = [part for part in raw_path.split("/") if part]
-        if Path(raw_path).is_absolute() or ".." in parts:
-            return f"写入路径必须是工作区内的相对路径：{raw_path}"
-        for part in DENY_WRITE_PARTS:
-            if part in parts:
-                return f"禁止写入受保护目录：{part}"
-    return None
-
-
-def _post_tool_hook(request, result):
-    text = str(result)
-    if len(text) > 5000:
-        logger.warning(f"[hook:PostToolUse] 输出较大：{len(text)} chars")
-    return None
-
-
-def _stop_hook(messages):
-    logger.info(f"[hook:Stop] messages={len(messages or [])}")
-    return None
-
-
-def _task_start_hook(task):
-    logger.info(f"[hook:TaskStart] {task.id} {task.subject}")
-
-
-def _task_complete_hook(task, answer, unblocked):
-    logger.info(f"[hook:TaskComplete] {task.id} unblocked={[item.id for item in unblocked]}")
-
-
-def _task_fail_hook(task, error):
-    logger.warning(f"[hook:TaskFail] {task.id} {error}")
-
-
 def build_scenario() -> Scenario:
     workspace = Workspace(WORKSPACE, LOG_DIR)
     _ensure_demo_files(workspace)
@@ -104,15 +49,7 @@ def build_scenario() -> Scenario:
         log_dir=LOG_DIR,
         task_store=store,
         subagent=subagent_config,
-        hooks={
-            "UserPromptSubmit": [_prompt_hook],
-            "PreToolUse": [_pre_tool_hook],
-            "PostToolUse": [_post_tool_hook],
-            "Stop": [_stop_hook],
-            "TaskStart": [_task_start_hook],
-            "TaskComplete": [_task_complete_hook],
-            "TaskFail": [_task_fail_hook],
-        },
+        hooks=build_hooks(),
     )
     base_tools = build_workspace_tools(workspace) + build_task_tools(store)
     subagent_tool = build_subagent_tool(

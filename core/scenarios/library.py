@@ -276,11 +276,13 @@ def label(name: str) -> str:
 
 
 def default_name() -> str:
-    """默认打开的场景：有可编辑的 spec 场景就选它，否则选办公学习。"""
+    """默认打开的场景：优先"可编辑且有工作流"（画布一打开就有东西看）。"""
     items = entries()
     editable = [item for item in items if item.from_spec and item.editable]
-    if editable:
-        return editable[0].name
+    with_workflow = [item for item in editable if item.has_workflow]
+    for group in (with_workflow, editable):
+        if group:
+            return group[0].name
     names_ = {item.name for item in items}
     for candidate in ("workspace_assistant", "general"):
         if candidate in names_:

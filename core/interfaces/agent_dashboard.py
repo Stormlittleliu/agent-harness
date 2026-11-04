@@ -154,7 +154,7 @@ def _render_view(
     if view == "architecture":
         render_architecture(agent)
     elif view == "editor":
-        render_editor()
+        render_editor(scenario_name)
     elif view == "task":
         render_task(agent, examples)
     elif view == "tests":

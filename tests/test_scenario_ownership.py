@@ -94,6 +94,20 @@ def test_eject_switches_owner_and_blocks_editing(tmp_path):
     assert "code-owned" in str(excinfo.value)
 
 
+def test_takeover_ignores_legacy_code_drift_but_still_blocks_eject(tmp_path):
+    """spec 接管后，原代码目录只是参考：它怎么改都不该挡住构建。"""
+    code_root, spec_root = _make_scene(tmp_path)
+    ensure_spec_editable(NAME, root=spec_root, code_root=code_root, track_code=False)
+    assert load_state(NAME, spec_root).code_hash is None
+
+    (code_root / NAME / "scenario.py").write_text("SPEC = 123\n", encoding="utf-8")
+    assert ensure_spec_editable(NAME, root=spec_root, code_root=code_root, track_code=False).owner == OWNER_SPEC
+
+    eject(NAME, "转代码", root=spec_root, code_root=code_root)
+    with pytest.raises(OwnershipError):
+        ensure_spec_editable(NAME, root=spec_root, code_root=code_root, track_code=False)
+
+
 def test_eject_then_code_change_is_allowed(tmp_path):
     code_root, spec_root = _make_scene(tmp_path)
     ensure_spec_editable(NAME, root=spec_root, code_root=code_root)

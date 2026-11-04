@@ -227,6 +227,7 @@ def build_from_spec(
     cases_path: Path | None = None,
     checkpoint_backend: str = "memory",
     checkpoint_path: str = "data/runtime/spec_checkpoints.sqlite",
+    runtime: Any = None,
 ) -> Any:
     """用 spec 组装一个 ``Scenario``；工具按 ``spec.tools`` 白名单过滤。"""
     from core.agent.contracts import Scenario
@@ -239,9 +240,8 @@ def build_from_spec(
     missing = [name for name in spec.tools if name not in by_name]
     if missing:
         raise SpecError([f"场景缺少工具：{', '.join(missing)}"])
+    # 允许没有工具：白板 / 结构化输出这类场景只有一个 agent 循环。
     selected = [by_name[name] for name in spec.tools]
-    if not selected:
-        raise SpecError(["spec.tools 不能为空：没有工具的 spec 场景无法检索"])
 
     # 工具白名单确定后再校验一次：块里引用的 tool_list 必须真的可用。
     errors = validate_spec(spec, tool_names={tool.name for tool in selected})
@@ -268,6 +268,7 @@ def build_from_spec(
         checkpoint_backend=checkpoint_backend,
         checkpoint_path=checkpoint_path,
         workflow_factory=(lambda scenario: build_workflows(spec, scenario)) if spec.workflows else None,
+        runtime=runtime,
     )
 
 

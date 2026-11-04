@@ -516,7 +516,7 @@ def _render_readonly(name: str, draft: dict) -> None:
     st.json(draft, expanded=False)
 
 
-def render_editor() -> None:
+def render_editor(current: str | None = None) -> None:
     page_header(
         "场景编辑",
         "受约束的低代码：节点只能引用已注册的块，参数按块契约校验，保存即新版本 spec。",
@@ -541,6 +541,9 @@ def render_editor() -> None:
     pending_select = st.session_state.pop("editor-pending-select", None)
     if pending_select and pending_select in existing:
         st.session_state["editor-scenario"] = pending_select
+    # 默认落在"侧边栏当前选中的场景"上：场景库选中谁，这里就编辑谁。
+    if "editor-scenario" not in st.session_state and current in existing:
+        st.session_state["editor-scenario"] = current
     choice = left.selectbox(
         "编辑场景",
         existing,

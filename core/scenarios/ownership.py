@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -122,17 +122,22 @@ def ensure_spec_editable(
     name: str,
     root: Path | str = SPEC_ROOT,
     code_root: Path | str = CODE_ROOT,
+    track_code: bool = True,
 ) -> ScenarioState:
     """spec 场景构建前的守卫：已 eject 或代码漂移都直接失败。
 
     首次调用会写入基线 state（owner=spec + 当前代码 hash）。
+
+    ``track_code=False`` 用于"spec 已经接管、原代码目录只剩参考价值"的场景：
+    仍然禁止使用已 eject 的 spec，但不再因为参考代码被改动而报错
+    （那时 spec 才是权威，代码分叉是预期内的）。
     """
     state = load_state(name, root)
     if state is None:
         state = ScenarioState(
             name=name,
             owner=OWNER_SPEC,
-            code_hash=scenario_code_hash(name, code_root),
+            code_hash=scenario_code_hash(name, code_root) if track_code else None,
         )
         save_state(state, root)
         return state
@@ -142,6 +147,12 @@ def ensure_spec_editable(
             f"场景 {name} 已转为 code-owned（{state.ejected_at or '未知时间'}），"
             "spec 不再参与构建，也不能再用低代码编辑。"
         )
+
+    if not track_code:
+        if state.code_hash is not None:
+            state = replace(state, code_hash=None)
+            save_state(state, root)
+        return state
 
     current = scenario_code_hash(name, code_root)
     if state.code_hash and current != state.code_hash:

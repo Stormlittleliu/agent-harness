@@ -28,6 +28,11 @@ def test_only_mcp_demo_imports_mcp():
     for path, text in _python_files(ROOT / "core" / "scenarios"):
         if path.parent.name == "mcp_demo":
             continue
+        # pools.py 是工具箱注册表：它替 mcp_demo 的 spec 仿造版保管 MCP 工具。
+        # 除它之外，只有 mcp_demo 自己可以加载 MCP。
+        if path.name == "pools.py":
+            assert "core.mcp.client" in text
+            continue
         assert "core.mcp" not in text, f"只有 mcp_demo 可以加载 MCP：{path}"
 
     mcp_text = (ROOT / "core" / "scenarios" / "mcp_demo" / "scenario.py").read_text(
