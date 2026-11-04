@@ -506,7 +506,7 @@ python -m streamlit run app_agent.py   # 场景选 coding_demo
 python -m pytest
 ```
 
-当前 **235 passed**。覆盖任务图依赖 / 持久化、workspace 读取 / 写入 / 编辑 / grep 与受保护目录拒绝、workspace / research 场景工具、总路由 / 子场景入口、场景 / MCP / LangGraph 边界、planning policy、outcome 断言、trials 聚合、metrics 的
+当前 **257 passed**。覆盖任务图依赖 / 持久化、workspace 读取 / 写入 / 编辑 / grep 与受保护目录拒绝、workspace / research 场景工具、总路由 / 子场景入口、场景 / MCP / LangGraph 边界、planning policy、outcome 断言、trials 聚合、metrics 的
 `expected_tools_any`、subagent 子上下文 / 工具白名单、hook 触发与异常隔离、结构化输出
 schema、成本报告聚合、评测门禁、故障注入（超时 / 权限 / 参数 / 空检索 / 拒答）、
 对象索引（工具 / 中间件源码定位）、完整报告选择、中间件中文说明与顺序不变量、
