@@ -13,8 +13,9 @@
 | `9f69f83` | `docs/design/open-source-borrowing.md`：LangGraph/Langflow/Promptflow/Rivet/Inspect 对标 |
 | `c6be957` | P0-1/P0-2：run/line/score/span 记录 + Scorer/Metric/Reducer + trace span |
 | `03461a1` | P0-3：块 `PortSpec` 输入/输出契约 + `block_ports` 动态端口 + `validate_port_flow` 静态数据流校验 |
+| `f8b2dfe` | M1：轨迹序列/转移挖掘 + 范式卡（只读，不自动采纳） |
 
-最近一次全量测试：**312 passed**。
+最近一次全量测试：**323 passed**。
 
 ### 已落地的质量地基
 
@@ -39,16 +40,18 @@ outputs/runs/<run_id>/
   报"必填输入缺失"与"类型不兼容"；**不改执行器**
 - 所有 active spec 仍零错误；说明见 `docs/design/node-ports.md`
 
+### 已落地的轨迹挖掘（M1）
+
+- `core/quality/mining.py`：读 `outputs/runs/*/lines.jsonl` + spans
+- 序列只挖长度 ≥ 3 的连续子序列；两跳交给转移层；按 `scenario × intent` 分桶
+- ReAct 的 `model/tools` 归一成 `model` / `tool:<name>`；相邻重复 token 合并
+- `support` 只算成功 trial，`success_rate` 分母是全部出现，`lift = success_rate - baseline`
+- 产物 `outputs/patterns/<mining_id>/patterns.json` + `patterns.md`；
+  **只产出 candidate，不自动采纳**
+- 已用 2 个真实 run（6 条 trial）+ 合成 run 跑通；基线 100% 时明确输出"没有可挖范式"
+- 说明见 `docs/design/workflow-mining.md` 的 4.3.1
+
 ## 2. 下一步队列（按顺序）
-
-### M1 · 序列/转移挖掘（只读）
-
-- 新建 `core/quality/mining.py`，读 `outputs/runs/*/lines.jsonl` + spans。
-- 先做两件：连续序列模式（PrefixSpan 或自写 Apriori）、`from_node → to_node`
-  转移 n-gram；不做完整 gSpan。
-- 过滤成功 run；按 `support × success_rate × lift / cost` 排序。
-- 输出 `outputs/patterns/<run_id>/patterns.json` + 可读范式卡。
-- 验收：用合成 trace + 真实 run 至少各跑通一次；**不自动采纳**。
 
 ### M2 · pattern_to_spec + shadow
 
@@ -65,7 +68,7 @@ outputs/runs/<run_id>/
 - 采纳后保留 baseline，一键回退。
 - 验收：采纳后 pass^k 不降，能回退。
 
-### 编辑器 P0（可与 M1 并行）
+### 编辑器 P0（可与 M2 并行）
 
 - 三栏工作台：左块库 / 中画布 / 右检查器；底部状态栏。
 - 撤销/重做、框选、Delete、缩放/平移、草稿按场景保存、错误点击定位。
@@ -102,5 +105,5 @@ git log --oneline -10
 
 ## 5. 恢复时怎么说
 
-> 继续按 `docs/design/plan-status.md` 的顺序做，从 M1（序列/转移挖掘，只读）开始；
-> 不要重做导航 A 和 P0-3，不要整平台替换，不要自动采纳 pattern。
+> 继续按 `docs/design/plan-status.md` 的顺序做，从 M2（pattern_to_spec + shadow）开始；
+> 不要重做导航 A、P0-3、M1，不要整平台替换，不要自动采纳 pattern。
