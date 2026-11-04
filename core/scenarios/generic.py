@@ -21,6 +21,7 @@ from core.llm.factory import chat_model
 from core.scenarios import pools
 from core.scenarios.ownership import OWNER_CODE, ensure_spec_editable, load_state
 from core.scenarios.spec import SpecError, build_from_spec, load_active_spec, resolve_cases_path
+from core.scenarios.schemas import resolve as resolve_schema
 from core.utils.path_tool import get_abs_path
 
 SPEC_ROOT = Path(get_abs_path("data/specs"))
@@ -84,4 +85,5 @@ def build_generic_spec_scenario(
         checkpoint_backend="sqlite",
         checkpoint_path=f"data/runtime/spec_{name}_checkpoints.sqlite",
         runtime=box.runtime,
+        response_format=resolve_schema(spec.response_format),
     )

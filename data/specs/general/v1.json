@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "name": "general",
+  "description": "白板：没有工具、没有工作流",
+  "kind": "agent",
+  "tools": [],
+  "system_prompt": "你是一个大模型助手。",
+  "cases_path": "core/scenarios/general/cases.jsonl",
+  "response_format": null,
+  "harness": {
+    "enable_todo": true,
+    "enable_summarization": true,
+    "tool_call_limit": 12,
+    "token_budget": 40000
+  },
+  "policies": null,
+  "workflows": {}
+}

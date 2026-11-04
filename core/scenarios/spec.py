@@ -99,6 +99,8 @@ class ScenarioSpec(BaseModel):
     # 行为用例文件（相对仓库根）；留空则找 data/specs/<name>/cases.jsonl。
     # 仿造现有场景时指向原来的 cases，保证两边是同一把尺子。
     cases_path: str | None = None
+    # 结构化输出：schemas.py 里登记的名字（如 "ReportSchema"），空表示不用。
+    response_format: str | None = None
     harness: HarnessSpec = Field(default_factory=HarnessSpec)
     policies: list[PolicySpecModel] | None = None
     workflows: dict[str, WorkflowSpec] = Field(default_factory=dict)
@@ -180,6 +182,14 @@ def validate_spec(spec: ScenarioSpec, tool_names: set[str] | None = None) -> lis
         errors.append("scenario.name 不能为空")
     # 允许没有 workflow：纯 ReAct 场景（general / coding / router…）只有一个 agent 循环。
     known_policies = set(available_policies())
+    if spec.response_format:
+        from core.scenarios.schemas import SCHEMAS
+
+        if spec.response_format not in SCHEMAS:
+            errors.append(
+                f"未知的 response_format：{spec.response_format}"
+                f"（可用：{', '.join(sorted(SCHEMAS))}）"
+            )
     for policy in spec.policies or []:
         if policy.name not in known_policies:
             errors.append(
@@ -228,6 +238,7 @@ def build_from_spec(
     checkpoint_backend: str = "memory",
     checkpoint_path: str = "data/runtime/spec_checkpoints.sqlite",
     runtime: Any = None,
+    response_format: Any = None,
 ) -> Any:
     """用 spec 组装一个 ``Scenario``；工具按 ``spec.tools`` 白名单过滤。"""
     from core.agent.contracts import Scenario
@@ -269,6 +280,7 @@ def build_from_spec(
         checkpoint_path=checkpoint_path,
         workflow_factory=(lambda scenario: build_workflows(spec, scenario)) if spec.workflows else None,
         runtime=runtime,
+        response_format=response_format,
     )
 
 

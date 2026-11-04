@@ -48,11 +48,15 @@ def test_code_scenario_is_marked_readonly():
 
 
 def test_default_name_prefers_editable_spec_scenario():
+    """默认打开"可编辑且有工作流"的场景：一进来画布上就有东西看。"""
     default = library.default_name()
     assert default in library.names()
     editable = [item for item in library.entries() if item.from_spec and item.editable]
-    if editable:
-        assert default == editable[0].name
+    if not editable:
+        return
+    with_workflow = [item for item in editable if item.has_workflow]
+    expected = (with_workflow or editable)[0]
+    assert default == expected.name
 
 
 def test_summary_counts_match_entries():

@@ -404,3 +404,19 @@ def test_disabled_policy_requires_reason_in_spec():
     spec = ScenarioSpec.model_validate(_payload(policies=[{"name": "retry", "enabled": False}]))
     errors = validate_spec(spec)
     assert any("reason" in error for error in errors)
+
+def test_response_format_must_be_registered(tmp_path):
+    from core.scenarios import spec as spec_module
+
+    base = {
+        "schema_version": 1,
+        "name": "fmt_demo",
+        "tools": [],
+        "workflows": {},
+    }
+    ok = spec_module.spec_from_dict({**base, "response_format": "ReportSchema"})
+    assert spec_module.validate_spec(ok) == []
+
+    bad = spec_module.spec_from_dict({**base, "response_format": "NoSuchSchema"})
+    errors = spec_module.validate_spec(bad)
+    assert any("response_format" in error for error in errors)
