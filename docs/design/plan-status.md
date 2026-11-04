@@ -14,8 +14,9 @@
 | `c6be957` | P0-1/P0-2：run/line/score/span 记录 + Scorer/Metric/Reducer + trace span |
 | `03461a1` | P0-3：块 `PortSpec` 输入/输出契约 + `block_ports` 动态端口 + `validate_port_flow` 静态数据流校验 |
 | `f8b2dfe` | M1：轨迹序列/转移挖掘 + 范式卡（只读，不自动采纳） |
+| `dbdd613` | M2：线性范式 → `candidates/` 候选 spec + shadow 记录（不覆盖 active） |
 
-最近一次全量测试：**323 passed**。
+最近一次全量测试：**339 passed**。
 
 ### 已落地的质量地基
 
@@ -51,15 +52,19 @@ outputs/runs/<run_id>/
 - 已用 2 个真实 run（6 条 trial）+ 合成 run 跑通；基线 100% 时明确输出"没有可挖范式"
 - 说明见 `docs/design/workflow-mining.md` 的 4.3.1
 
+### 已落地的候选编译与 shadow（M2）
+
+- `core/scenarios/pattern_to_spec.py`：步骤按源 spec 节点 / 块名 / `tool:` / `model`
+  解析；只编译线性范式，`branch` 明确拒绝
+- 候选写 `data/specs/<scenario>/candidates/<pattern_id>.json`，
+  **不写 `active.json`、不产生 `vN.json`**
+- 必填参数补不出来就失败；候选必须过 `validate_spec` + `build_workflows`
+- `ScenarioSpec.provenance` 记录 pattern id / scope / 指标 / evidence runs
+- `core/quality/shadow.py`：确定性 train/held-out，baseline/candidate 各跑一遍，
+  只写 `outputs/shadow/<shadow_id>/shadow.json`，`decision=pending`
+- 说明见 `docs/design/pattern-to-spec.md`
+
 ## 2. 下一步队列（按顺序）
-
-### M2 · pattern_to_spec + shadow
-
-- `core/scenarios/pattern_to_spec.py`：pattern → candidate spec；
-  只允许已注册块，不覆盖 active，走 `validate_spec`/`build_workflows`。
-- 生成到 `data/specs/<scenario>/candidates/` 或临时目录；记录 provenance。
-- shadow：原 cases + held-out 各跑一遍，只记录，不切换。
-- 验收：一个线性范式能编译成可运行 spec。
 
 ### M3 · A/B + UI
 
@@ -68,7 +73,7 @@ outputs/runs/<run_id>/
 - 采纳后保留 baseline，一键回退。
 - 验收：采纳后 pass^k 不降，能回退。
 
-### 编辑器 P0（可与 M2 并行）
+### 编辑器 P0（可与 M3 并行）
 
 - 三栏工作台：左块库 / 中画布 / 右检查器；底部状态栏。
 - 撤销/重做、框选、Delete、缩放/平移、草稿按场景保存、错误点击定位。
@@ -105,5 +110,5 @@ git log --oneline -10
 
 ## 5. 恢复时怎么说
 
-> 继续按 `docs/design/plan-status.md` 的顺序做，从 M2（pattern_to_spec + shadow）开始；
-> 不要重做导航 A、P0-3、M1，不要整平台替换，不要自动采纳 pattern。
+> 继续按 `docs/design/plan-status.md` 的顺序做，从 M3（A/B 门槛 + 范式 UI）开始；
+> 不要重做导航 A、P0-3、M1、M2，不要整平台替换，不要自动采纳 pattern。
