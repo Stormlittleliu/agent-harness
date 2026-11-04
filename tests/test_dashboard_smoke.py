@@ -8,7 +8,7 @@ from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
 
-from core.interfaces.console import routes
+from core.interfaces.console import quality, routes
 from core.scenarios import entry as entries
 from core.scenarios import library
 
@@ -119,10 +119,14 @@ def test_build_detail_tabs_and_publish_form():
 
 def test_quality_views_render():
     app = _app(routes.Route("quality"))
-    for view in ("评测", "复核", "优化", "数据集", "基准", "成本", "记录"):
-        _radio(app, "视图").set_value(view)
+    for group, views in quality.VIEW_GROUPS.items():
+        _group(app, "quality:group").set_value([group])
         app.run()
-        _ok(app, view)
+        _ok(app, group)
+        for view in views:
+            _group(app, "quality:view").set_value([view])
+            app.run()
+            _ok(app, f"{group}/{view}")
 
 
 def test_switching_chat_entry_keeps_other_threads():

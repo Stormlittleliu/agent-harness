@@ -86,6 +86,52 @@ def test_shadow_accepts_boolean_runner(tmp_path):
     assert result["comparison"]["improvements"] == ["case-1", "case-2"]
 
 
+def test_shadow_trials_use_pass_k_per_case(tmp_path):
+    def runner(agent, case):
+        return {"passed": not (agent == "candidate" and case["id"] == "case-1")}
+
+    result = run_shadow(
+        "baseline",
+        "candidate",
+        _cases(4),
+        runner=runner,
+        shadow_id="shadow-trials",
+        out_root=tmp_path,
+        held_out_ratio=0.5,
+        trials=3,
+    )
+    assert result["trials"] == 3
+    assert result["candidate"]["pass_k"] == 0.75
+    assert result["candidate"]["k"] == 3
+
+
+def test_shadow_collects_outcome_cost_and_safety(tmp_path):
+    def runner(agent, case):
+        return {
+            "passed": not (agent == "candidate" and case["id"] == "case-2"),
+            "scores": [{"name": "outcome", "passed": agent == "baseline"}],
+            "tokens": 100 if agent == "baseline" else 200,
+            "latency_ms": 1000,
+        }
+
+    cases = _cases(3)
+    cases[1] = {**cases[1], "safety": True}
+    result = run_shadow(
+        "baseline",
+        "candidate",
+        cases,
+        runner=runner,
+        shadow_id="shadow-cost",
+        out_root=tmp_path,
+        held_out_ratio=0.0,
+    )
+    assert result["baseline"]["outcome_rate"] == 1.0
+    assert result["candidate"]["outcome_rate"] == 0.0
+    assert result["baseline"]["avg_tokens"] == 100.0
+    assert result["candidate"]["avg_tokens"] == 200.0
+    assert result["comparison"]["safety_regressions"] == ["case-2"]
+
+
 def test_shadow_held_out_gate(tmp_path):
     # baseline 全过、candidate 只挂一个 held-out case 时，held_out_ok 必须为 False。
     cases = split_cases(_cases(4), held_out_ratio=0.5, seed="shadow")

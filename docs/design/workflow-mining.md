@@ -209,14 +209,28 @@ python -m core.quality.mining --scenario workspace_assistant --min-support 3 --t
 - 先 shadow（只记录不切换），再人工采纳；
 - 采纳后保留 baseline，支持一键回退。
 
+### 4.6.1 当前实现（M3）
+
+- `core/quality/adoption.py`：
+  - `evaluate_gate` 检查 pass^k / outcome / token / 延迟 / 安全回归；
+  - `adopt_candidate` 要求 active 存在、gate 通过，写 `vN+1` 并切 active，
+    记录 baseline 版本；
+  - `rollback_last` 只把 `active.json` 指回 baseline，不删新版本；
+  - 记录在 `outputs/adoptions/<scenario>/`。
+- `core/interfaces/dashboard/patterns.py`：
+  - 质量页「范式」视图：列表 / 证据 / 反例 / shadow / 采纳 / 回退 / 拒绝；
+  - 「采纳」在没有 shadow 或 gate 不过时不可点；
+  - 质量页导航改为「跑一次 / 看资产 / 查记录」分组，9 个视图不再横排。
+- 细节见 `docs/design/adoption.md`。
+
 ## 5. UI
 
-质量页新增「范式」视图（P2）：
+质量页新增「范式」视图（已完成，放在「看资产」分组）：
 
 ```text
 范式列表：名称 / scope / support / success / lift / 状态
 详情：步骤图（只读） · 证据 · 指标 · 反例
-操作：试运行 · 编译成 spec 草稿 · 采纳 · 拒绝
+操作：试运行 shadow · 编译成 spec 草稿 · 采纳 · 拒绝 · 回退
 ```
 
 构建页的「发布」页签显示 `source: mined` 和 provenance，避免“这版是哪来的”说不清。

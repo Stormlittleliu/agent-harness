@@ -55,9 +55,12 @@ python -m core.scenarios.eject <name> --status
 - `core/quality/selfbuilt.py` — 自建跨分类任务集评测（检索 / 单轮 / 多轮），任务在 `data/evals/datasets/selfbuilt/tasks.jsonl`；
 - `core/quality/mining.py` — 从 `outputs/runs/` 挖候选范式（序列 + 转移，只读，不自动采纳）；
 - `core/quality/shadow.py` — baseline/candidate 各跑一遍、只记录不切换（shadow）；
+- `core/quality/adoption.py` — 采纳门槛（pass^k / outcome / 成本 / 安全）、写新版本、回退指针；
 - `core/scenarios/pattern_to_spec.py` — 线性范式 → `candidates/` 候选 spec，不覆盖 active；
+- `core/interfaces/dashboard/patterns.py` — 质量页「范式」视图：证据 / shadow / 采纳 / 回退；
 - [docs/design/workflow-mining.md](docs/design/workflow-mining.md) — 评测轨迹 → 成功范式 → 工作流的分阶段设计；
 - [docs/design/pattern-to-spec.md](docs/design/pattern-to-spec.md) — 范式怎么映射成块、候选怎么落盘、shadow 的边界；
+- [docs/design/adoption.md](docs/design/adoption.md) — 采纳门槛、版本记录与回退的边界；
 - `core/scenarios/spec.py` — spec schema、校验、编译、版本化读写；
 - `core/scenarios/spec_nodes.py` — 块库、`ParamSpec` 参数契约、`PortSpec` 输入/输出端口、块的中文名与说明（`label` / `desc`）；
 - [docs/design/node-ports.md](docs/design/node-ports.md) — 参数层与端口层为什么分开、动态端口怎么解析、静态数据流校验的边界；

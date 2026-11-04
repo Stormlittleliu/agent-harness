@@ -18,13 +18,21 @@ from core.interfaces.dashboard.common import load_agent
 from core.interfaces.dashboard.cost import render_cost
 from core.interfaces.dashboard.evaluation import render_evaluation
 from core.interfaces.dashboard.history import render_history
-from core.interfaces.dashboard.layout import page_header
+from core.interfaces.dashboard.layout import page_header, sync_widget
 from core.interfaces.dashboard.optimization import render_optimization
+from core.interfaces.dashboard.patterns import render_patterns
 from core.interfaces.dashboard.review import render_review
 from core.interfaces.dashboard.tests import render_tests
 from core.scenarios import library
 
-VIEWS = ("评测", "复核", "优化", "自检", "数据集", "基准", "成本", "记录")
+# 9 个视图不再横排成一排 radio；按"跑一次 / 看资产 / 查记录"分组。
+VIEW_GROUPS = {
+    "跑一次": ("评测", "复核", "优化", "自检"),
+    "看资产": ("数据集", "基准", "成本", "范式"),
+    "查记录": ("记录",),
+}
+GROUP_KEY = "quality:group"
+VIEW_KEY = "quality:view"
 
 
 def render(route: routes.Route) -> None:
@@ -47,7 +55,25 @@ def render(route: routes.Route) -> None:
         key="quality:scenario",
         help="只影响质量页的评测对象；不会改变对话或构建里正在用的场景。",
     )
-    view = st.radio("视图", VIEWS, horizontal=True, key="quality:view")
+    group = st.segmented_control(
+        "分组",
+        list(VIEW_GROUPS),
+        key=GROUP_KEY,
+        label_visibility="collapsed",
+    )
+    if group not in VIEW_GROUPS:
+        group = next(iter(VIEW_GROUPS))
+    views = VIEW_GROUPS[group]
+    if st.session_state.get(VIEW_KEY) not in views:
+        sync_widget(VIEW_KEY, views[0])
+    view = st.segmented_control(
+        "视图",
+        list(views),
+        key=VIEW_KEY,
+        label_visibility="collapsed",
+    )
+    if view not in views:
+        view = views[0]
 
     if view == "评测":
         render_evaluation(scenario)
@@ -65,5 +91,7 @@ def render(route: routes.Route) -> None:
         render_benchmarks()
     elif view == "成本":
         render_cost()
+    elif view == "范式":
+        render_patterns(scenario)
     else:
         render_history()
