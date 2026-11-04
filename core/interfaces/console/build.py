@@ -157,7 +157,7 @@ def _detail(name: str, route: routes.Route) -> None:
     if tab == "overview":
         _overview(name, info, item)
     elif tab == "structure":
-        section("结构", "画布 / 表单改的是 spec；保存即新版本。")
+        # 结构页本身已经是工作台，不再叠一层「结构」H4 + 说明：那会把画布再往下推。
         render_editor(name, embedded=True)
     elif tab == "tools":
         _tools(name)

@@ -334,6 +334,16 @@ def _render_prompt_blocks(name: str, draft: dict, prefix: str) -> None:
             st.code(assembly.text or "（空）", language="text")
 
 
+def _mark_param_change() -> None:
+    """参数 widget 的 on_change：只标记，不在这里改草稿。
+
+    不能用"渲染后的值 != 草稿值"来推断用户改过参数：首次挂载时的默认值归一化
+    也会不相等，那样会把一次粘贴变成两个撤销步。on_change 只在用户真的动了
+    控件时触发，撤销栈才是干净的。
+    """
+    st.session_state["editor-param-changed"] = True
+
+
 def _render_params(fn: str, args: dict, prefix: str, tools: list[str]) -> dict:
     """按块的参数契约渲染表单；返回规范化后的参数。"""
     values = dict(args or {})
@@ -343,7 +353,10 @@ def _render_params(fn: str, args: dict, prefix: str, tools: list[str]) -> dict:
         key = f"{prefix}-{param.name}"
         current = values.get(param.name, param.default)
         if param.type == "bool":
-            values[param.name] = st.checkbox(label, value=bool(current), help=help_text, key=key)
+            values[param.name] = st.checkbox(
+                label, value=bool(current), help=help_text, key=key,
+                on_change=_mark_param_change,
+            )
         elif param.type in {"int", "float"}:
             minimum = param.minimum if param.minimum is not None else 0
             maximum = param.maximum if param.maximum is not None else 100000
@@ -353,14 +366,14 @@ def _render_params(fn: str, args: dict, prefix: str, tools: list[str]) -> dict:
                 default = min(max(int(default), minimum), maximum)
                 values[param.name] = int(st.number_input(
                     label, min_value=minimum, max_value=maximum, value=default, step=1,
-                    help=help_text, key=key,
+                    help=help_text, key=key, on_change=_mark_param_change,
                 ))
             else:
                 default = current if isinstance(current, (int, float)) else float(minimum)
                 default = min(max(float(default), float(minimum)), float(maximum))
                 values[param.name] = float(st.number_input(
                     label, min_value=float(minimum), max_value=float(maximum),
-                    value=default, help=help_text, key=key,
+                    value=default, help=help_text, key=key, on_change=_mark_param_change,
                 ))
         elif param.type == "enum":
             choices = list(param.choices or ())
@@ -369,15 +382,18 @@ def _render_params(fn: str, args: dict, prefix: str, tools: list[str]) -> dict:
             index = choices.index(current) if current in choices else 0
             values[param.name] = st.selectbox(
                 label, choices, index=index, help=help_text, key=key,
+                on_change=_mark_param_change,
             )
         elif param.type == "tool_list":
             default = [name for name in (current or []) if name in tools]
             values[param.name] = st.multiselect(
                 label, tools, default=default, help=help_text, key=key,
+                on_change=_mark_param_change,
             )
         elif param.type == "str_list":
             text = st.text_input(
                 label, value=", ".join(current or []), help=help_text, key=key,
+                on_change=_mark_param_change,
             )
             values[param.name] = [part.strip() for part in text.split(",") if part.strip()]
         else:
@@ -385,10 +401,12 @@ def _render_params(fn: str, args: dict, prefix: str, tools: list[str]) -> dict:
             if param.name in {"prompt", "system_prompt"}:
                 values[param.name] = st.text_area(
                     label, value=text_value, height=90, help=help_text, key=key,
+                    on_change=_mark_param_change,
                 )
             else:
                 values[param.name] = st.text_input(
                     label, value=text_value, help=help_text, key=key,
+                    on_change=_mark_param_change,
                 )
     return spec_edit.normalize_args(fn, values)
 
@@ -413,6 +431,18 @@ def _render_canvas_editor(
         include_blocks=False,
     )
     result = render_canvas(payload, key=f"{prefix}-canvas-{workflow}")
+    command_key = f"editor-canvas-command:{workflow}"
+    if (
+        isinstance(result, dict)
+        and result.get("command") in {"undo", "redo"}
+        and result.get("version") != st.session_state.get(command_key)
+    ):
+        st.session_state[command_key] = result.get("version")
+        changed = _undo(name) if result.get("command") == "undo" else _redo(name)
+        if changed:
+            _bump_generation()
+            st.rerun()
+        return
     if isinstance(result, dict) and result.get("version") != st.session_state.get("editor-canvas-version"):
         st.session_state["editor-canvas-version"] = result.get("version")
         before = copy.deepcopy(draft)
@@ -425,7 +455,10 @@ def _render_canvas_editor(
         st.rerun()
 
     header = st.columns([2.2, 1], vertical_alignment="center")
-    header[0].caption("拖节点移动 · 右侧圆点连线 · 点连线删除 · Delete 删节点 · 滚轮缩放 / 空白拖动平移")
+    header[0].caption(
+        "拖节点移动 · Shift+点/拖空白框选 · Ctrl+C/X/V 复制剪切粘贴 · "
+        "Ctrl+Z/Y 撤销重做 · Delete 删除 · 滚轮缩放 / 空白拖动平移"
+    )
     if header[1].button("重新自动排版", key=f"{prefix}-canvas-relayout"):
         spec_edit.clear_layout(name, workflow)
         _bump_generation()
@@ -447,6 +480,9 @@ def _render_selected_node(
     if node is None:
         st.caption(empty_hint)
         return
+
+    if st.session_state.pop("editor-param-changed", False):
+        _push_undo(name, draft)
 
     fn = str(node.get("fn"))
     options = registered_nodes()
@@ -494,16 +530,15 @@ def _render_selected_node(
         _bump_generation()
         st.rerun()
 
-    old_args = copy.deepcopy(node.get("args") or {})
-    new_args = _render_params(
+    old_args = dict(node.get("args") or {})
+    node["args"] = _render_params(
         str(node.get("fn")), old_args, f"{prefix}-sel-{node.get('id')}", tools
     )
-    if new_args != old_args:
-        _remember(name, draft)
-        node["args"] = new_args
 
 
 def _render_nodes(name: str, draft: dict, workflow: str, prefix: str, tools: list[str]) -> None:
+    if st.session_state.pop("editor-param-changed", False):
+        _push_undo(name, draft)
     workflow_draft = draft["workflows"][workflow]
     nodes = workflow_draft["nodes"]
     for index, node in enumerate(list(nodes)):
@@ -541,13 +576,12 @@ def _render_nodes(name: str, draft: dict, workflow: str, prefix: str, tools: lis
                 _bump_generation()
                 st.rerun()
             st.caption(block_desc(fn) or "该块没有说明。")
-            old_args = copy.deepcopy(node.get("args") or {})
-            new_args = _render_params(
-                str(node.get("fn") or fn), old_args, f"{prefix}-n{index}-{fn}", tools
+            node["args"] = _render_params(
+                str(node.get("fn") or fn),
+                dict(node.get("args") or {}),
+                f"{prefix}-n{index}-{fn}",
+                tools,
             )
-            if new_args != old_args:
-                _remember(name, draft)
-                node["args"] = new_args
 
     add_col1, add_col2 = st.columns([1.6, 1])
     block_options = registered_nodes()
@@ -801,7 +835,7 @@ def _render_status(name: str, draft: dict, prefix: str, tools: list[str]) -> Non
     redo = _redo_stacks().get(name) or []
     with st.container(border=True):
         cols = st.columns(
-            [1.25, 1.25, 1.0, 0.75, 0.75, 1.35, 1.4],
+            [1.2, 1.2, 0.95, 0.7, 0.7, 1.25, 1.35, 0.95],
             vertical_alignment="center",
             gap="small",
         )
@@ -821,6 +855,15 @@ def _render_status(name: str, draft: dict, prefix: str, tools: list[str]) -> Non
             st.rerun()
         if cols[6].button("保存为新版本", type="primary", key=f"{prefix}-save"):
             _save_draft(name, draft)
+        wide = bool(st.session_state.get("editor-wide"))
+        if cols[7].button(
+            "还原宽度" if wide else "宽屏",
+            key=f"{prefix}-wide",
+            help="把整个构建页放宽到接近视口宽度；画布右下角还可以拖拽调高。",
+        ):
+            st.session_state["editor-wide"] = not wide
+            st.rerun()
+
 
 
 def _render_versions(name: str, draft: dict, prefix: str) -> None:
@@ -873,7 +916,7 @@ def _render_eject(name: str, prefix: str) -> None:
 def _render_workbench(name: str, draft: dict, prefix: str, tools: list[str]) -> None:
     """三栏工作台：左块库 / 中画布 / 右检查器；状态栏在下方。"""
     workflow_names = list((draft.get("workflows") or {}).keys())
-    left, center, right = st.columns([1.05, 3.2, 1.55], gap="small")
+    left, center, right = st.columns([1.35, 4.25, 1.8], gap="small")
     with left:
         workflow = st.selectbox(
             "工作流", workflow_names, key=f"{prefix}-workflow"
@@ -881,17 +924,18 @@ def _render_workbench(name: str, draft: dict, prefix: str, tools: list[str]) -> 
         if st.session_state.get("editor-workflow-current") != workflow:
             st.session_state["editor-workflow-current"] = workflow
             st.session_state["editor-selected"] = None
-        with st.form(f"{prefix}-workflow-new", clear_on_submit=True):
-            workflow_name = st.text_input("新增工作流名", placeholder="report")
-            if st.form_submit_button("新增"):
-                _remember(name, draft)
-                try:
-                    spec_edit.add_workflow(draft, workflow_name)
-                except SpecError as exc:
-                    st.error("；".join(exc.errors))
-                else:
-                    _bump_generation()
-                    st.rerun()
+        with st.expander("新建工作流", expanded=False):
+            with st.form(f"{prefix}-workflow-new", clear_on_submit=True):
+                workflow_name = st.text_input("新增工作流名", placeholder="report")
+                if st.form_submit_button("新增"):
+                    _remember(name, draft)
+                    try:
+                        spec_edit.add_workflow(draft, workflow_name)
+                    except SpecError as exc:
+                        st.error("；".join(exc.errors))
+                    else:
+                        _bump_generation()
+                        st.rerun()
         mode = st.radio(
             "编辑方式",
             [MODE_CANVAS, MODE_FORM],
@@ -1031,6 +1075,12 @@ def render_editor(current: str | None = None, *, embedded: bool = False) -> None
         st.success(notice)
 
     tools = spec_tool_names()
+    if st.session_state.setdefault("editor-wide", True):
+        st.markdown(
+            "<style>.block-container{max-width:calc(100vw - 2rem) !important;"
+            "padding-left:1rem !important;padding-right:1rem !important;}</style>",
+            unsafe_allow_html=True,
+        )
     structure_tab, basics_tab, advanced_tab = st.tabs(["结构", "基本信息", "策略与版本"])
     with structure_tab:
         _render_workbench(choice, draft, prefix, tools)

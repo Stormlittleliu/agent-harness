@@ -62,6 +62,13 @@
     font-size: 11px; padding: 2px 7px; border-radius: 5px;
   }
   .zoombar button:hover { background: rgba(76,125,240,.12); }
+  .box { fill: rgba(76,125,240,.10); stroke: #4c7df0; stroke-width: 1; stroke-dasharray: 4 3; }
+  .resizer {
+    position: absolute; right: 4px; bottom: 4px; width: 16px; height: 16px;
+    cursor: nwse-resize; opacity: .65;
+    border-right: 2px solid #8fa2c0; border-bottom: 2px solid #8fa2c0;
+  }
+  .resizer:hover { opacity: 1; }
 </style>
 </head>
 <body>
@@ -77,24 +84,33 @@
     </div>
     <svg id="board" viewBox="0 0 1180 470" preserveAspectRatio="none"></svg>
     <div class="flash" id="flash"></div>
+    <div class="resizer" id="resizer" title="拖动放大画布"></div>
   </div>
 </div>
 <script>
 (function () {
-  var NODE_W = 156, NODE_H = 58, PORT_R = 5, BOARD_W = 1180, BOARD_H = 470;
+  var NODE_W = 184, NODE_H = 64, PORT_R = 5, BOARD_W = 1180, BOARD_H = 470;
   var START = "__start__", END = "__end__";
 
-  var model = { nodes: [], edges: [], blocks: [], errors: [], selected: null };
-  var drag = null;      // { id, dx, dy, moved }
+  var model = {
+    nodes: [], edges: [], blocks: [], errors: [],
+    selected: null, selection: [], clipboard: null, showPalette: true
+  };
+  var drag = null;      // { id, start, origins, moved }
   var link = null;      // { from, x, y }
-  var pan = null;       // { sx, sy, vx, vy }
+  var pan = null;       // { cx, cy, vx, vy, moved }
+  var box = null;       // { sx, sy, x, y }
+  var resize = null;    // { cy, h }
+  var boardH = 470;
   var view = { x: 0, y: 0, w: BOARD_W, h: BOARD_H };
   var version = 0;
   var svg = document.getElementById("board");
   var palette = document.getElementById("palette");
   var wrap = document.querySelector(".wrap");
   var flashBox = document.getElementById("flash");
+  var resizer = document.getElementById("resizer");
   var flashTimer = null;
+  try { boardH = Number(localStorage.getItem("ah-canvas-height")) || 470; } catch (err) { boardH = 470; }
 
   // ---------------- Streamlit 静态组件协议 ----------------
   function send(type, data) {
@@ -124,14 +140,19 @@
       return Array.prototype.map.call(edge, String);
     });
     model.errors = Array.isArray(args.errors) ? args.errors : [];
+    model.showPalette = args.show_palette !== false;
     var keep = args.selected || null;
     if (keep && !findNode(keep)) { keep = null; }
     model.selected = keep;
-    if (wrap) { wrap.classList.toggle("palette-off", model.blocks.length === 0); }
+    model.selection = (model.selection || []).filter(function (id) { return !!findNode(id); });
+    if (keep && model.selection.indexOf(keep) < 0) { model.selection = [keep]; }
+    if (!keep) { model.selection = []; }
+    if (wrap) { wrap.classList.toggle("palette-off", !model.showPalette); }
+    svg.style.height = boardH + "px";
     renderPalette();
     applyView();
     draw();
-    setHeight(510);
+    setHeight(boardH + 40);
   }
 
   // ---------------- 小工具 ----------------
@@ -211,7 +232,9 @@
     });
     setValue({
       nodes: model.nodes.filter(function (node) { return !isAnchor(node); }).map(function (node) {
-        return { id: node.id, fn: node.fn, x: Math.round(node.x), y: Math.round(node.y) };
+        var item = { id: node.id, fn: node.fn, x: Math.round(node.x), y: Math.round(node.y) };
+        if (node.copy_of) { item.copy_of = node.copy_of; }
+        return item;
       }),
       edges: model.edges,
       anchors: anchors,
@@ -238,7 +261,8 @@
   }
 
   function nodeSvg(node) {
-    var selected = model.selected === node.id;
+    var selected = model.selection.indexOf(node.id) >= 0;
+    var primary = model.selected === node.id;
     var broken = model.errors.indexOf(node.id) >= 0;
     var anchor = isAnchor(node);
     var stroke = broken ? "#e5484d" : (selected ? "#4c7df0" : "#c3cddd");
@@ -264,7 +288,7 @@
       out += '<circle data-port="out" data-node="' + esc(node.id) + '" cx="' + (node.x + NODE_W) +
         '" cy="' + (node.y + NODE_H / 2) + '" r="' + PORT_R + '" fill="#4c7df0" style="cursor:crosshair"/>';
     }
-    if (selected && !anchor) {
+    if (primary && !anchor) {
       out += '<g data-del="' + esc(node.id) + '" style="cursor:pointer">' +
         '<circle cx="' + (node.x + NODE_W - 10) + '" cy="' + (node.y + 10) + '" r="9" fill="#e5484d"/>' +
         '<text x="' + (node.x + NODE_W - 13.5) + '" y="' + (node.y + 14) +
@@ -302,14 +326,95 @@
       }
     }
     model.nodes.forEach(function (node) { parts.push(nodeSvg(node)); });
+    if (box) {
+      var bx = Math.min(box.sx, box.x), by = Math.min(box.sy, box.y);
+      var bw = Math.abs(box.x - box.sx), bh = Math.abs(box.y - box.sy);
+      parts.push('<rect class="box" x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '"/>');
+    }
     svg.innerHTML = parts.join("");
   }
 
   // ---------------- 交互 ----------------
-  function pick(node) {
-    model.selected = node ? node.id : null;
+  function selectOnly(id) {
+    model.selection = id ? [id] : [];
+    model.selected = id || null;
     draw();
     emit();
+  }
+  function toggleSelect(id) {
+    var index = model.selection.indexOf(id);
+    if (index >= 0) { model.selection.splice(index, 1); }
+    else { model.selection.push(id); }
+    model.selected = model.selection.length ? model.selection[model.selection.length - 1] : null;
+    draw();
+    emit();
+  }
+  function selectedNodeIds() {
+    return model.selection.filter(function (id) {
+      var node = findNode(id);
+      return !!node && !isAnchor(node);
+    });
+  }
+  function deleteNodes(ids) {
+    if (!ids.length) { return false; }
+    model.nodes = model.nodes.filter(function (node) { return ids.indexOf(node.id) < 0; });
+    model.edges = model.edges.filter(function (edge) {
+      return ids.indexOf(edge[0]) < 0 && ids.indexOf(edge[1]) < 0;
+    });
+    model.selection = model.selection.filter(function (id) { return ids.indexOf(id) < 0; });
+    if (ids.indexOf(model.selected) >= 0) { model.selected = null; }
+    return true;
+  }
+  function copySelection() {
+    var ids = selectedNodeIds();
+    if (!ids.length) { return false; }
+    var nodes = ids.map(function (id) { return Object.assign({}, findNode(id)); });
+    var edges = model.edges.filter(function (edge) {
+      return ids.indexOf(edge[0]) >= 0 && ids.indexOf(edge[1]) >= 0;
+    }).map(function (edge) { return [edge[0], edge[1]]; });
+    model.clipboard = { nodes: nodes, edges: edges };
+    flash("已复制 " + nodes.length + " 个节点");
+    return true;
+  }
+  function pasteClipboard(offset) {
+    if (!model.clipboard || !model.clipboard.nodes.length) { return false; }
+    var mapping = {}, newIds = [];
+    model.clipboard.nodes.forEach(function (source) {
+      var id = uniqueId(source.fn);
+      mapping[source.id] = id;
+      model.nodes.push(Object.assign({}, source, {
+        id: id, x: source.x + offset, y: source.y + offset, copy_of: source.id
+      }));
+      newIds.push(id);
+    });
+    model.clipboard.edges.forEach(function (edge) {
+      if (mapping[edge[0]] && mapping[edge[1]]) {
+        model.edges.push([mapping[edge[0]], mapping[edge[1]]]);
+      }
+    });
+    model.selection = newIds;
+    model.selected = newIds[0] || null;
+    draw();
+    emit();
+    flash("已粘贴 " + newIds.length + " 个节点");
+    return true;
+  }
+  function cutSelection() {
+    var ids = selectedNodeIds();
+    if (!ids.length) { return; }
+    copySelection();
+    deleteNodes(ids);
+    draw();
+    emit();
+    flash("已剪切 " + ids.length + " 个节点");
+  }
+  function duplicateSelection() {
+    if (!copySelection()) { return; }
+    pasteClipboard(28);
+  }
+  function command(name) {
+    version += 1;
+    setValue({ command: name, version: version });
   }
 
   svg.addEventListener("mousedown", function (event) {
@@ -329,9 +434,22 @@
       var node = findNode(nodeEl.getAttribute("data-node"));
       if (!node) { return; }
       event.preventDefault();
+      if (event.shiftKey) {
+        toggleSelect(node.id);
+        return;
+      }
+      if (model.selection.indexOf(node.id) < 0) {
+        model.selection = [node.id];
+        model.selected = node.id;
+        draw();
+      }
       var start = toBoard(event);
-      drag = { id: node.id, dx: start.x - node.x, dy: start.y - node.y, moved: false };
-      if (model.selected !== node.id) { pick(node); }
+      var origins = {};
+      model.selection.forEach(function (id) {
+        var item = findNode(id);
+        if (item) { origins[id] = [item.x, item.y]; }
+      });
+      drag = { id: node.id, start: start, origins: origins, moved: false };
       return;
     }
     var edgeEl = event.target.closest && event.target.closest("[data-edge]");
@@ -345,37 +463,98 @@
       }
       return;
     }
-    // 空白处拖动 = 平移画布。
+    // 空白处：Shift+拖 = 框选；普通拖 = 平移画布。
     event.preventDefault();
-    pan = { cx: event.clientX, cy: event.clientY, vx: view.x, vy: view.y };
+    var blank = toBoard(event);
+    if (event.shiftKey) {
+      box = { sx: blank.x, sy: blank.y, x: blank.x, y: blank.y };
+      return;
+    }
+    pan = {
+      cx: event.clientX, cy: event.clientY,
+      vx: view.x, vy: view.y, moved: false
+    };
   });
 
   window.addEventListener("mousemove", function (event) {
+    if (resize) {
+      boardH = Math.max(340, Math.min(1000, resize.h + event.clientY - resize.cy));
+      svg.style.height = boardH + "px";
+      setHeight(boardH + 40);
+      return;
+    }
     if (drag) {
-      var node = findNode(drag.id);
-      if (!node) { drag = null; return; }
+      var primary = findNode(drag.id);
+      if (!primary) { drag = null; return; }
       var point = toBoard(event);
-      node.x = Math.max(-2000, point.x - drag.dx);
-      node.y = Math.max(-2000, point.y - drag.dy);
-      drag.moved = true;
+      var dx = point.x - drag.start.x;
+      var dy = point.y - drag.start.y;
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { drag.moved = true; }
+      Object.keys(drag.origins).forEach(function (id) {
+        var item = findNode(id);
+        var origin = drag.origins[id];
+        if (item && origin) {
+          item.x = origin[0] + dx;
+          item.y = origin[1] + dy;
+        }
+      });
+      draw();
+    } else if (box) {
+      var here = toBoard(event);
+      box.x = here.x;
+      box.y = here.y;
       draw();
     } else if (link) {
-      var here = toBoard(event);
-      link.x = here.x;
-      link.y = here.y;
+      var linkPoint = toBoard(event);
+      link.x = linkPoint.x;
+      link.y = linkPoint.y;
       draw();
     } else if (pan) {
       var rect = svg.getBoundingClientRect();
-      var dx = (event.clientX - pan.cx) * view.w / (rect.width || 1);
-      var dy = (event.clientY - pan.cy) * view.h / (rect.height || 1);
-      view.x = pan.vx - dx;
-      view.y = pan.vy - dy;
+      var panX = (event.clientX - pan.cx) * view.w / (rect.width || 1);
+      var panY = (event.clientY - pan.cy) * view.h / (rect.height || 1);
+      if (Math.abs(panX) > 1 || Math.abs(panY) > 1) { pan.moved = true; }
+      view.x = pan.vx - panX;
+      view.y = pan.vy - panY;
       applyView();
     }
   });
 
   window.addEventListener("mouseup", function (event) {
-    if (pan) { pan = null; return; }
+    if (resize) {
+      resize = null;
+      try { localStorage.setItem("ah-canvas-height", String(boardH)); } catch (err) {}
+      return;
+    }
+    if (box) {
+      var left = Math.min(box.sx, box.x), right = Math.max(box.sx, box.x);
+      var top = Math.min(box.sy, box.y), bottom = Math.max(box.sy, box.y);
+      var picked = [];
+      if (right - left > 6 || bottom - top > 6) {
+        model.nodes.forEach(function (node) {
+          var within = node.x < right && node.x + NODE_W > left &&
+            node.y < bottom && node.y + NODE_H > top;
+          if (within) { picked.push(node.id); }
+        });
+      }
+      box = null;
+      model.selection = picked;
+      model.selected = picked.length ? picked[picked.length - 1] : null;
+      draw();
+      emit();
+      return;
+    }
+    if (pan) {
+      var panned = pan.moved;
+      pan = null;
+      if (!panned) {
+        model.selection = [];
+        model.selected = null;
+        draw();
+        emit();
+      }
+      return;
+    }
     if (drag) {
       var moved = drag.moved;
       drag = null;
@@ -416,14 +595,10 @@
     var del = event.target.closest && event.target.closest("[data-del]");
     if (!del) { return; }
     var id = del.getAttribute("data-del");
-    model.nodes = model.nodes.filter(function (node) { return node.id !== id; });
-    model.edges = model.edges.filter(function (edge) {
-      return edge[0] !== id && edge[1] !== id;
-    });
-    if (model.selected === id) { model.selected = null; }
+    if (!deleteNodes([id])) { return; }
     draw();
     emit();
-    flash("已删除节点 " + id);
+    flash("已删除节点 " + id + "（可撤销）");
   });
 
   svg.addEventListener("dragover", function (event) {
@@ -464,26 +639,40 @@
   document.addEventListener("keydown", function (event) {
     var tag = String((event.target && event.target.tagName) || "").toLowerCase();
     if (tag === "input" || tag === "textarea" || tag === "select") { return; }
-    var node = model.selected ? findNode(model.selected) : null;
-    if ((event.key === "Delete" || event.key === "Backspace") && node && !isAnchor(node)) {
+    var key = String(event.key || "").toLowerCase();
+    var ctrl = event.ctrlKey || event.metaKey;
+
+    if (ctrl && key === "z" && !event.shiftKey) {
+      event.preventDefault(); command("undo"); return;
+    }
+    if (ctrl && (key === "y" || (key === "z" && event.shiftKey))) {
+      event.preventDefault(); command("redo"); return;
+    }
+    if (ctrl && key === "c") { event.preventDefault(); copySelection(); return; }
+    if (ctrl && key === "x") { event.preventDefault(); cutSelection(); return; }
+    if (ctrl && key === "v") { event.preventDefault(); pasteClipboard(28); return; }
+    if (ctrl && key === "d") { event.preventDefault(); duplicateSelection(); return; }
+
+    var ids = selectedNodeIds();
+    if ((event.key === "Delete" || event.key === "Backspace") && ids.length) {
       event.preventDefault();
-      model.nodes = model.nodes.filter(function (item) { return item.id !== node.id; });
-      model.edges = model.edges.filter(function (edge) {
-        return edge[0] !== node.id && edge[1] !== node.id;
-      });
-      model.selected = null;
+      deleteNodes(ids);
       draw();
       emit();
-      flash("已删除节点 " + node.id + "（可撤销）");
+      flash("已删除 " + ids.length + " 个节点（可撤销）");
       return;
     }
-    if (!node || isAnchor(node)) { return; }
+    if (!ids.length) { return; }
     var step = event.shiftKey ? 16 : 4;
     var moved = false;
-    if (event.key === "ArrowLeft") { node.x -= step; moved = true; }
-    if (event.key === "ArrowRight") { node.x += step; moved = true; }
-    if (event.key === "ArrowUp") { node.y -= step; moved = true; }
-    if (event.key === "ArrowDown") { node.y += step; moved = true; }
+    ids.forEach(function (id) {
+      var node = findNode(id);
+      if (!node) { return; }
+      if (event.key === "ArrowLeft") { node.x -= step; moved = true; }
+      if (event.key === "ArrowRight") { node.x += step; moved = true; }
+      if (event.key === "ArrowUp") { node.y -= step; moved = true; }
+      if (event.key === "ArrowDown") { node.y += step; moved = true; }
+    });
     if (moved) {
       event.preventDefault();
       draw();
@@ -502,9 +691,18 @@
     });
   }
 
+  if (resizer) {
+    resizer.addEventListener("mousedown", function (event) {
+      resize = { cy: event.clientY, h: boardH };
+      event.preventDefault();
+      event.stopPropagation();
+    });
+  }
+
+  svg.style.height = boardH + "px";
   draw();
   send("streamlit:componentReady", { apiVersion: 1 });
-  setHeight(510);
+  setHeight(boardH + 40);
 })();
 </script>
 </body>

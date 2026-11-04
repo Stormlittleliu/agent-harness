@@ -9,6 +9,7 @@ Streamlit 只负责摆控件；所有会改结构、会写盘的判断都在这�
 """
 from __future__ import annotations
 
+import copy
 import json
 import re
 from pathlib import Path
@@ -32,10 +33,10 @@ from core.scenarios.spec_nodes import NODE_REGISTRY, block_params, block_label
 
 DEFAULT_WORKFLOW = "qa"
 LAYOUT_ROOT = Path("data/runtime/spec_layout")
-NODE_W = 156
-NODE_H = 58
-COL_GAP = 210
-ROW_GAP = 96
+NODE_W = 184
+NODE_H = 64
+COL_GAP = 238
+ROW_GAP = 104
 # 第一个节点往右挪一点，给 START 留出位置（否则 START 会被画到画布外面）。
 ORIGIN = (216, 40)
 
@@ -428,8 +429,14 @@ def merge_canvas(draft: dict[str, Any], workflow: str, payload: Any) -> bool:
         if not node_id or node_id in used or fn not in NODE_REGISTRY:
             continue
         previous = current.get(node_id)
+        copy_of = str(item.get("copy_of") or "")
+        source = current.get(copy_of)
         if previous is not None and str(previous.get("fn")) == fn:
             args = dict(previous.get("args") or {})
+        elif source is not None and str(source.get("fn")) == fn:
+            # 画布复制/粘贴只传 copy_of，不传参数；参数在 Python 侧从源节点复制，
+            # 既保留配置，又不让画布直接改参数。
+            args = copy.deepcopy(source.get("args") or {})
         else:
             args = block_defaults(fn)
         merged.append({"id": node_id, "fn": fn, "args": args})
@@ -512,15 +519,16 @@ def canvas_payload(
     xs = [item["x"] for item in canvas_nodes] or [0]
     ys = [item["y"] for item in canvas_nodes] or [0]
     saved = load_layout(name, root).get(workflow, {})
-    start_pos = saved.get(START) or [min(xs) - NODE_W - 40, int(sum(ys) / len(ys))]
+    # 保存过就原样还原：START/END 被拖到画布外也不能夹回去，否则松手会"回弹"。
+    start_pos = saved.get(START) or [max(0, min(xs) - NODE_W - 40), int(sum(ys) / len(ys))]
     end_pos = saved.get(END) or [max(xs) + NODE_W + 40, int(sum(ys) / len(ys))]
     canvas_nodes.insert(0, {
         "id": START, "fn": "", "label": "START",
-        "x": max(4, int(start_pos[0])), "y": max(4, int(start_pos[1])), "kind": "start",
+        "x": int(start_pos[0]), "y": int(start_pos[1]), "kind": "start",
     })
     canvas_nodes.append({
         "id": END, "fn": "", "label": "END",
-        "x": min(1000, max(4, int(end_pos[0]))), "y": max(4, int(end_pos[1])), "kind": "end",
+        "x": int(end_pos[0]), "y": int(end_pos[1]), "kind": "end",
     })
 
     return {
@@ -529,7 +537,8 @@ def canvas_payload(
         "blocks": [
             {"fn": fn, "label": block_label(fn)}
             for fn in NODE_REGISTRY
-        ] if include_blocks else [],
+        ],
+        "show_palette": bool(include_blocks),
         "errors": bad_node_ids(list(errors or []), nodes),
         "selected": selected if selected and selected not in {START, END} else None,
         "workflow": workflow,

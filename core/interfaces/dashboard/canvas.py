@@ -4,8 +4,11 @@
 前端是 ``canvas/index.html``——单文件、无 npm、无 CDN，自带一个很小的拖拽图编辑器；
 和后端只交换 JSON：
 
-    后端 -> 前端  {nodes:[{id, fn, label, x, y, kind?}], edges:[[from,to]], blocks, errors, selected}
-    前端 -> 后端  {nodes:[{id, fn, x, y}], edges, anchors:{__start__:[x,y]}, selected, version}
+    后端 -> 前端  {nodes:[{id, fn, label, x, y, kind?}], edges:[[from,to]], blocks,
+                   show_palette, errors, selected}
+    前端 -> 后端  {nodes:[{id, fn, x, y, copy_of?}], edges, anchors:{__start__:[x,y]},
+                   selected, version}
+               或 {command: "undo"|"redo", version}（快捷键只发命令，历史在 Python 侧）
 
 约定：**画布只改拓扑和位置**。节点 id 的合法性、块是否存在、边是否悬空，全部回到
 ``core.scenarios.spec_edit`` 里再校验一遍——前端传来的一律当不可信输入。

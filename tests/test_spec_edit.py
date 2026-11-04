@@ -197,6 +197,46 @@ def test_canvas_payload_keeps_anchors_inside_board():
         assert 0 <= node["y"] <= 470
 
 
+def test_anchor_positions_are_not_clamped_after_drag(tmp_path: Path):
+    """START/END 拖到画布外也不能被夹回去，否则松手会回弹。"""
+    draft = _draft()
+    payload = {
+        "nodes": [
+            {"id": "search", "fn": "retrieve", "x": 300, "y": 120},
+        ],
+        "edges": draft["workflows"]["qa"]["edges"],
+        "anchors": {"__start__": [-30, -20], "__end__": [1400, 540]},
+    }
+    spec_edit.absorb_canvas("demo", "qa", draft, payload, root=tmp_path)
+    restored = spec_edit.canvas_payload("demo", "qa", draft, root=tmp_path)
+    by_id = {node["id"]: node for node in restored["nodes"]}
+    assert by_id["__start__"]["x"] == -30
+    assert by_id["__start__"]["y"] == -20
+    assert by_id["__end__"]["x"] == 1400
+    assert by_id["__end__"]["y"] == 540
+
+
+def test_canvas_payload_keeps_block_labels_when_palette_hidden():
+    payload = spec_edit.canvas_payload("demo", "qa", _draft(), include_blocks=False)
+    assert payload["show_palette"] is False
+    assert payload["blocks"]  # 复制/粘贴要靠它给新节点中文名
+
+
+def test_copy_of_inherits_args_from_source_node():
+    draft = _draft()
+    draft["workflows"]["qa"]["nodes"][0]["args"] = {"tool": "search_notes", "limit": 9}
+    payload = {
+        "nodes": [
+            {"id": "search", "fn": "retrieve", "x": 0, "y": 0},
+            {"id": "search-copy", "fn": "retrieve", "copy_of": "search", "x": 40, "y": 40},
+        ],
+        "edges": [],
+    }
+    spec_edit.merge_canvas(draft, "qa", payload)
+    copied = next(node for node in draft["workflows"]["qa"]["nodes"] if node["id"] == "search-copy")
+    assert copied["args"] == {"tool": "search_notes", "limit": 9}
+
+
 def test_merge_canvas_accepts_known_blocks():
     draft = _draft()
     payload = {
