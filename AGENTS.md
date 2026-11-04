@@ -5,7 +5,7 @@
 ## 环境
 
 - Python 用 conda 环境 **`langchain`**；裸 `python` 是 3.8，跑不了测试。
-- 测试：`python -m pytest -q`（当前 174 passed）。
+- 测试：`python -m pytest -q`（当前 223 passed）。
 
 ## 场景归属（硬约束）
 
@@ -47,11 +47,23 @@ python -m core.scenarios.eject <name> --status
 
 ## 契约在哪
 
-- `core/agent/pipeline.py` — 中间件策略编排（slot + 顺序不变量 + `policies` 覆盖）；
+- `core/agent/pipeline.py` — 中间件策略编排（slot + 顺序不变量 + `policies` 覆盖）；**策略的中文名 / 说明 / 分层写在 `POLICY_DOCS`**，UI 直接读它，别在别处再抄一份；
 - `core/quality/selfbuilt.py` — 自建跨分类任务集评测（检索 / 单轮 / 多轮），任务在 `data/evals/datasets/selfbuilt/tasks.jsonl`；
 - `core/scenarios/spec.py` — spec schema、校验、编译、版本化读写；
-- `core/scenarios/spec_nodes.py` — 块库、`ParamSpec` 参数契约；
+- `core/scenarios/spec_nodes.py` — 块库、`ParamSpec` 参数契约、块的中文名与说明（`label` / `desc`）；
+- `core/scenarios/spec_edit.py` — 编辑器背后的纯逻辑（草稿 ↔ spec、加删节点、校验、存版本）；
+- `core/scenarios/generic.py` — 通用 spec 场景：`data/specs/<name>/` + 固定工具池就能构建，不写代码；
+- `core/scenarios/node_docs.py` — 节点说明注册表（调用链 / 轨迹页用它回答"这一步是哪个节点"）；
 - `core/scenarios/ownership.py` — 归属状态机（唯一写 state 的地方）；
 - `core/scenarios/eject.py` — 归属 CLI；
+- `core/observability/tracer.py` — 本地 trace；每条模型/工具事件带 `node`（LangGraph 节点名）；
+- `core/interfaces/dashboard/editor.py` — 控制台的「🎛 场景编辑」视图；
 - [docs/design/middleware-pipeline.md](docs/design/middleware-pipeline.md) — 中间件为什么这么排；
-- [docs/design/visual-scenario-roundtrip.md](docs/design/visual-scenario-roundtrip.md) — 设计说明与演示脚本。
+- [docs/design/visual-scenario-roundtrip.md](docs/design/visual-scenario-roundtrip.md) — 设计说明与演示脚本；
+- [docs/design/scenario-editor.md](docs/design/scenario-editor.md) — 控制台里那个编辑器的边界与数据流。
+
+## 新增工作流节点时
+
+**必须同时写中文说明**，否则 `tests/test_node_docs.py` 会红：代码场景写在
+`core/scenarios/<name>/graph.py` 的 `NODE_DOCS`，spec 场景来自块的 `label` / `desc`。
+不写说明的节点在调用链上只能显示英文 id，等于没解释。
