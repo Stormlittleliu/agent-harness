@@ -4,11 +4,13 @@
 > 从轨迹里挖出高频繁荣范式，编译成 spec 工作流，再用 held-out 评测决定
 > 能不能采纳。它是“评测 → 经验 → 工作流”的闭环。
 
-> **实现状态（M0 地基）**：`core/quality/records.py` 已提供
-> run/line/score/span + `RunStore`；`core/quality/scorers.py` 已提供
+> **实现状态（M1 只读挖掘）**：`core/quality/records.py` 提供
+> run/line/score/span + `RunStore`；`core/quality/scorers.py` 提供
 > behavior/judge/outcome → Score 与 pass^k reducer；`core/quality/trace_spans.py`
-> 已把现有 trace JSONL 读成 span；`agent_eval.run()` 现在会写
-> `outputs/runs/<run_id>/`。M1 的序列挖掘尚未开始。
+> 把 trace JSONL 读成 span；`agent_eval.run()` 写 `outputs/runs/<run_id>/`。
+> `core/quality/mining.py` 已实现序列/转移挖掘、门槛过滤、证据与范式卡，
+> 产物在 `outputs/patterns/<mining_id>/`；**只产出 candidate，不自动采纳**。
+> M2（pattern_to_spec + shadow）尚未开始。
 
 ## 1. 为什么做这个
 
@@ -138,6 +140,27 @@ score = support × success_rate × lift / cost_penalty
 ```
 
 要求：`support ≥ 5`、`success_rate ≥ baseline`、`lift > 0`；低于门槛不展示。
+
+### 4.3.1 当前实现（M1）
+
+`core/quality/mining.py`：
+
+- **归一**：spec 工作流的 trace 用真实节点名；ReAct 的 `model/tools` 这类通用
+  节点名改用 `tool:<name>` / `model`，否则整条序列全是 `tools`。相邻重复 token 合并。
+- **分桶**：按 `scenario × intent`（`line.metadata.category`）分桶，不同意图不硬比较。
+- **序列**：只挖长度 ≥ 3 的连续子序列（两跳交给转移层，避免同一件事两种写法）。
+- **转移**：把相邻节点对 `a → b` 当 pattern；若与序列重复则保留序列。
+- **support** 只统计成功 trial；`success_rate` 的分母是该 pattern 在所有 trial 里的出现次数；
+  `lift = success_rate - baseline`。反例就是出现过该 pattern 但失败的 trial。
+- **成本惩罚**：`1 + avg_tokens/4000 + avg_latency_ms/2000`。
+- **产物**：`outputs/patterns/<mining_id>/patterns.json` + `patterns.md`；
+  `mining_id` 默认按时间生成，重复挖掘不会覆盖。
+- **基线 100% 时**：没有路径能超过基线，结果为空，范式卡会明确说明“先跑出失败样本”，
+  而不是硬凑一个 lift=0 的“范式”。
+
+```powershell
+python -m core.quality.mining --scenario workspace_assistant --min-support 3 --top 10
+```
 
 ### 4.4 Summarize
 
