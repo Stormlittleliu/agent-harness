@@ -157,12 +157,21 @@ published_hash: 4621b055707eed4d
 - 真实链路手测：`workspace_assistant` 连续两轮对话，第二轮能答出"杭州"（thread 复用
   生效），每轮都有「这次怎么答的」展开项。
 
-## 10. 一个容易踩的坑：顶部按钮"看得见、点不动"
+## 10. 顶部导航：固定条 + 透明 header 的点击死区
 
 Streamlit 的 `header[data-testid="stHeader"]` 是**固定定位的透明层**，默认盖在页面
 最上面。第一行如果贴着顶部放按钮，鼠标点击会被这一层吃掉——现象就是"按钮好像
-很难点进去"。做法是给 `.block-container` 留出 `padding-top: 3.6rem`，让内容从
-header 下面开始（`core/interfaces/dashboard/layout.py` 的 `_CSS`）。
+很难点进去"。只加 `padding-top` 不够：内容一滚动又会滑进这层死区。
+
+现在的做法（`core/interfaces/dashboard/layout.py` 的 `_CSS`）：
+
+- `header` 保持可见（运行中的停止按钮还在），但 `pointer-events: none`；
+  `stToolbar` / `stStatusWidget` / `stAppDeployButton` 单独恢复 `auto`；
+- 产品导航是 `st.container(key="ah-nav")` 里的 **`st.segmented_control`**，
+  `position: fixed; top: 0`，滚动时不会跑掉；`.block-container` 留 `5.5rem`
+  让第一行从导航下面开始；
+- 页签也是 `segmented_control`，用 `route.tab` 做唯一真相；旧的
+  `build:tab:<name>` widget 状态不再压过深链。
 
 不要图省事把 header `display: none`：那会一起干掉运行中的停止按钮。
 

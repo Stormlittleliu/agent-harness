@@ -33,6 +33,11 @@ def _radio(app: AppTest, label: str):
     return next(radio for radio in app.radio if radio.label == label)
 
 
+def _group(app: AppTest, key: str):
+    """导航 / 页签是 segmented_control，AppTest 里暴露成 button_group。"""
+    return next(group for group in app.button_group if group.key == key)
+
+
 def test_default_opens_first_published_entry():
     app = _app()
     _ok(app)
@@ -45,10 +50,12 @@ def test_default_opens_first_published_entry():
     assert any(first.display_title in str(markdown.value) for markdown in app.markdown)
 
 
-def test_sidebar_lists_only_published_entries():
+def test_entry_rail_lists_only_published_entries():
     app = _app()
     keys = [str(button.key) for button in app.button if str(button.key or "").startswith("chat-open-")]
     assert sorted(keys) == sorted(f"chat-open-{name}" for name in entries.published_names())
+    # 入口列表在内容左列，不再占用 sidebar
+    assert not app.sidebar.button
 
 
 def test_chat_conversation_renders_history():
@@ -65,13 +72,14 @@ def test_chat_conversation_renders_history():
     _ok(app)
     assert len(app.chat_input) == 1
     assert any("综合助手。" in str(markdown.value) for markdown in app.markdown)
-    assert not [b for b in app.button if str(b.key or "").startswith("chat-starter-")]
+    assert not [g for g in app.button_group if str(g.key or "").startswith("chat-starter:")]
 
 
 def test_chat_shows_starters_for_empty_thread():
     app = _app(routes.Route("chat", "router"))
     _ok(app)
-    assert [b for b in app.button if str(b.key or "").startswith("chat-starter-")]
+    starters = _group(app, "chat-starter:router")
+    assert len(starters.options) > 0
 
 
 def test_closed_or_missing_entry_is_explained():
@@ -83,7 +91,7 @@ def test_closed_or_missing_entry_is_explained():
 def test_product_switch_uses_top_nav():
     app = _app()
     _ok(app)
-    next(button for button in app.button if button.key == "console-nav-build").click()
+    _group(app, "console:product").set_value(["build"])
     app.run()
     _ok(app, "switch")
     assert app.session_state["console:route"].product == "build"
@@ -100,9 +108,9 @@ def test_build_library_lists_every_scenario():
 def test_build_detail_tabs_and_publish_form():
     app = _app(routes.Route("build", "workspace_assistant"))
     _ok(app)
-    tabs = _radio(app, "页签")
+    tabs = _group(app, "build:tab")
     assert tabs.value == "overview"
-    tabs.set_value("publish")
+    tabs.set_value(["publish"])
     app.run()
     _ok(app, "publish")
     assert "入口标题" in [box.label for box in app.text_input]

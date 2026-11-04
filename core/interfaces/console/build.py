@@ -15,7 +15,13 @@ from core.interfaces.console import routes
 from core.interfaces.dashboard.architecture import render_architecture
 from core.interfaces.dashboard.common import load_agent
 from core.interfaces.dashboard.editor import render_editor
-from core.interfaces.dashboard.layout import compact_table, empty_state, page_header, section
+from core.interfaces.dashboard.layout import (
+    compact_table,
+    empty_state,
+    page_header,
+    section,
+    sync_widget,
+)
 from core.scenarios import entry as entries
 from core.scenarios import library, spec_edit
 
@@ -27,6 +33,7 @@ TAB_LABELS = {
     "publish": "发布",
     "runtime": "运行窗口",
 }
+TAB_KEY = "build:tab"
 
 
 def render(route: routes.Route) -> None:
@@ -109,6 +116,13 @@ def _create_form() -> None:
 # ---------------------------------------------------------------- 场景详情
 
 
+def _on_tab_change(name: str) -> None:
+    """页签回调：把选择写回路由；重跑由 Streamlit 负责。"""
+    tab = st.session_state.get(TAB_KEY)
+    if tab in TAB_LABELS:
+        routes.set_route(routes.Route("build", name, tab))
+
+
 def _detail(name: str, route: routes.Route) -> None:
     info = library.entry(name)
     if info is None:
@@ -123,19 +137,23 @@ def _detail(name: str, route: routes.Route) -> None:
     if notice:
         st.success(notice)
 
-    default = route.tab if route.tab in TAB_LABELS else "overview"
     tabs = list(TABS) + (["runtime"] if info.supports_runtime else [])
-    if default not in tabs:
-        default = "overview"
-    tab = st.radio(
-        "页签",
-        tabs,
-        index=tabs.index(default),
-        format_func=lambda value: TAB_LABELS[value],
-        horizontal=True,
-        key=f"build:tab:{name}",
-        label_visibility="collapsed",
-    )
+    default = route.tab if route.tab in tabs else "overview"
+    # route 是唯一真相：深链 ?tab=publish 每次进这个场景都生效，不再被旧的
+    # `build:tab:<name>` widget 状态盖住；widget 只负责"用户点了哪个"。
+    sync_widget(TAB_KEY, default)
+    with st.container(key="ah-tabs"):
+        tab = st.segmented_control(
+            "页签",
+            tabs,
+            key=TAB_KEY,
+            format_func=lambda value: TAB_LABELS[value],
+            on_change=_on_tab_change,
+            args=(name,),
+            label_visibility="collapsed",
+        )
+    if tab not in tabs:
+        tab = default
     if tab == "overview":
         _overview(name, info, item)
     elif tab == "structure":

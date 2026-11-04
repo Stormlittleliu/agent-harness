@@ -34,17 +34,29 @@ def render(route: routes.Route) -> None:
         _closed(requested)
         return
     current = requested or names[0]
-    _entry_rail(published, current)
-    _conversation(current)
+    item = entries.load_entry(current)
+    info = library.entry(current)
+    if info is None or not item.enabled:
+        _closed(current)
+        return
+    # 标题行留在顶层：Streamlit 只允许 columns 嵌一层，放进下面的分栏会报错。
+    _header(item, info)
+    # 入口列表放在内容左列（不再用 sidebar）：三个产品统一无 sidebar，
+    # 切换产品时整条顶部导航不会横移。
+    rail, panel = st.columns([1.05, 3.95], gap="large")
+    with rail:
+        _entry_rail(published, current)
+    with panel:
+        _conversation(current)
 
 
 # ---------------------------------------------------------------- 入口与兜底
 
 
 def _entry_rail(published: list[entries.ChatEntry], current: str) -> None:
-    """左栏：已发布入口列表；当前入口实心，点其它入口切过去。"""
-    with st.sidebar:
-        st.markdown("**对话入口**")
+    """左栏：已发布入口列表；当前入口高亮，点其它入口切过去。"""
+    with st.container(key="chat-rail"):
+        st.caption("对话入口")
         for item in published:
             info = library.entry(item.name)
             icon = info.icon if info else "💬"
@@ -57,7 +69,6 @@ def _entry_rail(published: list[entries.ChatEntry], current: str) -> None:
             ):
                 if not active:
                     routes.navigate("chat", item.name)
-        st.divider()
         st.caption("只列已发布的入口；在「构建 → 发布」里开放或撤回。")
 
 
@@ -99,6 +110,19 @@ def _new_thread(name: str) -> None:
     st.session_state.pop(_interrupt_key(name), None)
 
 
+def _pick_starter(name: str) -> None:
+    """开场白 chip 回调：把选中那句话交给本轮发送，并清空选中态。
+
+    清空必须发生在回调里：脚本跑起来之后 pill 已经实例化，再改它的 key 会报错；
+    不清空的话下一轮会把同一句话再发一次。
+    """
+    key = f"chat-starter:{name}"
+    picked = st.session_state.get(key)
+    st.session_state[key] = None
+    if picked:
+        st.session_state[f"chat:pending:{name}"] = picked
+
+
 def _conversation(name: str) -> None:
     item = entries.load_entry(name)
     info = library.entry(name)
@@ -106,7 +130,6 @@ def _conversation(name: str) -> None:
         _closed(name)
         return
 
-    _header(item, info)
     for message in _messages(name):
         with st.chat_message(message["role"]):
             st.markdown(message.get("content") or "—")
@@ -119,15 +142,16 @@ def _conversation(name: str) -> None:
         return
 
     if not _messages(name) and item.starters:
-        st.caption("可以这样开始：")
-        starter_cols = st.columns(min(3, len(item.starters)))
-        for index, starter in enumerate(item.starters[:3]):
-            if starter_cols[index].button(
-                starter.split("\n")[0][:40],
-                key=f"chat-starter-{name}-{index}",
-                use_container_width=True,
-            ):
-                st.session_state[f"chat:pending:{name}"] = starter
+        with st.container(key="chat-starters"):
+            st.pills(
+                "可以这样开始",
+                item.starters[:3],
+                key=f"chat-starter:{name}",
+                format_func=lambda value: value.split("\n")[0][:40],
+                on_change=_pick_starter,
+                args=(name,),
+                selection_mode="single",
+            )
     elif not _messages(name):
         st.caption("直接输入问题开始；回答下面可以展开「这次怎么答的」。")
 

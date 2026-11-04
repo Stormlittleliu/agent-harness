@@ -12,9 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def _editor_app(scenario: str = "flow_demo") -> AppTest:
     app = AppTest.from_file(str(ROOT / "app_agent.py"), default_timeout=300)
-    app.session_state["console:route"] = routes.Route("build", scenario)
-    app.run()
-    next(radio for radio in app.radio if radio.label == "页签").set_value("structure")
+    # 页签由路由携带：深链 tab=structure 直接落在结构页，无需再点页签控件。
+    app.session_state["console:route"] = routes.Route("build", scenario, "structure")
     app.run()
     return app
 

@@ -26,7 +26,8 @@ KPI_COLUMNS = 4
 _CSS = """
 <style>
 .block-container {
-    padding-top: 3.6rem;
+    /* 固定导航条盖住 header 顶部；留 5.5rem 给导航条和第一行之间的呼吸 */
+    padding-top: 5.5rem;
     padding-bottom: 2rem;
     max-width: 1500px;
     margin: 0 auto;
@@ -79,10 +80,92 @@ div[data-testid="stDataFrame"] {
 .stGraphVizChart { min-height: 120px; }
 .stGraphVizChart svg { width: 100% !important; height: auto !important; min-height: 120px; }
 #MainMenu { visibility: hidden; }
-[data-testid="stToolbar"] { visibility: hidden; }
 [data-testid="stAppDeployButton"] { display: none; }
 [data-testid="stDecoration"] { display: none; }
-header[data-testid="stHeader"] { background: transparent; }
+/* header 是 position:absolute 的 3.75rem 覆盖层：只画成透明不够，它还会吃掉点击。
+   把整条 header 的指针事件关掉，只让真正可点的子元素（工具条 / 运行状态 / Deploy）
+   恢复 auto——这样既保留运行中的停止按钮，又不会形成"看得见点不动"的死区。 */
+header[data-testid="stHeader"] {
+    background: transparent;
+    pointer-events: none;
+}
+header[data-testid="stHeader"] [data-testid="stToolbar"],
+header[data-testid="stHeader"] [data-testid="stStatusWidget"],
+header[data-testid="stHeader"] [data-testid="stAppDeployButton"] {
+    pointer-events: auto;
+}
+/* 顶部导航条：固定在 header 下方。Streamlit 1.40 的 stMain 滚动容器会让
+   position:sticky 失效（实测滚动 900px 后导航会消失），所以用 fixed；另加一条
+   白色 topfill 盖住 0–3.75rem 的 header 区，避免滚动内容从导航上方透出来。 */
+.st-key-ah-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    box-sizing: border-box;
+    z-index: 900;
+    background: #fff;
+    border-bottom: 1px solid rgba(128,128,128,.16);
+    padding: .55rem max(1rem, calc((100vw - 1500px) / 2)) .55rem;
+    margin: 0;
+}
+.st-key-ah-nav [data-testid="stButtonGroup"] {
+    max-width: 24rem;
+    margin: 0;
+}
+.st-key-ah-nav [data-testid="stButtonGroup"] button,
+.st-key-ah-tabs [data-testid="stButtonGroup"] button {
+    border: 0 !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 6px 6px 0 0 !important;
+    background: transparent !important;
+    color: inherit !important;
+    box-shadow: none !important;
+    padding: .35rem .85rem !important;
+    font-weight: 500;
+}
+.st-key-ah-nav [data-testid="stButtonGroup"] button:hover,
+.st-key-ah-tabs [data-testid="stButtonGroup"] button:hover {
+    background: rgba(76,125,240,.08) !important;
+}
+.st-key-ah-nav [data-testid="stButtonGroup"] button[data-testid="stBaseButton-segmented_controlActive"],
+.st-key-ah-tabs [data-testid="stButtonGroup"] button[data-testid="stBaseButton-segmented_controlActive"] {
+    color: #2F5BD3 !important;
+    border-bottom-color: #4C7DF0 !important;
+    background: transparent !important;
+    font-weight: 600;
+}
+.st-key-chat-starters [data-testid="stButtonGroup"] button[data-testid="stBaseButton-pillsActive"] {
+    color: #2F5BD3 !important;
+    border-color: rgba(76,125,240,.45) !important;
+    background: #EEF4FF !important;
+}
+.st-key-ah-tabs {
+    margin-bottom: .5rem;
+}
+/* 对话页入口列表（在内容左列，不再用 sidebar）：整行可点，不要按钮盒子 */
+.st-key-chat-rail [data-testid="stButton"] button {
+    justify-content: flex-start;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: .32rem .55rem;
+}
+.st-key-chat-rail [data-testid="stButton"] button:hover {
+    background: rgba(76,125,240,.08) !important;
+}
+.st-key-chat-rail [data-testid="stButton"] button[data-testid="stBaseButton-primary"] {
+    color: #2F5BD3 !important;
+    background: rgba(76,125,240,.14) !important;
+    font-weight: 600;
+}
+/* 开场白是小 chip，不是三张通栏大卡 */
+.st-key-chat-starters [data-testid="stButtonGroup"] button {
+    border-radius: 999px !important;
+    font-size: .82rem !important;
+    padding: .22rem .7rem !important;
+}
 [data-testid="stSidebar"] {
     background: #FAFBFC;
     border-right: 1px solid rgba(128,128,128,.12);
@@ -119,6 +202,17 @@ class Kpi:
 def inject_css() -> None:
     """在 set_page_config 之后注入一次；只用主题中立颜色。"""
     st.markdown(_CSS, unsafe_allow_html=True)
+
+
+def sync_widget(key: str, value: Any) -> None:
+    """让 widget 的值跟随外部真相（如 ``console:route``）。
+
+    必须在**创建该 widget 之前**调用：Streamlit 只允许在实例化前改
+    ``st.session_state[key]``。导航 / 页签都用它把 route 当唯一真相，
+    这样深链 ``?tab=publish`` 在第二次进入同一场景时也不会被旧 widget 值盖掉。
+    """
+    if st.session_state.get(key) != value:
+        st.session_state[key] = value
 
 
 def page_header(

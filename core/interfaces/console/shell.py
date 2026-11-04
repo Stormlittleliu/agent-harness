@@ -17,9 +17,10 @@ import os
 import streamlit as st
 
 from core.interfaces.console import build, chat, quality, routes
-from core.interfaces.dashboard.layout import inject_css
+from core.interfaces.dashboard.layout import inject_css, sync_widget
 
-ROUTE_KEY = "console:route"
+ROUTE_KEY = routes.ROUTE_KEY
+PRODUCT_KEY = "console:product"
 
 
 def current_route() -> routes.Route:
@@ -37,36 +38,45 @@ def current_route() -> routes.Route:
     return route
 
 
-def _product_bar(route: routes.Route) -> None:
-    """品牌 + 左对齐的三个产品按钮；当前产品实心。
+def _on_product_change() -> None:
+    """segmented_control 回调：只写路由，重跑交给 Streamlit。"""
+    product = st.session_state.get(PRODUCT_KEY)
+    if product in routes.PRODUCTS:
+        routes.set_route(routes.Route(product=product))
 
-    注意：页面顶部的 Streamlit header 是固定定位的透明层，按钮如果压在它下面
-    会"看得见但点不动"——所以全局 CSS 把 header 隐藏了（见 layout._CSS）。
+
+def _product_bar(route: routes.Route) -> None:
+    """品牌 + 一个产品级 segmented_control；整条吸顶，值恒由 route 派生。
+
+    为什么不是三个按钮：按钮无法表达"当前在哪一档"，也没有 tab 的键盘语义；
+    吸顶容器解决"滚下去就点不到"，route→widget 的单向同步解决"深链被旧值盖住"。
     """
-    brand, *buttons, _spacer = st.columns([2.4, 1, 1, 1, 4.2], vertical_alignment="center")
-    brand.markdown("#### 🛠 Agent Harness")
-    for column, product in zip(buttons, routes.PRODUCTS):
-        active = product == route.product
-        if column.button(
-            routes.PRODUCT_LABELS[product],
-            key=f"console-nav-{product}",
-            type="primary" if active else "secondary",
-            use_container_width=True,
-        ):
-            if not active:
-                routes.navigate(product)
+    with st.container(key="ah-nav"):
+        brand, tabs, _status_space = st.columns([2.0, 3.4, 2.0], vertical_alignment="center")
+        brand.markdown("**🛠 Agent Harness**")
+        sync_widget(PRODUCT_KEY, route.product)
+        with tabs:
+            st.segmented_control(
+                "产品",
+                list(routes.PRODUCTS),
+                key=PRODUCT_KEY,
+                format_func=lambda value: routes.PRODUCT_LABELS.get(value, value),
+                on_change=_on_product_change,
+                label_visibility="collapsed",
+            )
     if route.unknown_product:
         st.caption(f"未知的产品：`{route.unknown_product}`，已回到对话。")
 
 
 def run() -> None:
     route = current_route()
-    # 对话页需要左栏放入口列表；构建 / 质量不需要侧边栏，收起来更干净。
+    # 入口列表已经移到对话页内容左列，三个产品都不再需要 sidebar：
+    # 统一收起，切换产品时不会因为侧栏开合让整条导航横移。
     st.set_page_config(
         page_title="Agent Harness 控制台",
         page_icon="🛠",
         layout="wide",
-        initial_sidebar_state="expanded" if route.product == "chat" else "collapsed",
+        initial_sidebar_state="collapsed",
     )
     inject_css()
     _product_bar(route)

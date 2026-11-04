@@ -16,8 +16,10 @@ from dataclasses import dataclass
 from typing import Mapping
 
 PRODUCTS = ("chat", "build", "quality")
-PRODUCT_LABELS = {"chat": "💬 对话", "build": "🎛 构建", "quality": "🧪 质量"}
+# 导航用纯文字标签：emoji 在 Windows 下渲染不一致，也容易让页签看起来像营销按钮。
+PRODUCT_LABELS = {"chat": "对话", "build": "构建", "quality": "质量"}
 DEFAULT_PRODUCT = "chat"
+ROUTE_KEY = "console:route"
 
 
 @dataclass(frozen=True)
@@ -59,23 +61,34 @@ def link(product: str, scenario: str | None = None, tab: str | None = None) -> s
     return "/?" + "&".join(parts)
 
 
+def set_route(route: Route) -> None:
+    """写入当前路由并同步 URL，**不重跑**。
+
+    ``on_change`` 回调里用它：Streamlit 在回调结束后本来就会重跑，再调
+    ``st.rerun()`` 只会多一次；而按钮路径仍然走 ``navigate()``。
+    """
+    import streamlit as st
+
+    st.session_state[ROUTE_KEY] = route
+    try:
+        params = {"app": route.product}
+        if route.scenario:
+            params["scenario"] = route.scenario
+        if route.tab:
+            params["tab"] = route.tab
+        st.query_params.clear()
+        st.query_params.update(params)
+    except Exception:  # noqa: BLE001 - 无 URL 环境（测试）不阻断跳转
+        pass
+
+
 def navigate(product: str, scenario: str | None = None, tab: str | None = None) -> None:
-    """切换产品 / 场景；同步 URL 后立刻重跑。
+    """按钮路径：切换产品 / 场景，同步 URL 后立刻重跑。
 
     AppTest 没有 URL，``st.query_params`` 可能不可用——同步失败不影响跳转，
     因为真相在 ``session_state['console:route']``。
     """
     import streamlit as st
 
-    st.session_state["console:route"] = Route(product=product, scenario=scenario, tab=tab)
-    try:
-        params = {"app": product}
-        if scenario:
-            params["scenario"] = scenario
-        if tab:
-            params["tab"] = tab
-        st.query_params.clear()
-        st.query_params.update(params)
-    except Exception:  # noqa: BLE001 - 无 URL 环境（测试）不阻断跳转
-        pass
+    set_route(Route(product=product, scenario=scenario, tab=tab))
     st.rerun()
