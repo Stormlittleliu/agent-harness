@@ -47,6 +47,7 @@ class RGBAdapter(BenchmarkAdapter):
                 instruction=item.get("query", ""),
                 grader="mixed",
                 bucket="capability",
+                eval_scope="model_capability",
                 environment={"kind": "rgb", "split": "zh_refine", "runner": "native"},
                 success_criteria=[
                     {"type": "answer", "value": item.get("answer", "")},
@@ -92,6 +93,7 @@ class MultiHopAdapter(BenchmarkAdapter):
                 instruction=item.get("query", ""),
                 grader="mixed",
                 bucket="adversarial" if item.get("question_type") == "null_query" else "capability",
+                eval_scope="model_capability",
                 environment={"kind": "multihop", "runner": "native"},
                 success_criteria=[
                     {"type": "answer", "value": item.get("answer", "")},

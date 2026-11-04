@@ -17,6 +17,7 @@ class BenchTask:
     grader: str
     environment: dict
     bucket: str = "capability"  # capability / regression / adversarial / multi_turn
+    eval_scope: str = "model_capability"  # model_capability / scenario_tool
     initial_state: dict = field(default_factory=dict)
     tools: list[dict] = field(default_factory=list)
     policy: str = ""

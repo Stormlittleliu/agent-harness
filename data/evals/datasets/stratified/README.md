@@ -33,6 +33,30 @@
 > GAIA/SWE-bench/WebArena/OSWorld 走现有 BenchTask 适配器，`source_index` 为空，
 > 用 `source_id`（task id）溯源；新增的 CFBench / HumanEval / MBPP 有原始行号。
 
+## 判分口径：模型能力 / 场景工具
+
+| 口径 | 条数 | 集合 | 怎么判 |
+|---|---:|---|---|
+| **模型能力** `model_capability` | 81 | RGB 30、MultiHop 20、CFBench 21、HumanEval 5、MBPP 5 | 只看最终输出（文本/代码/答案）；不检查工具调用或环境状态 |
+| **场景/工具** `scenario_tool` | 300 | BFCL 95、τ² 20、GAIA 15、SWE 53、WebArena 47、OSWorld 70 | 要看工具选择/参数、多轮对话或环境终态；最终输出对不算通过 |
+
+`selections.jsonl` 每条都带 `eval_scope` 和 `execution`。这两个字段不是一回事：
+
+- `eval_scope`：这条 case **该怎么判**；
+- `execution`：本仓库**现在能不能跑**。
+
+| execution | 含义 | 当前集合 |
+|---|---|---|
+| `native` | 已有本项目的 runner / 报告路径 | RGB、MultiHop |
+| `judge_required` | 要 LLM judge，尚未接 | CFBench |
+| `sandbox_required` | 要代码执行沙箱，尚未接 | HumanEval、MBPP |
+| `harness_required` | 要官方 harness / 环境，只做了数据适配 | BFCL、τ²、SWE-bench、WebArena、OSWorld |
+| `tools_required` | 题面需要联网/文件/工具，但适配器没带工具 | GAIA |
+
+所以“场景/工具 300 条”不等于“能跑 300 条场景/工具评测”；大部分是
+`harness_required`。GAIA 归到场景/工具，是因为官方任务要联网/读附件；但当前
+适配器只带题面，所以执行状态是 `tools_required`。
+
 ## 抽样规则
 
 - seed = 42，每类 5 条；

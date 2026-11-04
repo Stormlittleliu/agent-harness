@@ -70,6 +70,7 @@ class CFBenchAdapter(BenchmarkAdapter):
                 instruction=str(item.get("prompt") or ""),
                 grader="mixed",
                 bucket="adversarial" if answerable == "unanswerable" else "capability",
+                eval_scope="model_capability",
                 environment={"kind": "cfbench", "runner": "native", "judge": "llm"},
                 success_criteria=checks,
                 difficulty=split,

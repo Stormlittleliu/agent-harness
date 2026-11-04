@@ -55,6 +55,7 @@ class HumanEvalAdapter(BenchmarkAdapter):
                 instruction=str(item.get("prompt") or ""),
                 grader="unit_test",
                 bucket="capability",
+                eval_scope="model_capability",
                 environment={
                     "kind": "humaneval",
                     "runner": "sandbox_required",

@@ -51,6 +51,7 @@ class SWEBenchAdapter(BenchmarkAdapter):
                     task_type="code_repair",
                     instruction=item.get("problem_statement", ""),
                     grader="code",
+                    eval_scope="scenario_tool",
                     environment={
                         "kind": "swebench",
                         "runner": "external",

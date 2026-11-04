@@ -111,6 +111,7 @@ def test_new_sources_are_grouped_and_traceable(tmp_path):
     }
     assert manifest["sets"]["humaneval"]["counts"] == {"function_completion": 5}
     assert manifest["sets"]["mbpp"]["counts"] == {"function_generation": 5}
+    assert manifest["selection_record"]["by_eval_scope"] == {"model_capability": 31}
 
     selections = [
         json.loads(line)

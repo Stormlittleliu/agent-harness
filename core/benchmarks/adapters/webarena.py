@@ -38,6 +38,7 @@ class WebArenaAdapter(BenchmarkAdapter):
                 task_type="web_navigation",
                 instruction=item.get("intent", ""),
                 grader="code",
+                eval_scope="scenario_tool",
                 environment={
                     "kind": "webarena",
                     "runner": "external",

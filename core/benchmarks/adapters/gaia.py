@@ -45,6 +45,7 @@ class GAIAAdapter(BenchmarkAdapter):
                     instruction=question,
                     grader="mixed",
                     environment={"kind": "gaia", "runner": "native"},
+                    eval_scope="scenario_tool",
                     success_criteria=[{"type": "answer", "value": item.get("Final answer") or item.get("final_answer") or ""}],
                     difficulty=str(item.get("Level") or item.get("level") or "unknown"),
                     license=self.license,

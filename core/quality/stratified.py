@@ -28,6 +28,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
 
+from core.quality.eval_layers import LAYER_DEFS, describe, label
+
 OUT_DIR = Path("data/evals/datasets/stratified")
 DEFAULT_BENCH_ROOT = Path(r"E:\CODE\benchmarks")
 DEFAULT_PER_CATEGORY = 5
@@ -130,9 +132,14 @@ def select_row(
     source_size: int,
 ) -> dict[str, Any]:
     """一条被选中样本的溯源记录；JSONL 里一条一行。"""
+    meta = describe(benchmark)
+    eval_scope = source_row.get("eval_scope") or meta["eval_scope"]
+    execution = source_row.get("execution") or meta["execution"]
     return {
         "benchmark": benchmark,
         "category": category,
+        "eval_scope": eval_scope,
+        "execution": execution,
         "source": source_path.as_posix(),
         "source_file": source_path.name,
         "source_sha256": source_sha,
@@ -145,11 +152,22 @@ def select_row(
     }
 
 
+def _tag_case(row: dict[str, Any], benchmark: str) -> dict[str, Any]:
+    """给样本打上判分口径和当前执行状态；已有值不覆盖。"""
+    meta = describe(benchmark)
+    row.setdefault("eval_scope", meta["eval_scope"])
+    row.setdefault("execution", meta["execution"])
+    return row
+
+
 def _write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     count = 0
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         for row in rows:
+            benchmark = row.get("benchmark")
+            if benchmark:
+                _tag_case(row, benchmark)
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
             count += 1
     return count
@@ -683,6 +701,14 @@ def _write_selection_record(
     for item in selections:
         key = (item["benchmark"], item["category"], item["source_file"])
         grouped.setdefault(key, []).append(item)
+
+    layer_totals: dict[str, int] = {}
+    layer_benchmarks: dict[str, set[str]] = {}
+    for item in selections:
+        scope = item["eval_scope"]
+        layer_totals[scope] = layer_totals.get(scope, 0) + 1
+        layer_benchmarks.setdefault(scope, set()).add(item["benchmark"])
+
     lines = [
         "# 分层抽样出处记录",
         "",
@@ -691,12 +717,31 @@ def _write_selection_record(
         "- 产物是平衡抽样，不是官方 benchmark 完整成绩。",
         "- 每条样本的源文件、源文件 hash、源行号、源 id 见 `selections.jsonl`。",
         "",
-        "| benchmark | category | 源文件 | 源条数 | 选中 |",
-        "|---|---|---|---:|---:|",
+        "## 判分口径",
+        "",
+        "| 类别 | 含义 | 条数 | 集合 |",
+        "|---|---|---:|---|",
+    ]
+    for scope in sorted(layer_totals):
+        lines.append(
+            f"| {label(scope)} | {LAYER_DEFS.get(scope, '')} | {layer_totals[scope]} | "
+            f"{', '.join(sorted(layer_benchmarks[scope]))} |"
+        )
+    lines += [
+        "",
+        "> `eval_scope` 只说明“这条 case 该怎么判”，不说明“现在能不能跑”；"
+        "`execution` 才是当前执行状态（native / judge_required / sandbox_required / "
+        "harness_required / tools_required）。",
+        "",
+        "| benchmark | 类别 | category | 执行 | 源文件 | 源条数 | 选中 |",
+        "|---|---|---|---|---|---:|---:|",
     ]
     for (benchmark, category, source_file), items in sorted(grouped.items()):
         source_size = items[0].get("source_size", "")
-        lines.append(f"| {benchmark} | {category} | `{source_file}` | {source_size} | {len(items)} |")
+        lines.append(
+            f"| {benchmark} | {label(items[0]['eval_scope'])} | {category} | "
+            f"{items[0]['execution']} | `{source_file}` | {source_size} | {len(items)} |"
+        )
     lines.append("")
     lines.append("> `source_index` 是源文件中的 0-based 行号；`source_sha256` 是源文件内容哈希前 16 位。")
     (out_dir / "selections.md").write_text(
@@ -747,6 +792,21 @@ def build_all(
         per_category=per_category,
         generated_at=generated_at,
     )
+    layer_totals: dict[str, int] = {}
+    layer_benchmarks: dict[str, set[str]] = {}
+    for item in selections:
+        scope = item["eval_scope"]
+        layer_totals[scope] = layer_totals.get(scope, 0) + 1
+        layer_benchmarks.setdefault(scope, set()).add(item["benchmark"])
+    layers = {
+        scope: {
+            "label": label(scope),
+            "definition": LAYER_DEFS.get(scope, ""),
+            "count": layer_totals[scope],
+            "benchmarks": sorted(layer_benchmarks[scope]),
+        }
+        for scope in sorted(layer_totals)
+    }
     manifest = {
         "generated_at": generated_at,
         "seed": seed,
@@ -756,7 +816,9 @@ def build_all(
             "jsonl": "selections.jsonl",
             "markdown": "selections.md",
             "count": len(selections),
+            "by_eval_scope": layer_totals,
         },
+        "layers": layers,
         "sets": sets,
     }
     (out_dir / "manifest.json").write_text(
@@ -785,6 +847,8 @@ def main(argv: list[str] | None = None) -> int:
         total = sum(info["counts"].values())
         print(f"{name}: {total} rows / {len(info['counts'])} categories")
         print("  " + ", ".join(f"{key}={value}" for key, value in info["counts"].items()))
+    for scope, info in manifest["layers"].items():
+        print(f"{info['label']} ({scope}): {info['count']} rows")
     print(f"selections: {manifest['selection_record']['count']} rows")
     return 0
 

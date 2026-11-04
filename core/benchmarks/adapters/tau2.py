@@ -73,6 +73,7 @@ class Tau2Adapter(BenchmarkAdapter):
                 instruction=instruction,
                 grader="mixed",
                 bucket="multi_turn",
+                eval_scope="scenario_tool",
                 environment={
                     "kind": "tau2",
                     "domain": "retail",

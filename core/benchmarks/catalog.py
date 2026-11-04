@@ -31,6 +31,7 @@ def _summary(tasks: list[BenchTask]) -> dict:
         "by_category": dict(Counter(task.category for task in tasks)),
         "by_task_type": dict(Counter(task.task_type for task in tasks)),
         "by_bucket": dict(Counter(task.bucket for task in tasks)),
+        "by_eval_scope": dict(Counter(task.eval_scope for task in tasks)),
         "by_grader": dict(Counter(task.grader for task in tasks)),
         "by_environment": dict(Counter(task.environment.get("kind", "unknown") for task in tasks)),
     }
@@ -115,11 +116,15 @@ def build(per_source: int, seed: int, out_dir: Path, only: str | None = None) ->
     lines += ["", "## AgentGuide Bucket", ""]
     for name, count in sorted(summary["by_bucket"].items()):
         lines.append(f"- {name}: {count}")
-    lines += ["", "## 样例", "", "| ID | 来源 | Bucket | 类别 | 任务 | 评分 |", "|:---|:---|:---|:---|:---|:---|"]
+    lines += ["", "## 评测范围（模型能力 / 场景工具）", ""]
+    for name, count in sorted(summary["by_eval_scope"].items()):
+        lines.append(f"- {name}: {count}")
+    lines += ["", "## 样例", "", "| ID | 来源 | Bucket | 范围 | 类别 | 任务 | 评分 |", "|:---|:---|:---|:---|:---|:---|:---|"]
     for task in sampled:
         instruction = task.instruction.replace("\n", " ")[:60]
         lines.append(
-            f"| {task.id} | {task.source} | {task.bucket} | {task.category} | {instruction} | {task.grader} |"
+            f"| {task.id} | {task.source} | {task.bucket} | {task.eval_scope} | "
+            f"{task.category} | {instruction} | {task.grader} |"
         )
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 

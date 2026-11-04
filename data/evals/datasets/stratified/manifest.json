@@ -1,12 +1,43 @@
 {
-  "generated_at": "2026-11-04T23:05:39",
+  "generated_at": "2026-11-04T23:14:23",
   "seed": 42,
   "per_category": 5,
   "note": "平衡抽样，不是官方 benchmark 成绩；类别/源规模见 sets。",
   "selection_record": {
     "jsonl": "selections.jsonl",
     "markdown": "selections.md",
-    "count": 381
+    "count": 381,
+    "by_eval_scope": {
+      "scenario_tool": 300,
+      "model_capability": 81
+    }
+  },
+  "layers": {
+    "model_capability": {
+      "label": "模型能力",
+      "definition": "只看最终输出（文本/代码/答案）；不检查工具调用或环境状态。",
+      "count": 81,
+      "benchmarks": [
+        "CFBench",
+        "HumanEval",
+        "MBPP",
+        "MultiHop-RAG",
+        "RGB"
+      ]
+    },
+    "scenario_tool": {
+      "label": "场景/工具",
+      "definition": "要看工具选择/参数、多轮对话或环境终态；最终输出对不算通过。",
+      "count": 300,
+      "benchmarks": [
+        "BFCL-v4",
+        "GAIA",
+        "OSWorld",
+        "SWE-bench",
+        "WebArena",
+        "tau2-bench"
+      ]
+    }
   },
   "sets": {
     "bfcl": {

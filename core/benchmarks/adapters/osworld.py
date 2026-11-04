@@ -43,6 +43,7 @@ class OSWorldAdapter(BenchmarkAdapter):
                 task_type="desktop",
                 instruction=item.get("instruction", ""),
                 grader="code",
+                eval_scope="scenario_tool",
                 environment={
                     "kind": "osworld",
                     "runner": "external",

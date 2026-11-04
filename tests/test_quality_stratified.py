@@ -88,3 +88,39 @@ def test_build_all_records_every_pick(tmp_path):
         assert item["source_size"] >= 5
     assert (out / "selections.md").is_file()
     assert (out / "manifest.json").is_file()
+
+
+def test_eval_scope_splits_model_and_scenario(tmp_path):
+    root = _fake_root(tmp_path)
+    out = tmp_path / "out"
+    manifest = build_all(
+        root,
+        out,
+        per_category=5,
+        seed=42,
+        sources=("bfcl", "rgb", "tau2", "multihop"),
+    )
+
+    assert manifest["selection_record"]["by_eval_scope"] == {
+        "model_capability": 50,
+        "scenario_tool": 30,
+    }
+    assert manifest["layers"]["model_capability"]["benchmarks"] == [
+        "MultiHop-RAG",
+        "RGB",
+    ]
+    assert manifest["layers"]["scenario_tool"]["benchmarks"] == [
+        "BFCL-v4",
+        "tau2-bench",
+    ]
+
+    selections = [
+        json.loads(line)
+        for line in (out / "selections.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert {item["eval_scope"] for item in selections} == {
+        "model_capability",
+        "scenario_tool",
+    }
+    assert all(item["execution"] for item in selections)

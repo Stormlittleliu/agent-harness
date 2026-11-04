@@ -50,6 +50,7 @@ class MBPPAdapter(BenchmarkAdapter):
                 instruction=str(item.get("text") or ""),
                 grader="unit_test",
                 bucket="capability",
+                eval_scope="model_capability",
                 environment={
                     "kind": "mbpp",
                     "runner": "sandbox_required",

@@ -70,6 +70,7 @@ class BFCLAdapter(BenchmarkAdapter):
                 instruction=first_user_text(item),
                 grader="code",
                 bucket="capability",
+                eval_scope="scenario_tool",
                 environment={
                     "kind": "bfcl",
                     "test_category": "simple_python",
@@ -100,6 +101,7 @@ class BFCLAdapter(BenchmarkAdapter):
                 instruction=first_user_text(item),
                 grader="code",
                 bucket="adversarial",
+                eval_scope="scenario_tool",
                 environment={
                     "kind": "bfcl",
                     "test_category": "irrelevance",

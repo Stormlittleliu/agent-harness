@@ -96,7 +96,8 @@ python test_entry.py bfcl --simple 2 --irrelevance 2
 `stratified/` 的原始样本由本地 benchmark 源生成，**不随仓库分发**（RGB 是
 CC BY-NC-SA，不能直接复制进 MIT 仓库）。仓库只保留 `selections.jsonl` /
 `selections.md` / `manifest.json` 作为出处记录；当前 11 个源、381 条。
-重新生成命令：
+每条样本带 `eval_scope`（`model_capability` / `scenario_tool`）和 `execution`
+（当前能不能跑），不要把两层混成一张分。重新生成命令：
 
 ```powershell
 python -m core.quality.stratified --per-category 5 --seed 42

@@ -97,3 +97,13 @@ def test_cfbench_runner_requires_judge():
     )
     result = get_runner(task).run(task)
     assert result.status == "judge_required"
+
+
+def test_eval_layers_do_not_guess_scenario():
+    from core.quality.eval_layers import MODEL_CAPABILITY, describe
+
+    assert describe("unknown-benchmark")["eval_scope"] == MODEL_CAPABILITY
+    assert describe("unknown-benchmark")["execution"] == "unknown"
+    bfcl = describe("BFCL-v4")
+    assert bfcl["eval_scope"] == "scenario_tool"
+    assert bfcl["execution"] == "harness_required"
