@@ -404,11 +404,19 @@ def node_positions(
     }
 
 
-def merge_canvas(draft: dict[str, Any], workflow: str, payload: Any) -> bool:
+def merge_canvas(
+    draft: dict[str, Any],
+    workflow: str,
+    payload: Any,
+    clipboard: dict[str, dict] | None = None,
+) -> bool:
     """把画布回传的状态并进草稿；返回是否真的改了结构。
 
     画布是"不可信输入"：未知块、重复 id、悬空边、空节点列表全部丢掉，
     只接受 ``{nodes: [{id, fn, x, y}], edges: [[from, to]]}``。
+
+    ``clipboard`` 只用于 Ctrl+X 后的粘贴：被剪掉的源节点已不在草稿里，
+    但它的参数要从 Python 侧快照恢复，画布本身不传参数。
     """
     if not isinstance(payload, dict):
         return False
@@ -430,7 +438,7 @@ def merge_canvas(draft: dict[str, Any], workflow: str, payload: Any) -> bool:
             continue
         previous = current.get(node_id)
         copy_of = str(item.get("copy_of") or "")
-        source = current.get(copy_of)
+        source = current.get(copy_of) or (clipboard or {}).get(copy_of)
         if previous is not None and str(previous.get("fn")) == fn:
             args = dict(previous.get("args") or {})
         elif source is not None and str(source.get("fn")) == fn:
@@ -551,9 +559,10 @@ def absorb_canvas(
     draft: dict[str, Any],
     payload: Any,
     root: str | Path | None = None,
+    clipboard: dict[str, dict] | None = None,
 ) -> bool:
     """吸收一次画布回传：合并结构 + 记住位置；返回结构是否变化。"""
-    changed = merge_canvas(draft, workflow, payload)
+    changed = merge_canvas(draft, workflow, payload, clipboard=clipboard)
     if not isinstance(payload, dict):
         return changed
     positions: dict[str, list[int]] = {}

@@ -237,6 +237,27 @@ def test_copy_of_inherits_args_from_source_node():
     assert copied["args"] == {"tool": "search_notes", "limit": 9}
 
 
+def test_cut_clipboard_restores_args_after_source_removed():
+    draft = _draft()
+    draft["workflows"]["qa"]["nodes"] = []
+    payload = {
+        "nodes": [
+            {"id": "search-copy", "fn": "retrieve", "copy_of": "search", "x": 40, "y": 40},
+        ],
+        "edges": [],
+    }
+    clipboard = {
+        "search": {
+            "id": "search",
+            "fn": "retrieve",
+            "args": {"tool": "search_notes", "limit": 9},
+        }
+    }
+    spec_edit.merge_canvas(draft, "qa", payload, clipboard=clipboard)
+    copied = draft["workflows"]["qa"]["nodes"][0]
+    assert copied["args"] == {"tool": "search_notes", "limit": 9}
+
+
 def test_merge_canvas_accepts_known_blocks():
     draft = _draft()
     payload = {

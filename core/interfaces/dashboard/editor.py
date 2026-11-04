@@ -446,7 +446,18 @@ def _render_canvas_editor(
     if isinstance(result, dict) and result.get("version") != st.session_state.get("editor-canvas-version"):
         st.session_state["editor-canvas-version"] = result.get("version")
         before = copy.deepcopy(draft)
-        changed = spec_edit.absorb_canvas(name, workflow, draft, result)
+        clipboard = st.session_state.get(f"editor:clipboard:{name}") or {}
+        if result.get("cut"):
+            # Ctrl+X 后源节点已经不在草稿里；先把带参数的快照留在 Python 侧，
+            # 粘贴时按 copy_of 恢复参数，而不是让画布传参数。
+            clipboard = {
+                str(node.get("id")): copy.deepcopy(node)
+                for node in draft["workflows"][workflow]["nodes"]
+            }
+            st.session_state[f"editor:clipboard:{name}"] = clipboard
+        changed = spec_edit.absorb_canvas(
+            name, workflow, draft, result, clipboard=clipboard
+        )
         if changed:
             _remember(name, before)
             # 结构变了，之前那次校验的结论就过期了。

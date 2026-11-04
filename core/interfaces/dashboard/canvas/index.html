@@ -224,13 +224,13 @@
     while (findNode(base + index)) { index += 1; }
     return base + index;
   }
-  function emit() {
+  function emit(extra) {
     version += 1;
     var anchors = {};
     model.nodes.forEach(function (node) {
       if (isAnchor(node)) { anchors[node.id] = [Math.round(node.x), Math.round(node.y)]; }
     });
-    setValue({
+    setValue(Object.assign({
       nodes: model.nodes.filter(function (node) { return !isAnchor(node); }).map(function (node) {
         var item = { id: node.id, fn: node.fn, x: Math.round(node.x), y: Math.round(node.y) };
         if (node.copy_of) { item.copy_of = node.copy_of; }
@@ -240,7 +240,7 @@
       anchors: anchors,
       selected: model.selected,
       version: version
-    });
+    }, extra || {}));
   }
 
   // ---------------- 绘制 ----------------
@@ -405,7 +405,7 @@
     copySelection();
     deleteNodes(ids);
     draw();
-    emit();
+    emit({ cut: true });
     flash("已剪切 " + ids.length + " 个节点");
   }
   function duplicateSelection() {
