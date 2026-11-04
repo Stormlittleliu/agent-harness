@@ -69,6 +69,21 @@ python test_entry.py benchmark public
 python test_entry.py bfcl --simple 2 --irrelevance 2
 ```
 
+## 任务级夹具（eval fixtures）
+
+公开集/自建集的“任务能不能在合适工具下做对”用 `core/quality/fixtures.py`，
+不再借用 `robot_vacuum` 这类产品场景：
+
+```powershell
+python -m core.quality.fixtures --family bfcl --limit 3 --dry-run
+python -m core.quality.fixtures --family bfcl --limit 3
+python -m core.quality.fixtures --family permission
+```
+
+变体：`clean` / `distractor` / `missing` / `failure` / `permission`。
+报告写到 `outputs/fixtures/`，是行为探针，不是官方 benchmark 分数。
+说明见 [docs/design/eval-fixtures.md](../../docs/design/eval-fixtures.md)。
+
 ## 指标
 
 | 模块 | 指标 |

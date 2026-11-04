@@ -5,7 +5,7 @@
 ## 环境
 
 - Python 用 conda 环境 **`langchain`**；裸 `python` 是 3.8，跑不了测试。
-- 测试：`python -m pytest -q`（当前 283 passed）。
+- 测试：`python -m pytest -q`（当前 381 passed）。
 
 ## 场景归属（硬约束）
 
@@ -53,6 +53,7 @@ python -m core.scenarios.eject <name> --status
 
 - `core/agent/pipeline.py` — 中间件策略编排（slot + 顺序不变量 + `policies` 覆盖）；**策略的中文名 / 说明 / 分层写在 `POLICY_DOCS`**，UI 直接读它，别在别处再抄一份；
 - `core/quality/selfbuilt.py` — 自建跨分类任务集评测（检索 / 单轮 / 多轮），任务在 `data/evals/datasets/selfbuilt/tasks.jsonl`；
+- `core/quality/fixtures.py` — 任务级评测夹具：按任务配工具、`clean/distractor/missing/failure/permission` 变体，不注册产品场景；
 - `core/quality/mining.py` — 从 `outputs/runs/` 挖候选范式（序列 + 转移，只读，不自动采纳）；
 - `core/quality/shadow.py` — baseline/candidate 各跑一遍、只记录不切换（shadow）；
 - `core/quality/adoption.py` — 采纳门槛（pass^k / outcome / 成本 / 安全）、写新版本、回退指针；

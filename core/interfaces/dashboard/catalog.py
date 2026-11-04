@@ -47,7 +47,10 @@ ADAPTER_PATHS = {
     "bfcl-v4": "core/benchmarks/adapters/bfcl.py",
     "rgb": "core/benchmarks/adapters/rag.py",
     "multihop-rag": "core/benchmarks/adapters/rag.py",
+    "cfbench": "core/benchmarks/adapters/cfbench.py",
     "gaia": "core/benchmarks/adapters/gaia.py",
+    "humaneval": "core/benchmarks/adapters/humaneval.py",
+    "mbpp": "core/benchmarks/adapters/mbpp.py",
     "swe-bench": "core/benchmarks/adapters/swebench.py",
     "webarena": "core/benchmarks/adapters/webarena.py",
     "osworld": "core/benchmarks/adapters/osworld.py",
@@ -208,7 +211,7 @@ def render_catalog() -> None:
         st.warning(f"catalog.jsonl 中有 {skipped} 行无法解析，已跳过。")
 
     if manifest is None and rows is None:
-        page_header("Benchmark 目录", "8 个来源的统一任务目录。")
+        page_header("Benchmark 目录", "公开 benchmark 的统一任务目录。")
         empty_state("未找到 benchmark 目录数据。先生成样例集：", "python -m core.benchmarks.catalog --list\n" + BUILD_CMD)
         return
 
@@ -221,7 +224,7 @@ def render_catalog() -> None:
     total_recorded = (manifest or {}).get("total")
     page_header(
         "Benchmark 目录",
-        "8 个来源 × 40 条统一样例；区分数据可用与执行环境可用。",
+        "统一任务目录；区分数据可用与执行环境可用。",
         meta=f"{len(rows)} 条 · {source_count} 个来源 · seed={seed if seed is not None else '—'}",
     )
     source_footer([(MANIFEST_PATH, "manifest.json"), (CATALOG_PATH, "catalog.jsonl")])

@@ -148,6 +148,11 @@ python -m core.quality.runner rag generation --limit 5 # 能力层：生成
 python -m core.quality.runner public --rgb-limit 2 --skip-multihop
 python -m core.quality.runner bfcl --simple 2 --irrelevance 2
 
+# 任务级夹具：按任务配工具，不借用产品场景
+python -m core.quality.fixtures --family bfcl --limit 3 --dry-run
+python -m core.quality.fixtures --family bfcl --limit 3
+python -m core.quality.fixtures --family permission
+
 # 兼容旧入口
 python test_entry.py rag retrieval
 python test_entry.py rag generation
