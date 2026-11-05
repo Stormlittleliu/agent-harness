@@ -26,6 +26,7 @@ from core.interfaces.dashboard.layout import (
 BFCL_RESULTS = ROOT / "outputs" / "bfcl" / "eval_bfcl.json"
 PUBLIC_RESULTS = ROOT / "outputs" / "public" / "eval_public_results.json"
 TAU2_RESULTS = ROOT / "outputs" / "tau2" / "results.json"
+CATALOG_MANIFEST = ROOT / "data" / "benchmarks" / "manifest.json"
 
 
 def _read_report(path: Path, name: str) -> dict | None:
@@ -310,6 +311,41 @@ def _render_tau2() -> None:
         _render_tau2_detail(sim, item)
 
 
+def _render_other_sources() -> None:
+    """只展示 catalog 里有数据、但还没有公开报告页的来源，避免“看起来没接”。"""
+    manifest, error = load_json(CATALOG_MANIFEST)
+    if error:
+        st.error(f"读取 catalog manifest 失败：{error}")
+        return
+    if not isinstance(manifest, dict):
+        empty_state("catalog manifest 缺失；先运行 `python -m core.benchmarks.catalog --build`。")
+        return
+    known = {"bfcl-v4", "rgb", "multihop-rag", "tau2-bench"}
+    rows = [
+        {
+            "来源": item.get("name"),
+            "抽样": item.get("sampled"),
+            "原始条数": item.get("loaded"),
+            "版本": item.get("version"),
+            "说明": item.get("note"),
+        }
+        for item in manifest.get("sources") or []
+        if item.get("name") not in known
+    ]
+    if not rows:
+        empty_state("没有额外的数据来源。")
+        return
+    st.caption(
+        f"这些来源只有 catalog 数据，没有接公开基准报告；生成于 {manifest.get('generated_at', '—')}。"
+    )
+    compact_table(
+        rows,
+        height=300,
+        key="benchmarks-other-table",
+        column_order=["来源", "抽样", "原始条数", "版本", "说明"],
+    )
+
+
 def render_benchmarks(embedded: bool = False) -> None:
     if not embedded:
         page_header(
@@ -330,11 +366,11 @@ def render_benchmarks(embedded: bool = False) -> None:
     )
     st.caption(
         "CFBench / HumanEval / MBPP 目前只有 catalog 数据，没有接公开基准报告；"
-        "它们不是“已评测”，要看数据请去质量页 → 基准 → Benchmark 目录。"
+        "它们不是“已评测”，看数据请切到「其他（仅目录）」。"
     )
     mode = st.radio(
         "Benchmark",
-        ["BFCL", "RGB / MultiHop", "τ²"],
+        ["BFCL", "RGB / MultiHop", "τ²", "其他（仅目录）"],
         horizontal=True,
         key="benchmarks-mode",
     )
@@ -342,5 +378,7 @@ def render_benchmarks(embedded: bool = False) -> None:
         _render_bfcl()
     elif mode == "RGB / MultiHop":
         _render_public()
-    else:
+    elif mode == "τ²":
         _render_tau2()
+    else:
+        _render_other_sources()

@@ -36,6 +36,14 @@ DEFAULT_PER_CATEGORY = 5
 DEFAULT_SEED = 42
 
 
+def _source_ref(path: Path) -> str:
+    """仓库内 provenance 只存相对 BENCHMARK_ROOT 的路径，不写作者机器盘符。"""
+    try:
+        return path.resolve().relative_to(DEFAULT_BENCH_ROOT.resolve()).as_posix()
+    except (OSError, ValueError):
+        return path.name
+
+
 def _read_rows(path: Path) -> list[dict[str, Any]]:
     """兼容 JSONL 和 pretty-printed JSON array（BFCL 有些文件是数组）。"""
     text = path.read_text(encoding="utf-8")
@@ -140,7 +148,8 @@ def select_row(
         "category": category,
         "eval_scope": eval_scope,
         "execution": execution,
-        "source": source_path.as_posix(),
+        "source": _source_ref(source_path),
+        "source_root": "BENCHMARK_ROOT",
         "source_file": source_path.name,
         "source_sha256": source_sha,
         "source_size": source_size,

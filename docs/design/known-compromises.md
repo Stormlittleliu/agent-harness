@@ -108,6 +108,9 @@ if judged is not None:
 
 **下一步**：存 `benchmark` + 相对路径 + `BENCHMARK_ROOT` 版本；绝对路径只放本地 manifest，不进仓库。
 
+**2026-11-05 已修**：`stratified.py` 写 `source` 时改为相对 `DEFAULT_BENCH_ROOT`，并写
+`source_root: BENCHMARK_ROOT`；现有 `selections.jsonl` 381 行已重写，`absolute_left=0`。
+
 ### 11. 文档里的测试数已经过期
 
 **证据**：`AGENTS.md:8` 当时写“当前 283 passed”；`docs/design/plan-status.md:25` 写“365 passed”；审计时是 375。现在以 399 为准。
@@ -125,6 +128,8 @@ if judged is not None:
 **后果**：新接的源只能在 catalog 里看到，不能在质量页按 benchmark 看；看起来像没接。
 
 **下一步**：要么把新源并进 catalog 视图，要么在 benchmark 视图加“其他”分组；先补数据，不急着加 tab。
+
+**2026-11-05 已修**：公开基准页加「其他（仅目录）」分组，只读 `manifest.json`，明确标注“只有数据、没有报告”。
 
 ### 13. 根 README 的规模与结果数字过期
 
@@ -181,8 +186,9 @@ if judged is not None:
 - P1-5 “300 条里大部分跑不了”的对外口径已改为按 `by_runner` 分组，但 60 条任务级样本
   仍不能代表全量；这是数据事实，不是待修 bug。
 - P1-6 除 BFCL 外，多数族的 `BenchTask.tools` 仍为空；要接 `TaskToolAdapter` 或官方环境。
-- P1-10 `stratified/selections.jsonl` 的 `source` 仍是作者机器的绝对路径；重生成前不改历史文件。
-- P1-1 selfbuilt 剩余场景迁移；P1-12 新 benchmark 仍只有 catalog，没有报告页。
+
+P1-1 / P1-10 / P1-12 已在 2026-11-05 处理：selfbuilt 已切任务级 fixture，
+provenance 已改相对路径，公开基准页已有「其他（仅目录）」。
 
 
 ## 不打算改的
