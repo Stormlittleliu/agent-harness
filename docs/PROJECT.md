@@ -12,7 +12,7 @@
 - LangGraph checkpoint / 多轮记忆 / 中断恢复；
 - LangGraph 工作流：检索问答、报告生成；
 - 两层评测：工具层 / 行为层；
-- 公开 benchmark 适配层：8 个来源、320 条统一样例；
+- 公开 benchmark 适配层：11 个来源、132 条统一样例（2026-11-05 重建）；
 - 最小优化循环：跑 → badcase 归因 → 定向改 → 复跑 → 查回归；
 - 运行时扩展：hooks、SQLite 任务图（blocked_by 依赖）、文件读写 / 编辑 / glob / grep / 命令执行、运行窗口、单层 subagent；
 - 结构化输出：`Scenario.response_format` → `create_agent` → Pydantic `ReportSchema`，评测直接读 `structured_response`；
@@ -86,9 +86,9 @@
 |:---|:---|
 | Agent = Model + Harness | 已分开：BFCL/τ² 是模型能力；自建机制/回归是 Harness |
 | Task / Trial / Grader / Transcript / Outcome | 有 Task/Trial/Grader/Trace；新增 12 条 outcome 用例 / 13 个断言（文件 / SQLite / 任务图 / 路由 trace），未接 CI |
-| Capability vs Regression | 320 条 catalog 是 capability；13 条自建是 regression；demo 60/45 混合 |
+| Capability vs Regression | 132 条 catalog 是 capability；13 条自建是 regression；demo 60/45 混合 |
 | Code-based → LLM judge → human | 有 code-based + DeepSeek judge；没有人工校准 |
-| 150 task benchmark | 320 条 catalog，但真正跑过的只有 60/45 demo；大量来源未执行 |
+| 150 task benchmark | 132 条 catalog，但真正跑过的只有 60/45 demo；大量来源未执行 |
 | 5–10 trial + CI | 目前 3 trial，没有置信区间/CI 门禁 |
 | 三层质量门 / 四级 Ship Gate | 有离线 gate + 故障注入；没有 shadow / A/B / 灰度 |
 | 读 transcript | 有 trace 时间线和失败分析，但没有固定“每次读 15 条”的流程 |
@@ -135,10 +135,10 @@ core/interfaces/       # CLI / Streamlit / 6 功能视图 + 总览工作台
 core/quality/          # 两层评测 + outcome / 公开基准 / 失败集 / 门禁 / 结构化评测
 core/observability/    # trace + token budget + 成本时延报告
 core/mcp/              # MCP client + Fetch server
-core/benchmarks/       # 8 个公开 benchmark 适配器
+core/benchmarks/       # 11 个公开 benchmark 适配器
 core/experiments/      # 最小优化循环 + 触发率 + planner A/B
 tests/                 # pytest：runtime / workspace / metrics / dashboard / 故障注入
-data/benchmarks/       # 320 条统一样例
+data/benchmarks/       # 132 条统一样例
 docs/benchmarks/       # 结果总览 / 复盘
 ```
 

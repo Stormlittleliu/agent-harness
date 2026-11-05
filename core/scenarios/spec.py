@@ -32,6 +32,7 @@ from core.scenarios.spec_nodes import (
     NODE_REGISTRY,
     ResolvedPorts,
     block_ports,
+    branch_route_values,
     types_compatible,
     validate_args,
     validate_tool_refs,
@@ -254,6 +255,7 @@ def _validate_workflow(name: str, workflow: WorkflowSpec, tool_names: set[str] |
     reverse: dict[str, set[str]] = {}
     conditional_sources: set[str] = set()
     plain_sources: set[str] = set()
+    conditional_labels: dict[str, set[str]] = {}
     for edge in workflow.edges:
         source, target, when = split_edge(edge)
         if source not in known:
@@ -266,6 +268,7 @@ def _validate_workflow(name: str, workflow: WorkflowSpec, tool_names: set[str] |
             if not str(when).strip():
                 errors.append(f"{prefix}.{source} 存在空的条件标签")
             conditional_sources.add(source)
+            conditional_labels.setdefault(source, set()).add(str(when))
         else:
             plain_sources.add(source)
         adjacency.setdefault(source, set()).add(target)
@@ -275,6 +278,26 @@ def _validate_workflow(name: str, workflow: WorkflowSpec, tool_names: set[str] |
         errors.append(
             f"{prefix}.{source} 同时有条件和无条件出边：一个节点要么固定去一处，要么按分支走"
         )
+
+    for node in workflow.nodes:
+        if node.fn != "branch":
+            continue
+        routes, route_errors = branch_route_values(node.args)
+        errors.extend(f"{prefix}.{node.id}：{error}" for error in route_errors)
+        labels = conditional_labels.get(node.id, set())
+        if not labels:
+            errors.append(f"{prefix}.{node.id} 是 branch，但没有条件出边")
+            continue
+        missing = sorted(routes - labels)
+        if missing:
+            errors.append(
+                f"{prefix}.{node.id} 可能写出 route={missing}，但没有对应条件边"
+            )
+        extra = sorted(labels - routes)
+        if extra:
+            errors.append(
+                f"{prefix}.{node.id} 的条件边标签 {extra} 不是 branch 的输出"
+            )
 
     if not adjacency.get(START):
         errors.append(f"{prefix} 缺少从 START 出发的边")

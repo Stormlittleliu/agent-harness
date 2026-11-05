@@ -53,3 +53,29 @@ def test_evaluate_cases_reports_each_trial(monkeypatch):
     assert seen == [1, 2]
     assert results[0]["pass_rate"] == 1.0
     assert results[0]["scores"][0]["name"] == "behavior"
+
+
+def test_judge_cannot_override_deterministic_failure(monkeypatch):
+    class FakeAgent:
+        last_trace_id = "t"
+
+        def invoke(self, question):
+            return {"messages": []}
+
+    monkeypatch.setattr(
+        agent_eval,
+        "score_case",
+        lambda case, answer, tool_names: {
+            "coverage": 0.0,
+            "matched_points": [],
+            "tools_ok": False,
+            "refused": False,
+            "passed": False,
+        },
+    )
+    monkeypatch.setattr(agent_eval, "judge_answer", lambda *args: {"verdict": "pass"})
+    row = agent_eval.evaluate_case(
+        FakeAgent(), {"question": "q", "expected_points": []}, judge_chain=object()
+    )
+    assert row["passed"] is False
+    assert row["judge_pass"] is True

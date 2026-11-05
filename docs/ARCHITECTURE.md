@@ -44,7 +44,7 @@
 ┌──────────────────────────────────────────────────────────────┐
 │ 评测 / 实验 / 可观测层                                        │
 │ core/quality/      行为评测 + outcome + gate + 公开集 + 失败集│
-│ core/benchmarks/   8 来源 320 条 catalog + 适配器              │
+│ core/benchmarks/   11 来源 132 条 catalog + 适配器             │
 │ core/experiments/  优化循环 + 触发率 + planner A/B            │
 │ core/observability/ trace + token budget + 成本/时延报告      │
 └──────────────────────────────┬───────────────────────────────┘
@@ -117,7 +117,7 @@ my_agent_harness/
 │  │  └─ general/                # 无业务工具的基线
 │  │
 │  ├─ quality/                   # 【评测层】
-│  │  ├─ agent_eval.py           # 行为评测：44 条 cases，支持 --trials
+│  │  ├─ agent_eval.py           # 行为评测：按场景 cases_path 读，支持 --trials
 │  │  ├─ outcome_eval.py         # outcome 评测：文件/SQLite/任务图/路由 trace
 │  │  ├─ metrics.py              # 关键词覆盖 / 工具命中 / 拒答
 │  │  ├─ judge.py                # LLM-as-judge
@@ -140,7 +140,7 @@ my_agent_harness/
 ├─ data/                         # 数据，不放代码
 │  ├─ knowledge/                 # 智能硬件客服知识库
 │  ├─ evals/datasets/            # 42 条历史业务集 + RGB 20 + MultiHop 12
-│  ├─ benchmarks/                # 320 条 catalog + manifest
+│  ├─ benchmarks/                # 132 条 catalog + manifest
 │  ├─ models/                    # 本地 BGE（gitignored）
 │  ├─ runtime/                   # Chroma / SQLite / 工作区 / 日志（gitignored）
 │  ├─ workspace_assistant/notes/ # 办公助手 seed 笔记
@@ -176,7 +176,7 @@ my_agent_harness/
 | 运行时 | `core/runtime/` | 任务图、工作区文件/命令、TaskRunner、hooks 配置 | 模型调用 |
 | MCP | `core/mcp/` | MCP client、Fetch server、async→sync 包装 | Agent 决策 |
 | 评测 | `core/quality/` | 行为/outcome 评测、metrics、gate、结构化、公开集、失败集 | 模型定义 |
-| 基准 | `core/benchmarks/` | 8 来源 catalog、分层抽样、适配器 | 大部分 adapter 是数据/目录层，不是端到端执行 |
+| 基准 | `core/benchmarks/` | 11 来源 / 132 条 catalog、分层抽样、适配器 | 大部分 adapter 是数据/目录层，不是端到端执行 |
 | 实验 | `core/experiments/` | 优化循环、触发率、planner A/B | 生产调度 |
 | 可观测 | `core/observability/` | trace、token budget、成本/时延报告 | 评分逻辑 |
 | 模型 | `core/llm/` | provider 抽象 | 提示词、工具 |
@@ -247,7 +247,7 @@ core/scenarios/<name>/
 | `general` | 无业务工具基线 | Harness 本身 | 4 行为 |
 
 工作流合计 **7 条**：robot 2 + workspace 4 + research 1。
-评测合计：**44 条行为用例 + 12 条 outcome 用例 / 13 个断言**。
+评测合计：**各场景行为用例（按 `cases_path` 读取）+ 12 条 outcome 用例 / 13 个断言**。
 
 ---
 

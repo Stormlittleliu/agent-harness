@@ -108,8 +108,11 @@ def evaluate_case(agent: FrameworkAgent, case: dict, judge_chain=None) -> dict:
         )
 
     passed = deterministic["passed"]
+    judge_pass = None
     if judged is not None:
-        passed = judged.get("verdict") == "pass"
+        judge_pass = judged.get("verdict") == "pass"
+        # judge 只能降级/确认，不能把工具没调、参数错这类确定性失败翻成通过。
+        passed = passed and judge_pass
 
     score_values = [scorers.behavior_score(deterministic)]
     judge_value = scorers.judge_score(judged)
@@ -127,6 +130,7 @@ def evaluate_case(agent: FrameworkAgent, case: dict, judge_chain=None) -> dict:
         "refused": deterministic["refused"],
         "passed": passed,
         "judge": judged,
+        "judge_pass": judge_pass,
         "judge_used": judged is not None,
         "structured_used": structured is not None,
         "trace_id": getattr(agent, "last_trace_id", None),

@@ -100,8 +100,9 @@ python -m core.interfaces.workflow_cli --scenario workspace_assistant --run stud
 python -m core.interfaces.workflow_cli --scenario research_assistant --run deep_research --input "对比三份资料"
 ```
 
-> 新场景已完成 3-trial 行为回归（workspace 5/5、research 2/3、router 3/4）与 12 条
-> outcome 断言；评测口径见 [docs/benchmarks/current-results.md](./docs/benchmarks/current-results.md)。
+> 行为用例按场景 `cases_path` 读取；11/02 的 3-trial 快照是 workspace 5/5、
+> research 2/3、router 3/4，最新单跑结果见 `outputs/agent/`。
+> outcome 断言见 [docs/benchmarks/current-results.md](./docs/benchmarks/current-results.md)。
 
 ## Planning Policy 与 Outcome 评测
 
@@ -135,7 +136,7 @@ coding 脚本 + 运行日志 + 任务图 `completed`、router 的 `target` + `ta
 
 `data/evals/` 保存数据集，`core/quality/` 保存评测代码，报告写到 `outputs/`。
 能力层（RAG 检索/生成、RGB/MultiHop）走 `FrameworkAgent.invoke_tool`，
-行为层（44 条用例，支持 `--trials` 跑 pass^k）走 `FrameworkAgent.invoke`：
+行为层（各场景 `cases_path` 里的用例，支持 `--trials` 跑 pass^k）走 `FrameworkAgent.invoke`：
 
 ```bash
 python -m core.quality.runner agent --limit 2          # 行为层
@@ -460,7 +461,7 @@ python -m core.benchmarks.catalog --list
 python -m core.benchmarks.catalog --build --per-source 12 --seed 42
 ```
 
-把 τ²-bench、BFCL、RGB、MultiHop-RAG、SWE-bench、WebArena、OSWorld 等公开任务统一成 `BenchTask`，按来源和类别分层抽样，输出：
+把 τ²-bench、BFCL、RGB、MultiHop-RAG、CFBench、GAIA、HumanEval、MBPP、SWE-bench、WebArena、OSWorld 等公开任务统一成 `BenchTask`，按来源和类别分层抽样，输出：
 
 ```text
 data/benchmarks/catalog.jsonl
@@ -468,7 +469,8 @@ data/benchmarks/manifest.json
 data/benchmarks/catalog.md
 ```
 
-当前 `--per-source 40` 会生成 **8 个来源 × 40 = 320 条**样例。GAIA 是 gated dataset，已下载 165 条 validation；重新下载需要先设置 `HF_TOKEN` 并接受数据集条款：
+当前 catalog 是 **11 个来源 × 12 = 132 条**（2026-11-05 重建；`--per-source 40` 可生成更大样本）。
+GAIA 是 gated dataset，已下载 165 条 validation；重新下载需要先设置 `HF_TOKEN` 并接受数据集条款：
 
 ```bash
 python -m core.benchmarks.download_gaia --proxy http://127.0.0.1:7897

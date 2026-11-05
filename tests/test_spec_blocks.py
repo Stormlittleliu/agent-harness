@@ -4,7 +4,14 @@ from langchain_core.messages import AIMessage
 from langchain_core.tools import tool
 
 from core.scenarios.router import routes as route_table
-from core.scenarios.spec_nodes import call_tool, fan_out, llm_text, render_template
+from core.scenarios.spec_nodes import (
+    branch,
+    branch_route_values,
+    call_tool,
+    fan_out,
+    llm_text,
+    render_template,
+)
 
 
 class _FakeModel:
@@ -35,6 +42,39 @@ class _FakeScenario:
 def test_render_template_reads_state_and_scratch():
     state = {"input": "问题", "scratch": {"user_id": "u-1"}}
     assert render_template("{input}/{scratch.user_id}/{missing}", state) == "问题/u-1/"
+
+
+def test_branch_multi_way_prefers_first_match_and_default():
+    cases = ["robot=扫地|回充", "clothing=尺码|颜色"]
+    state = {"input": "扫地机器人回充失败", "scratch": {}}
+    assert branch(state, field="input", cases=cases, default="other")["scratch"]["route"] == "robot"
+
+    state = {"input": "黄皮适合什么颜色", "scratch": {}}
+    assert branch(state, field="input", cases=cases, default="other")["scratch"]["route"] == "clothing"
+
+    state = {"input": "今天天气怎么样", "scratch": {}}
+    assert branch(state, field="input", cases=cases, default="other")["scratch"]["route"] == "other"
+
+
+def test_branch_legacy_hit_miss_still_works():
+    state = {"input": "没有相关信息", "scratch": {}}
+    out = branch(
+        state,
+        field="input",
+        mode="keywords",
+        keywords=["没有相关信息"],
+        hit="refuse",
+        miss="answer",
+    )
+    assert out["scratch"]["route"] == "refuse"
+
+
+def test_branch_route_values_include_default():
+    routes, errors = branch_route_values(
+        {"cases": ["robot=扫地|回充", "clothing=尺码"], "default": "other"}
+    )
+    assert routes == {"robot", "clothing", "other"}
+    assert errors == []
 
 
 def test_call_tool_interpolates_args_and_saves():

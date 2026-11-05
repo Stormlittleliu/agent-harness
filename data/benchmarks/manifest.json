@@ -1,8 +1,9 @@
 {
-  "generated_at": "2026-10-31T04:05:54",
+  "generated_at": "2026-11-05T18:34:32",
   "seed": 42,
-  "per_source": 40,
-  "total": 320,
+  "per_source": 12,
+  "source_count": 11,
+  "total": 132,
   "sources": [
     {
       "name": "tau2-bench",
@@ -12,7 +13,8 @@
       "url": "https://github.com/sierra-research/tau2-bench",
       "loaded": 114,
       "note": "零售客服多轮任务；工具/用户模拟器/数据库由 τ² 官方环境提供。",
-      "sampled": 40
+      "error": "",
+      "sampled": 12
     },
     {
       "name": "bfcl-v4",
@@ -22,7 +24,8 @@
       "url": "https://github.com/ShishirPatil/gorilla",
       "loaded": 640,
       "note": "工具调用能力；官方数据，官方评分是 AST/可执行匹配。",
-      "sampled": 40
+      "error": "",
+      "sampled": 12
     },
     {
       "name": "rgb",
@@ -32,7 +35,8 @@
       "url": "https://github.com/chen700564/RGB",
       "loaded": 300,
       "note": "中文 RAG 检索；300 条 zh_refine，非商业许可。",
-      "sampled": 40
+      "error": "",
+      "sampled": 12
     },
     {
       "name": "multihop-rag",
@@ -42,7 +46,19 @@
       "url": "https://github.com/yixuantt/MultiHop-RAG",
       "loaded": 2556,
       "note": "英文多跳检索；2556 条，609 篇语料。",
-      "sampled": 40
+      "error": "",
+      "sampled": 12
+    },
+    {
+      "name": "cfbench",
+      "available": true,
+      "version": "0bcbf9b",
+      "license": "未附 LICENSE（上游仓库）",
+      "url": "https://github.com/PKU-Baichuan-MLSystemLab/CFBench",
+      "loaded": 1000,
+      "note": "中文多约束遵循；1000 条，约束满足靠 LLM judge，不是执行环境。",
+      "error": "",
+      "sampled": 12
     },
     {
       "name": "gaia",
@@ -52,7 +68,30 @@
       "url": "https://huggingface.co/datasets/gaia-benchmark/GAIA",
       "loaded": 165,
       "note": "通用助手多步任务；165 条 validation 已下载（gated，需 HF token）。",
-      "sampled": 40
+      "error": "",
+      "sampled": 12
+    },
+    {
+      "name": "humaneval",
+      "available": true,
+      "version": "b9453e8",
+      "license": "MIT",
+      "url": "https://github.com/openai/human-eval",
+      "loaded": 164,
+      "note": "164 条 Python 函数补全；判分要执行单测，执行沙箱未接。",
+      "error": "",
+      "sampled": 12
+    },
+    {
+      "name": "mbpp",
+      "available": true,
+      "version": "unknown",
+      "license": "Apache-2.0",
+      "url": "https://github.com/google-research/google-research/tree/master/mbpp",
+      "loaded": 974,
+      "note": "974 条 Python 函数生成；判分要执行单测，执行沙箱未接。",
+      "error": "",
+      "sampled": 12
     },
     {
       "name": "swe-bench",
@@ -62,7 +101,8 @@
       "url": "https://github.com/princeton-nlp/SWE-bench",
       "loaded": 500,
       "note": "GitHub issue 修复；每个 instance 需要 Docker 仓库环境。",
-      "sampled": 40
+      "error": "",
+      "sampled": 12
     },
     {
       "name": "webarena",
@@ -72,7 +112,8 @@
       "url": "https://github.com/web-arena-x/webarena",
       "loaded": 812,
       "note": "Web 多步任务；需要 Docker 自托管 shopping/reddit/gitlab 等网站。",
-      "sampled": 40
+      "error": "",
+      "sampled": 12
     },
     {
       "name": "osworld",
@@ -82,74 +123,98 @@
       "url": "https://github.com/xlang-ai/OSWorld",
       "loaded": 418,
       "note": "桌面/OS 多步任务；需要虚拟机或 Docker 桌面环境。",
-      "sampled": 40
+      "error": "",
+      "sampled": 12
     }
   ],
   "summary": {
     "by_source": {
-      "bfcl-v4": 40,
-      "gaia": 40,
-      "multihop-rag": 40,
-      "osworld": 40,
-      "rgb": 40,
-      "swe-bench": 40,
-      "tau2-bench": 40,
-      "webarena": 40
+      "bfcl-v4": 12,
+      "cfbench": 12,
+      "gaia": 12,
+      "humaneval": 12,
+      "mbpp": 12,
+      "multihop-rag": 12,
+      "osworld": 12,
+      "rgb": 12,
+      "swe-bench": 12,
+      "tau2-bench": 12,
+      "webarena": 12
     },
     "by_category": {
-      "tool_calling_irrelevance": 20,
-      "tool_calling_simple": 20,
-      "general_assistant": 40,
-      "rag_multihop_comparison_query": 10,
-      "rag_multihop_inference_query": 10,
-      "rag_multihop_null_query": 10,
-      "rag_multihop_temporal_query": 10,
-      "os_chrome": 3,
-      "os_excel": 3,
-      "os_gimp": 3,
-      "os_libreoffice_calc": 3,
-      "os_libreoffice_impress": 3,
-      "os_libreoffice_writer": 3,
-      "os_multi_app": 3,
-      "os_multi_apps": 3,
-      "os_os": 3,
-      "os_ppt": 3,
-      "os_thunderbird": 3,
-      "os_vlc": 3,
-      "os_vs_code": 2,
-      "os_word": 2,
-      "rag_rgb": 40,
-      "coding": 40,
-      "customer_service": 40,
-      "web": 40
+      "tool_calling_irrelevance": 6,
+      "tool_calling_simple": 6,
+      "easy_answerable": 4,
+      "easy_unanswerable": 3,
+      "hard_answerable": 2,
+      "hard_unanswerable": 2,
+      "hard_unknown": 1,
+      "general_assistant": 12,
+      "function_completion": 12,
+      "function_generation": 12,
+      "rag_multihop_comparison_query": 3,
+      "rag_multihop_inference_query": 3,
+      "rag_multihop_null_query": 3,
+      "rag_multihop_temporal_query": 3,
+      "os_chrome": 1,
+      "os_excel": 1,
+      "os_gimp": 1,
+      "os_libreoffice_calc": 1,
+      "os_libreoffice_impress": 1,
+      "os_libreoffice_writer": 1,
+      "os_multi_app": 1,
+      "os_multi_apps": 1,
+      "os_os": 1,
+      "os_ppt": 1,
+      "os_thunderbird": 1,
+      "os_vlc": 1,
+      "rag_rgb": 12,
+      "coding": 12,
+      "customer_service": 12,
+      "web": 12
     },
     "by_task_type": {
-      "single_turn_tool": 40,
-      "multi_step": 40,
-      "rag_retrieval": 80,
-      "desktop": 40,
-      "code_repair": 40,
-      "multi_turn_tool": 40,
-      "web_navigation": 40
+      "single_turn_tool": 12,
+      "constraint_following": 12,
+      "multi_step": 12,
+      "code_generation": 24,
+      "rag_retrieval": 24,
+      "desktop": 12,
+      "code_repair": 12,
+      "multi_turn_tool": 12,
+      "web_navigation": 12
     },
     "by_bucket": {
-      "adversarial": 30,
-      "capability": 250,
-      "multi_turn": 40
+      "adversarial": 14,
+      "capability": 106,
+      "multi_turn": 12
+    },
+    "by_eval_scope": {
+      "scenario_tool": 72,
+      "model_capability": 60
     },
     "by_grader": {
-      "code": 160,
-      "mixed": 160
+      "code": 48,
+      "mixed": 60,
+      "unit_test": 24
     },
     "by_environment": {
-      "bfcl": 40,
-      "gaia": 40,
-      "multihop": 40,
-      "osworld": 40,
-      "rgb": 40,
-      "swebench": 40,
-      "tau2": 40,
-      "webarena": 40
+      "bfcl": 12,
+      "cfbench": 12,
+      "gaia": 12,
+      "humaneval": 12,
+      "mbpp": 12,
+      "multihop": 12,
+      "osworld": 12,
+      "rgb": 12,
+      "swebench": 12,
+      "tau2": 12,
+      "webarena": 12
+    },
+    "by_runner": {
+      "external": 60,
+      "native": 48,
+      "sandbox_required": 24
     }
   }
 }

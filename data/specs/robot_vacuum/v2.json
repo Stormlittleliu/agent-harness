@@ -76,7 +76,7 @@
         [
           "branch",
           "verify",
-          "miss"
+          "verify"
         ],
         [
           "verify",

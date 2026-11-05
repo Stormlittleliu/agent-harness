@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import subprocess
+from functools import lru_cache
 from pathlib import Path
 
 from core.benchmarks.schema import BenchTask
 
 
-def git_version(path: Path) -> str:
+@lru_cache(maxsize=64)
+def git_version(path: str | Path) -> str:
+    """同一个仓库只跑一次 git；adapter 是按条调用 version 的。"""
     try:
         result = subprocess.run(
             ["git", "-C", str(path), "rev-parse", "--short", "HEAD"],

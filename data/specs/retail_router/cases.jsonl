@@ -1,0 +1,5 @@
+{"id":"retail-robot-001","category":"robot","question":"扫地机器人回充失败怎么办？","expected_points":["回充","充电座"],"expected_tools":["robot_retrieve"],"should_refuse":false,"notes":"机器人问题：应只查机器人库"}
+{"id":"retail-robot-002","category":"robot","question":"扫地机器人滤网多久换一次？","expected_points":["滤网"],"expected_tools":["robot_retrieve"],"should_refuse":false,"notes":"机器人维护：应只查机器人库"}
+{"id":"retail-clothing-001","category":"clothing","question":"身高170厘米，体重110斤，推荐什么尺码？","expected_points":["M"],"expected_tools":["clothing_retrieve"],"should_refuse":false,"notes":"服装问题：应只查服装库"}
+{"id":"retail-clothing-002","category":"clothing","question":"我是黄皮，适合什么颜色的外套？","expected_points":["暖色调"],"expected_tools":["clothing_retrieve"],"should_refuse":false,"notes":"服装颜色：应只查服装库"}
+{"id":"retail-other-001","category":"refusal","question":"你们支持七天无理由退货吗？","expected_points":[],"expected_tools":[],"should_refuse":true,"notes":"两个域都不覆盖，应拒答而不是硬答"}

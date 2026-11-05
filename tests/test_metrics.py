@@ -31,3 +31,13 @@ def test_refusal_case_accepts_query_not_found():
         "should_refuse": True,
     }
     assert score_case(case, "抱歉，暂时查询不到相关的退货政策", [])["passed"] is True
+
+
+def test_refusal_case_accepts_scope_boundary():
+    case = {
+        "question": "write code",
+        "expected_points": [],
+        "should_refuse": True,
+    }
+    answer = "我只处理服装相关的问题，写代码不在我的服务范围内。"
+    assert score_case(case, answer, [])["passed"] is True

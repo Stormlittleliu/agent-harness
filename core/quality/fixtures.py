@@ -118,6 +118,7 @@ class TaskFixture:
     approval: str | None = None  # approve / reject；None 表示不中断
     max_steps: int = 8
     token_budget: int | None = 20000
+    eval_scope: str = "scenario_tool"
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_scenario(self, model=None) -> Scenario:
@@ -285,6 +286,7 @@ def run_fixture(fixture: TaskFixture, model=None) -> dict[str, Any]:
         scored["id"] = fixture.id
         scored["family"] = fixture.family
         scored["variant"] = fixture.variant
+        scored["eval_scope"] = fixture.eval_scope
         scored["fixture_status"] = status
         scored["proposed_calls"] = proposed
         return scored

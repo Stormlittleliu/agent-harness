@@ -1,6 +1,6 @@
 # Benchmark 执行层：模型层 / Harness 层 / 能力层 / 外部层
 
-> 用途：面试时避免把“模型层分数”说成“Harness 成绩”，也避免把“数据目录”说成“跑过 320 条”。
+> 用途：面试时避免把“模型层分数”说成“Harness 成绩”，也避免把“数据目录”说成“跑过 132 条”。
 > 原则：同一 benchmark，不同执行路径，能证明的东西不同。
 
 ---
@@ -15,13 +15,13 @@
 | **能力层** | RGB 20 / MultiHop 抽样 | `core/quality/public_sample.py` + `rag_harness.py` | `build_eval_agent(retriever)` → `invoke_tool("rag_summarize")` | 检索/生成工具质量 | 绕过模型决策和中间件 |
 | **检索层** | MultiHop 全量 2555 | `core/quality/multihop_full.py` | Chroma retriever + 官方 `calculate_metrics` | 检索召回 | 不是 Agent |
 | **外部层** | τ²-bench retail 20 | 外部 τ² harness + `run_tau2_deepseek_judge.py` | τ² 自己的 LLMAgent + 官方环境 | 模型在 τ² 环境的能力 | 不是我的 Harness |
-| **数据层** | 320 catalog（8×40） | `core/benchmarks/catalog.py` + `runner.py` | 统一样例目录；`NativeRunner` 占位 | 数据可用性/抽样口径 | 大部分未端到端执行 |
+| **数据层** | 132 catalog（11×12） | `core/benchmarks/catalog.py` + `runner.py` | 统一样例目录；`NativeRunner` 占位 | 数据可用性/抽样口径 | 大部分未端到端执行 |
 
 ---
 
 ## 2. 一句话口径
 
-> “BFCL 200 是模型层：我用 `bind_tools` 直接测模型；BFCL 60 是 Harness 层：我把 schema 转成 LangChain 工具，跑 `FrameworkAgent`，所以语法提示、重复调用抑制、参数校验都能归因到我的链路。MultiHop 45 也是 Harness 层；RGB 是能力层；MultiHop 全量是检索层；τ² 是外部 harness；320 catalog 是数据目录。”
+> “BFCL 200 是模型层：我用 `bind_tools` 直接测模型；BFCL 60 是 Harness 层：我把 schema 转成 LangChain 工具，跑 `FrameworkAgent`，所以语法提示、重复调用抑制、参数校验都能归因到我的链路。MultiHop 45 也是 Harness 层；RGB 是能力层；MultiHop 全量是检索层；τ² 是外部 harness；132 catalog 是数据目录。”
 
 ---
 
@@ -49,8 +49,8 @@
 ### Q4. τ² 呢？
 > “外部层：τ² 跑它自己的 LLMAgent，不是我的 Harness；我只把 NL judge 换成 DeepSeek。不能说 τ² 测的是我的 Harness。”
 
-### Q5. 320 条都跑过吗？
-> “没有。320 是数据目录；`NativeRunner` 还是占位。真正跑过的是 BFCL 200/60、MultiHop 45/2555、RGB 20、τ² 20，且口径各不相同。”
+### Q5. 132 条都跑过吗？
+> “没有。132 是数据目录；`run_task` 是 probe，`NativeRunner` 等返回 `*_required`，不是执行结果。真正跑过的是 BFCL 200/60、MultiHop 45/2555、RGB 20、τ² 20，且口径各不相同。”
 
 ---
 

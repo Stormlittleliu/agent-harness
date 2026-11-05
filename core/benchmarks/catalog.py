@@ -34,15 +34,20 @@ def _summary(tasks: list[BenchTask]) -> dict:
         "by_eval_scope": dict(Counter(task.eval_scope for task in tasks)),
         "by_grader": dict(Counter(task.grader for task in tasks)),
         "by_environment": dict(Counter(task.environment.get("kind", "unknown") for task in tasks)),
+        "by_runner": dict(Counter(task.environment.get("runner", "unknown") for task in tasks)),
     }
 
 
 def list_adapters() -> None:
-    print(f"{'adapter':<16} {'available':<10} {'loaded':>7}  note")
+    """只报告可用性，不加载数据。
+
+    之前这里对每个 adapter 调 ``load()``，``--list`` 会扫完整批数据，
+    在 MultiHop/SWE 这类大源上看起来像卡死；列表命令不应该做构建的事。
+    """
+    print(f"{'adapter':<16} {'available':<10}  note")
     for adapter in ADAPTERS:
-        tasks = adapter.load() if adapter.available() else []
         flag = "yes" if adapter.available() else "no"
-        print(f"{adapter.name:<16} {flag:<10} {len(tasks):>7}  {adapter.note()}")
+        print(f"{adapter.name:<16} {flag:<10}  {adapter.note()}")
         if not adapter.available():
             print(f"{'':<16} download: {adapter.url}")
 
@@ -52,7 +57,14 @@ def build(per_source: int, seed: int, out_dir: Path, only: str | None = None) ->
     loaded: list[BenchTask] = []
     source_rows = []
     for adapter in adapters:
-        tasks = adapter.load() if adapter.available() else []
+        print(f"[load] {adapter.name} ...", flush=True)
+        try:
+            tasks = adapter.load() if adapter.available() else []
+            error = ""
+        except Exception as exc:  # noqa: BLE001 - 单个源失败不拖死整批
+            tasks = []
+            error = f"{type(exc).__name__}: {exc}"
+            print(f"[skip] {adapter.name}: {error}", flush=True)
         loaded.extend(tasks)
         source_rows.append({
             "name": adapter.name,
@@ -62,8 +74,9 @@ def build(per_source: int, seed: int, out_dir: Path, only: str | None = None) ->
             "url": adapter.url,
             "loaded": len(tasks),
             "note": adapter.note(),
+            "error": error,
         })
-        print(f"[load] {adapter.name}: {len(tasks)} tasks")
+        print(f"[load] {adapter.name}: {len(tasks)} tasks", flush=True)
 
     sampled = stratified_sample(loaded, per_source=per_source, seed=seed)
     summary = _summary(sampled)
@@ -71,6 +84,7 @@ def build(per_source: int, seed: int, out_dir: Path, only: str | None = None) ->
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "seed": seed,
         "per_source": per_source,
+        "source_count": len(source_rows),
         "total": len(sampled),
         "sources": [
             {
@@ -97,7 +111,7 @@ def build(per_source: int, seed: int, out_dir: Path, only: str | None = None) ->
         "# 统一 benchmark 样例集",
         "",
         f"- 生成时间：{manifest['generated_at']}",
-        f"- 抽样：每个来源 {per_source} 条，seed={seed}",
+        f"- 来源：{manifest['source_count']} 个；每个来源 {per_source} 条，seed={seed}",
         f"- 总计：{len(sampled)} 条",
         "",
         "## 来源",
@@ -118,6 +132,9 @@ def build(per_source: int, seed: int, out_dir: Path, only: str | None = None) ->
         lines.append(f"- {name}: {count}")
     lines += ["", "## 评测范围（模型能力 / 场景工具）", ""]
     for name, count in sorted(summary["by_eval_scope"].items()):
+        lines.append(f"- {name}: {count}")
+    lines += ["", "## 执行方式", ""]
+    for name, count in sorted(summary["by_runner"].items()):
         lines.append(f"- {name}: {count}")
     lines += ["", "## 样例", "", "| ID | 来源 | Bucket | 范围 | 类别 | 任务 | 评分 |", "|:---|:---|:---|:---|:---|:---|:---|"]
     for task in sampled:

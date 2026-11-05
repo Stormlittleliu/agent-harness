@@ -25,6 +25,7 @@ class RunnerResult:
     output: str = ""
     error: str = ""
     metadata: dict = field(default_factory=dict)
+    probe: bool = False
 
 
 class BenchmarkRunner:
@@ -72,6 +73,7 @@ class NativeRunner(BenchmarkRunner):
                 "检索任务可先用 core.quality.multihop_full / core.quality.public_sample。"
             ),
             metadata=task.environment,
+            probe=True,
         )
 
 
@@ -82,6 +84,7 @@ class DataOnlyRunner(BenchmarkRunner):
             status="data_only",
             error="只加载了任务元数据，执行环境未安装",
             metadata=task.environment,
+            probe=True,
         )
 
 
@@ -94,6 +97,7 @@ class SandboxRunner(BenchmarkRunner):
             status="sandbox_required",
             error="需要 Python 执行沙箱（子进程 + 超时 + 禁网）；当前未接。",
             metadata=task.environment,
+            probe=True,
         )
 
 
@@ -106,6 +110,7 @@ class JudgeRunner(BenchmarkRunner):
             status="judge_required",
             error="需要 LLM judge 逐条判约束；当前未接。",
             metadata=task.environment,
+            probe=True,
         )
 
 
@@ -130,4 +135,9 @@ def get_runner(task: BenchTask) -> BenchmarkRunner:
 
 
 def run_task(task: BenchTask, execute: bool = False) -> RunnerResult:
+    """Probe：返回“这条任务需要什么环境/命令”，不承诺已经执行。
+
+    真正可执行的只有装了官方环境的 ExternalRunner；其余 status 都是
+    ``*_required``，调用方不要把它当成“跑过”的证据。
+    """
     return get_runner(task).run(task, execute=execute)

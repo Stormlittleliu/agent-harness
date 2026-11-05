@@ -326,7 +326,11 @@ def render_benchmarks(embedded: bool = False) -> None:
     ])
     st.caption(
         "执行层：BFCL 200 = 模型层（`bind_tools`）；BFCL 60 = Harness 层（`FrameworkAgent`）；"
-        "RGB / MultiHop = 能力/检索层；τ² = 外部官方 harness；320 catalog = 数据目录。"
+        "RGB / MultiHop = 能力/检索层；τ² = 外部官方 harness；catalog = 数据目录（来源数见 manifest）。"
+    )
+    st.caption(
+        "CFBench / HumanEval / MBPP 目前只有 catalog 数据，没有接公开基准报告；"
+        "它们不是“已评测”，要看数据请去质量页 → 基准 → Benchmark 目录。"
     )
     mode = st.radio(
         "Benchmark",

@@ -25,6 +25,8 @@
 
 **下一步**：重建 catalog；来源数改成 `source_count`；补 `ADAPTER_PATHS`。重建前页面必须标注 `manifest.generated_at` 和数据版本。
 
+**2026-11-05 已修**：`--list` 不再加载数据；`build` 有 `[load]` 进度/单源跳过；`git_version` 缓存；catalog 为 11 源 / 132 条，`manifest.source_count=11`，页面按 `by_runner` 显示执行方式。
+
 ### 3. judge 可以覆盖确定性失败
 
 **证据**：`core/quality/agent_eval.py:110-112`：
@@ -38,6 +40,8 @@ if judged is not None:
 **后果**：工具没调、参数错，只要 judge 说“回答得不错”，这条就过了。judge 本来只该判语义覆盖，不该覆盖工具/参数这类硬失败。
 
 **下一步**：改成“确定性硬失败优先”；judge 只在确定性通过后做加分/降级，或单独记 `judge_pass`，不覆盖 `passed`。
+
+**2026-11-05 已修**：`passed = deterministic_passed and judge_pass`，新增 `judge_pass` 字段和回归测试。
 
 ## P1：口径容易被讲大
 
@@ -101,11 +105,13 @@ if judged is not None:
 
 ### 11. 文档里的测试数已经过期
 
-**证据**：`AGENTS.md:8` 写“当前 283 passed”；`docs/design/plan-status.md:25` 写“365 passed”；当前是 375（这次改动后还会变）。
+**证据**：`AGENTS.md:8` 当时写“当前 283 passed”；`docs/design/plan-status.md:25` 写“365 passed”；审计时是 375。现在以 399 为准。
 
 **后果**：读文档的人会拿旧数字做判断；面试时被问“多少测试”会答错。
 
 **下一步**：测试数只在一个地方维护（例如 `README` 徽章/CI），其他文档引用链接，不写死。
+
+**2026-11-05 已修**：AGENTS / README / 一页纸 / friday-plan 的当前数字同步为 399 tests、11 场景；历史快照保留但标注过期。
 
 ### 12. 质量页的 benchmark 视图只认 BFCL / RGB / τ²
 
@@ -131,6 +137,8 @@ if judged is not None:
 
 **下一步**：每个 adapter 加超时和 `[load] name` 即时 flush；失败只跳过该源并记录，不拖死整批。
 
+**2026-11-05 已修**：`--list` 只查可用性；`build` 每个源 flush 进度、异常跳过并记 `error`；根因是 `git_version` 每条任务跑一次 git，已按仓库缓存。重建耗时从“看起来卡死”降到秒级。
+
 ## 这次先动什么
 
 1. **新增 `core/quality/fixtures.py`**：`TaskFixture` / `ToolStub` / `clean|distractor|missing|failure|permission`，先做 BFCL POC。
@@ -144,13 +152,32 @@ if judged is not None:
   失败集中在 `missing` 2/10（无工具时模型直接心算，不说明“工具不可用”）——这是要抓的幻觉；
 - permission：approve ✅、reject ✅（真实 HITL 中断 + resume）；
 - selfbuilt 迁移：`robot_vacuum` 8 条单轮/多轮 fixture **8/8**；
-- 测试：382 passed。
+- 测试：399 passed。
+
+## 2026-11-05 晚二次修复
+
+- **P0-2 / P1-14 catalog**：`--list` 不再加载全量数据；`build` 每个 adapter 先 flush
+  `[load]`，单源失败跳过并记 `error`；`git_version` 按仓库缓存，不再每条任务跑一次 git。
+  重建后 catalog 为 **11 个来源 × 12 = 132 条**，manifest 带 `source_count` / `by_runner`。
+- **P0-3 judge**：确定性硬失败优先；judge 只会在确定性通过后确认/降级，新增
+  `judge_pass` 字段和回归测试。
+- **P1-4 eval_scope**：`TaskFixture` 自带 `eval_scope`，结果行带上该字段；源级映射只做默认值。
+- **P1-7 runner**：`run_task` 明确是 probe；占位 runner 返回 `probe=True`，不把
+  `*_required` 当执行结果。
+- **P1-11 / P1-13 文档口径**：AGENTS 测试数、README 场景/用例数、ARCHITECTURE / PROJECT
+  的 catalog 数同步为当前值。
+- **新场景**：`clothing_service` 6 条、`retail_router` 5 条行为用例；1-trial 抽样分别 6/6、5/5。
+- **branch**：支持 `cases` 多路 + `default`，旧 `hit/miss` 兼容；编译期校验
+  “branch 可能写出的 route 必须有对应条件边”。同时修正了 robot_vacuum / workspace_assistant
+  旧 spec 里 `branch` 写 `verify/answer`、边上却写 `miss` 的真实错位。
 
 ## 仍未修
 
-- P0-2 catalog 仍是 8 源/320 条旧快照；尝试重建时卡在 adapter 扫描（无输出），
-  已中止。重建完成前，质量页的“8 个来源”必须当作过期数据。
-- P0-3 judge 覆盖确定性失败；P1-4/5/6/7 仍在队列。
+- P1-5 “300 条里大部分跑不了”的对外口径已改为按 `by_runner` 分组，但 60 条任务级样本
+  仍不能代表全量；这是数据事实，不是待修 bug。
+- P1-6 除 BFCL 外，多数族的 `BenchTask.tools` 仍为空；要接 `TaskToolAdapter` 或官方环境。
+- P1-10 `stratified/selections.jsonl` 的 `source` 仍是作者机器的绝对路径；重生成前不改历史文件。
+- P1-1 selfbuilt 剩余场景迁移；P1-12 新 benchmark 仍只有 catalog，没有报告页。
 
 
 ## 不打算改的

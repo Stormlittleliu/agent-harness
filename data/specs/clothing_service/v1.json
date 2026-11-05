@@ -24,22 +24,11 @@
           "id": "triage",
           "fn": "branch",
           "args": {
-            "mode": "keywords",
             "field": "input",
-            "keywords": [
-              "尺码",
-              "身高",
-              "体重",
-              "颜色",
-              "肤色",
-              "洗",
-              "新品",
-              "外套",
-              "搭配",
-              "面料"
+            "cases": [
+              "clothing=尺码|身高|体重|颜色|肤色|洗|新品|外套|搭配|面料"
             ],
-            "hit": "clothing",
-            "miss": "out_of_scope"
+            "default": "out_of_scope"
           }
         },
         {

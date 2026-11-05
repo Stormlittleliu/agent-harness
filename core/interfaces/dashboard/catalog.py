@@ -253,6 +253,13 @@ def render_catalog() -> None:
             Kpi("每个来源", per_source if per_source is not None else "—"),
         ]
     )
+    execution = ((manifest or {}).get("summary") or {}).get("by_runner") or {}
+    if execution:
+        st.caption(
+            "执行方式分布："
+            + " · ".join(f"{name} {count}" for name, count in sorted(execution.items()))
+            + "（external / native / sandbox_required 不等于本机可跑）"
+        )
 
     if not rows:
         empty_state("catalog.jsonl 为空或缺失；生成样例集：", BUILD_CMD)

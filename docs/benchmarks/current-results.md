@@ -8,6 +8,10 @@
 
 ## 1. 统一 Benchmark 样例集
 
+> 2026-10-31 历史快照：8 个来源 × 40 = 320 条。
+> 2026-11-05 已重建为 **11 个来源 × 12 = 132 条**（新增 CFBench / HumanEval / MBPP），以
+> `data/benchmarks/manifest.json` 为准；下表保留旧快照。
+
 ```text
 8 个来源 × 40 条 = 320 条
 ```
@@ -241,6 +245,8 @@ Subagent：父 Agent 通过 `subagent` 工具派生单层子 Agent，子 Agent �
   + Todo + 任务图 + subagent，共 7 条行为用例。
 - `workspace_assistant` 有 4 条 LangGraph 工作流，`research_assistant` 有 1 条
   `deep_research` 工作流，`router` 是对话式场景级路由，不合并目标场景工具。
+- **2026-11-05 新场景抽样**：`clothing_service` 6 条 6/6、`retail_router` 5 条 5/5；
+  这是 1-trial sanity，不是 pass^k，只说明用例链路能跑通。
 
 ### 4.4 Outcome 评测（12 条用例 / 13 个断言，2026-11-02）
 
@@ -253,6 +259,11 @@ Subagent：父 Agent 通过 `subagent` 工具派生单层子 Agent，子 Agent �
 | coding_demo | 2 | 脚本 + 运行日志 / 任务图 completed | 2/2 | 2/2 |
 | router | 4 | `target` + `target_trace_id` 存在 | 4/4 | 4/4 |
 | **合计** | **12** |  | **12/12** | **12/12** |
+
+> 2026-11-05 复核：12/12、13/13 断言，36 个 trial trace + 4 个 router target trace
+> 全部可查。复核时发现并修复了 spec 版 `deep_research` 的 `call_tool` JSON 插值问题，
+> 报告见 [outcome_all_20261105_175051.md](../../outputs/outcome/outcome_all_20261105_175051.md)，
+> 链路见 [eval-traceability.md](eval-traceability.md)。
 
 复现：
 
@@ -272,6 +283,11 @@ check 原因（文件不存在 / 内容不满足 / SQLite 行不存在 / 任务�
 |:---|:---:|:---:|:---:|:---:|:---:|:---:|
 | baseline | 11/12 | 91.7% | — | 1.92 | 2221 | 9.6s |
 | policy | 12/12 | 100% | 1/12 | 1.08 | 1567 | 19.9s |
+
+> 2026-11-05 复核：实验脚本已改为从 `data/routes/router.json` 生成 policy；重跑仍是
+> baseline 11/12、policy 12/12（1 条 abstain），24 条结果带 trace_id，
+> 报告见 [planner_eval_20261105_174542.md](../../outputs/experiments/planner_eval_20261105_174542.md)。
+> 时延受目标场景负载/缓存影响，不以时延作结论。
 
 说明：
 
@@ -310,7 +326,7 @@ python -m streamlit run app_agent.py
 
 - 成本时延：成功率、p50/p95、token、估算成本、按模型/工具/最近 run 展示；
 - 优化循环：5 轮趋势、pass^k/mean、A/B 对比、失败类型、trace 时间线、搜索/下载；
-- Benchmark 目录：8 个来源、320 条样例、按来源/类别/bucket/任务类型/关键词筛选；
+- Benchmark 目录：11 个来源、132 条样例、按来源/类别/bucket/任务类型/关键词筛选；
 - 评测记录（新增）：浏览 `outputs/` 下的历史报告，查看 summary、逐条结果、下载。
 
 ## 6. P0 / P1 / P2 状态
@@ -322,13 +338,14 @@ python -m streamlit run app_agent.py
 - **Runtime**：hooks / SQLite 任务图 / read_file / run_command / 运行窗口 ✅
 - **P0 追加**：成本/时延报告 ✅、结构化输出 5/5 ✅、评测门禁 + 故障注入 ✅、触发率实验 ✅
 - **2026-11-02 新增**：新场景 3-trial 行为回归 ✅、12 条 outcome 用例 / 13 个断言 ✅、确定性 planning policy（12/12）✅
+- **2026-11-05 修复**：planner 实验改用路由表 policy ✅、workflow/outcome trace 链路 ✅、`call_tool` JSON 插值 ✅、catalog 11 源/132 条并带构建进度 ✅、judge 不再覆盖确定性失败 ✅
 - **待做**：后台任务 / 定时调度、rerank、τ² adapter、5–10 trial + CI、MCP HTTP/SSE/auth
 
 ## 7. 文件位置
 
 ```text
-data/benchmarks/                          # 320 条统一样例 + manifest
-core/benchmarks/                          # 8 个适配器
+data/benchmarks/                          # 132 条统一样例 + manifest
+core/benchmarks/                          # 11 个适配器
 core/experiments/                         # 优化循环
 core/mcp/                                 # MCP client + Fetch server
 core/scenarios/mcp_demo/                  # Memory + Fetch 演示场景

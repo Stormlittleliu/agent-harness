@@ -5,4 +5,4 @@ starters:
 - 读取 README.md，并告诉我这个工作区叫什么名字。
 - 在工作区运行 echo hello，并告诉我输出。
 order: 40
-published_hash: fc240206d8081b17
+published_hash: 463b678aeaf7c63b

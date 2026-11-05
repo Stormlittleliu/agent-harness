@@ -25,22 +25,12 @@
           "id": "classify",
           "fn": "branch",
           "args": {
-            "mode": "keywords",
             "field": "input",
-            "keywords": [
-              "扫地",
-              "机器人",
-              "回充",
-              "滤网",
-              "拖布",
-              "吸力",
-              "充电",
-              "故障",
-              "维护",
-              "建图"
+            "cases": [
+              "robot=扫地|机器人|回充|滤网|拖布|吸力|充电|故障|维护|建图",
+              "clothing=尺码|身高|体重|颜色|肤色|洗|新品|外套|搭配|面料"
             ],
-            "hit": "robot",
-            "miss": "clothing"
+            "default": "other"
           }
         },
         {
@@ -68,6 +58,14 @@
           "id": "verify",
           "fn": "require_citation",
           "args": {}
+        },
+        {
+          "id": "refuse",
+          "fn": "constant",
+          "args": {
+            "text": "我只处理扫地机器人和服装问题。请换一个相关问题。",
+            "save_to": "answer"
+          }
         }
       ],
       "edges": [
@@ -85,6 +83,11 @@
           "to": "clothing_search",
           "when": "clothing"
         },
+        {
+          "from": "classify",
+          "to": "refuse",
+          "when": "other"
+        },
         [
           "robot_search",
           "answer"
@@ -99,6 +102,10 @@
         ],
         [
           "verify",
+          "__end__"
+        ],
+        [
+          "refuse",
           "__end__"
         ]
       ]

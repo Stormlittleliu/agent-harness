@@ -118,6 +118,33 @@ def test_valid_spec_has_no_errors():
     assert validate_spec(_spec()) == []
 
 
+def test_branch_route_without_edge_is_rejected():
+    payload = _payload()
+    payload["workflows"]["qa"]["nodes"] = [
+        {
+            "id": "triage",
+            "fn": "branch",
+            "args": {"field": "input", "cases": ["robot=扫地"], "default": "other"},
+        },
+        {"id": "answer", "fn": "llm_answer"},
+    ]
+    payload["workflows"]["qa"]["edges"] = [
+        [START, "triage"],
+        {"from": "triage", "to": "answer", "when": "robot"},
+        ["answer", END],
+    ]
+    errors = validate_spec(ScenarioSpec.model_validate(payload))
+    assert any("route=['other']" in error for error in errors)
+
+
+def test_retail_branch_default_routes_to_refuse_without_model():
+    """真实 spec 的三路分支：两个域都不命中时走 default=other，不调模型/检索。"""
+    graphs = build_workflows(load_active_spec("retail_router"), None)
+    state = graphs["triage"].invoke({"input": "今天天气怎么样"})
+    assert state["scratch"]["route"] == "other"
+    assert "只处理" in state["answer"]
+
+
 def test_unknown_node_function_is_rejected():
     payload = _payload()
     payload["workflows"]["qa"]["nodes"][0]["fn"] = "nope"

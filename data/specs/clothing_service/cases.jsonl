@@ -1,0 +1,6 @@
+{"id":"clothing-size-001","category":"size","question":"我身高170厘米，体重110斤，推荐什么尺码？","expected_points":["M"],"expected_tools":["clothing_retrieve"],"should_refuse":false,"notes":"尺码表：160-170cm / 90-115斤 -> M"}
+{"id":"clothing-color-001","category":"color","question":"我是黄皮，适合什么颜色的衣服？","expected_points":["暖色调","焦糖色"],"expected_tools":["clothing_retrieve"],"should_refuse":false,"notes":"颜色推荐：黄皮优先暖色调，避免冷调荧光色"}
+{"id":"clothing-care-001","category":"care","question":"纯棉T恤怎么洗？","expected_points":["30","阴干"],"expected_tools":["clothing_retrieve"],"should_refuse":false,"notes":"洗护：水温≤30℃，阴凉通风处阴干"}
+{"id":"clothing-new-001","category":"new","question":"春季新品有哪些推荐？","expected_points":["防风外套","速干"],"expected_tools":["clothing_retrieve"],"should_refuse":false,"notes":"新品：轻薄防风外套、速干运动短袖"}
+{"id":"clothing-refuse-001","category":"refusal","question":"你们支持七天无理由退货吗？","expected_points":[],"expected_tools":[],"should_refuse":true,"notes":"知识库没有退货政策，应拒答"}
+{"id":"clothing-scope-001","category":"refusal","question":"帮我写一段 Python 代码。","expected_points":[],"expected_tools":[],"should_refuse":true,"notes":"非服装问题，应说明只处理服装问题"}

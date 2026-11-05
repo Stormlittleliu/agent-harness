@@ -590,22 +590,65 @@ def fan_out(
     return _save({}, state, save_to, findings)
 
 
+def _split_branch_cases(cases: list[str] | None) -> tuple[list[tuple[str, list[str]]], list[str]]:
+    """把 ``route=词1|词2`` 解析成 (route, words)；空 words 表示匹配空字段。"""
+    rules: list[tuple[str, list[str]]] = []
+    errors: list[str] = []
+    for item in cases or []:
+        text = str(item).strip()
+        if not text:
+            continue
+        if "=" not in text:
+            errors.append(f"branch case 缺少 '='：{text}")
+            continue
+        route, raw = text.split("=", 1)
+        route = route.strip()
+        if not route:
+            errors.append(f"branch case 的 route 为空：{text}")
+            continue
+        words = [word.strip() for word in raw.split("|") if word.strip()]
+        rules.append((route, words))
+    return rules, errors
+
+
+def branch_route_values(args: dict[str, Any]) -> tuple[set[str], list[str]]:
+    """branch 可能写出的 route 集合；编译器用它校验条件边是否接得住。"""
+    cases = args.get("cases") or []
+    if cases:
+        rules, errors = _split_branch_cases(cases)
+        routes = {route for route, _words in rules}
+        default = str(args.get("default") or "miss").strip() or "miss"
+        routes.add(default)
+        return routes, errors
+    return {
+        str(args.get("hit") or "hit"),
+        str(args.get("miss") or "miss"),
+    }, []
+
+
 @register_node(
     "branch",
     label="分支判断",
-    desc="看一个 state 字段（关键词命中 / 是否为空），把结果写进 scratch.route，配合条件边决定走哪条路",
+    desc="按顺序匹配多路关键词，把命中的 route 写进 scratch.route；都不命中走 default。旧版 hit/miss 仍兼容",
     params=(
+        ParamSpec(
+            "cases",
+            "str_list",
+            default=None,
+            help="多路分支，每项 route=词1|词2；按顺序先命中先走。例：robot=扫地|回充",
+        ),
+        ParamSpec("default", "str", default="miss", help="cases 全部未命中时写入的 route"),
         ParamSpec(
             "mode",
             "enum",
             default="keywords",
             choices=("keywords", "empty"),
-            help="keywords：命中任一关键词走 hit；empty：字段为空走 hit",
+            help="旧版兼容：keywords 命中任一关键词走 hit；empty 字段为空走 hit",
         ),
         ParamSpec("field", "str", default="tool_result", help="要检查的 state key（可用 scratch.xxx）"),
-        ParamSpec("keywords", "str_list", default=None, help="keywords 模式的触发词"),
-        ParamSpec("hit", "str", default="hit", help="命中时写入的 route 值（对应条件边标签）"),
-        ParamSpec("miss", "str", default="miss", help="未命中时写入的 route 值"),
+        ParamSpec("keywords", "str_list", default=None, help="旧版兼容：keywords 模式的触发词"),
+        ParamSpec("hit", "str", default="hit", help="旧版兼容：命中时写入的 route 值"),
+        ParamSpec("miss", "str", default="miss", help="旧版兼容：未命中时写入的 route 值"),
     ),
     outputs=(PortSpec("scratch.route", "text", required=True, help="条件边读取的路由值"),),
 )
@@ -617,10 +660,32 @@ def branch(
     keywords: list[str] | None = None,
     hit: str = "hit",
     miss: str = "miss",
+    cases: list[str] | None = None,
+    default: str = "miss",
     **_,
 ) -> dict[str, Any]:
-    """把分支结果写进 ``scratch.route``；条件边靠它选路。"""
+    """把分支结果写进 ``scratch.route``；条件边靠它选路。
+
+    ``cases`` 优先：按顺序匹配，先命中先走；都不命中写 ``default``。
+    空关键词项（``route=``）表示“字段为空时命中”。没有 ``cases`` 时保持旧版
+    ``mode/keywords/hit/miss`` 语义。
+    """
     value = _lookup(state, field)
+    rules, errors = _split_branch_cases(cases)
+    if errors:
+        return {
+            "scratch": _merge_scratch(
+                state,
+                route=default or "miss",
+                error="；".join(errors),
+            )
+        }
+    if rules:
+        for route, words in rules:
+            matched = (not value.strip()) if not words else any(word in value for word in words)
+            if matched:
+                return {"scratch": _merge_scratch(state, route=route)}
+        return {"scratch": _merge_scratch(state, route=default or "miss")}
     if mode == "empty":
         matched = not value.strip()
     else:

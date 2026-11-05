@@ -51,7 +51,8 @@ def test_clothing_service_has_out_of_scope_branch():
     spec = load_active_spec("clothing_service")
     workflow = spec.workflows["qa"]
     triage = next(node for node in workflow.nodes if node.fn == "branch")
-    assert triage.args["miss"] == "out_of_scope"
+    assert triage.args["default"] == "out_of_scope"
+    assert any(str(item).startswith("clothing=") for item in triage.args["cases"])
     assert any(
         split_edge(edge)[2] == "out_of_scope" and split_edge(edge)[1] == "refuse"
         for edge in workflow.edges
