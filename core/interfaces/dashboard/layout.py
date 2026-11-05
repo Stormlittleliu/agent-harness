@@ -266,7 +266,7 @@ h1, h2, h3, h4 { letter-spacing: -.012em; }
 .ah-page-head p {
     margin: 0;
     color: var(--ah-muted);
-    font-size: .86rem;
+    font-size: .89rem;
     line-height: 1.65;
     max-width: 74ch;
 }
@@ -341,7 +341,7 @@ h1, h2, h3, h4 { letter-spacing: -.012em; }
 }
 .ah-card-title { font-weight: 650; font-size: .92rem; line-height: 1.35; }
 .ah-card-id { color: var(--ah-muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .68rem; }
-.ah-card-desc { color: var(--ah-muted); font-size: .78rem; line-height: 1.55; min-height: 2.45rem; margin: .45rem 0 .5rem; }
+.ah-card-desc { color: var(--ah-muted); font-size: .875rem; line-height: 1.55; min-height: 2.45rem; margin: .45rem 0 .5rem; }
 .ah-card-badges { display: flex; flex-wrap: wrap; gap: .28rem; margin-bottom: .55rem; }
 .ah-tag {
     border: 1px solid var(--ah-border); border-radius: 999px;
@@ -466,6 +466,53 @@ h1, h2, h3, h4 { letter-spacing: -.012em; }
 .st-key-quality-context [data-testid="stSelectbox"] { margin-bottom: 0; }
 .st-key-quality-context [data-testid="stButtonGroup"] { margin: 0; }
 .ah-quality-view { color: var(--ah-muted); font-size: .74rem; margin: .3rem 0 .1rem; }
+
+/* 键盘可达：Streamlit 默认 focus 很淡，补一个不依赖颜色的焦点环 */
+button:focus-visible, a:focus-visible, [role="button"]:focus-visible, input:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--ah-accent) !important;
+    outline-offset: 2px !important;
+}
+
+/* 窄屏：把卡片行折成两列/一列，别把 4 张卡硬塞进 1024 */
+@media (max-width: 1180px) {
+    [data-testid="stHorizontalBlock"]:has([class*="st-key-build-card-"]) {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: .8rem !important;
+    }
+    [data-testid="stHorizontalBlock"]:has([class*="st-key-build-card-"]) > div {
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        flex: none !important;
+    }
+}
+@media (max-width: 900px) {
+    .block-container { padding-top: 4rem; padding-left: 1rem !important; padding-right: 1rem !important; }
+    .ah-page-head { flex-direction: column; align-items: flex-start; gap: .35rem; }
+    .ah-page-meta { white-space: normal; }
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat-rail-card) {
+        flex-direction: column;
+    }
+    [data-testid="stHorizontalBlock"]:has(.st-key-chat-rail-card) > div {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+    .ah-chat-capabilities { grid-template-columns: 1fr; }
+    .st-key-quality-context [data-testid="stHorizontalBlock"] { flex-direction: column; }
+}
+@media (max-width: 760px) {
+    [data-testid="stHorizontalBlock"]:has([class*="st-key-build-card-"]) {
+        grid-template-columns: 1fr !important;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
 </style>
 """
 
