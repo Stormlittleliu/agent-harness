@@ -506,6 +506,9 @@ def build_selfbuilt_fixtures(
 
     ``scenario=None`` / ``"all"`` 时覆盖所有单轮/多轮任务；每个任务用自己
     ``task["scenario"]`` 的同名工具箱，不再借用产品场景的 prompt / cases。
+
+    ``extra_tools`` 是任务的前置工具（例如“先 remember 再检索”），只加入工具池，
+    不写进 ``expected.calls``；不存在的工具只记 ``metadata.missing_tools``，不伪造。
     """
     from core.scenarios import pools
 
@@ -532,11 +535,9 @@ def build_selfbuilt_fixtures(
         available = {str(getattr(tool, "name", "")): tool for tool in box.tools}
         required = list(dict.fromkeys(task.get("expected_tools") or []))
         any_tools = list(dict.fromkeys(task.get("expected_tools_any") or []))
-        tools = [
-            available[tool_name]
-            for tool_name in required + any_tools
-            if tool_name in available
-        ]
+        extra_tools = list(dict.fromkeys(task.get("extra_tools") or []))
+        requested = list(dict.fromkeys(required + any_tools + extra_tools))
+        tools = [available[tool_name] for tool_name in requested if tool_name in available]
         expected: dict[str, Any] = {
             "calls": [{"name": tool_name, "args": {}} for tool_name in required],
             "expected_points": task.get("expected_points") or [],
@@ -558,9 +559,10 @@ def build_selfbuilt_fixtures(
                 "scenario": name,
                 "kind": task["kind"],
                 "eval_scope": "scenario_tool",
+                "extra_tools": extra_tools,
                 "missing_tools": [
                     tool_name
-                    for tool_name in required + any_tools
+                    for tool_name in requested
                     if tool_name not in available
                 ],
             },

@@ -17,9 +17,10 @@
 10 条 retrieval 留在能力层；`research_assistant` / `coding_demo` / `router` / `workspace_assistant`
 的任务定义还缺前置工具，先不硬迁。产品场景保留做端到端回归，不再冒充任务级评测。
 
-**2026-11-05 二次进展**：`build_selfbuilt_fixtures(scenario="all")` 已支持按各自工具箱构建全部
-16 条单轮/多轮任务；抽样 research 2/2、coding 2/2、router 2/2、workspace 1/2。
-`sb-multi-005` 缺 `remember` 前置工具，未把它硬改成通过。
+**2026-11-05 已切**：`selfbuilt.py` 的单轮/多轮已改走 `TaskFixture`，`retrieval` 仍直调 `rag_retrieve`；
+`build_selfbuilt_fixtures(scenario="all")` 覆盖 16 条；`sb-multi-005` 已加
+`extra_tools: ["remember"]`。此前抽样 7/8（workspace 1/2），修复后未重跑全量真实模型，
+以 406 passed 的单测和 dry-run 为准，不宣称 16/16。
 
 ### 2. 质量页的 benchmark 目录是旧快照
 
@@ -115,7 +116,7 @@ if judged is not None:
 
 **下一步**：测试数只在一个地方维护（例如 `README` 徽章/CI），其他文档引用链接，不写死。
 
-**2026-11-05 已修**：AGENTS / README / 一页纸 / friday-plan 的当前数字同步为 401 tests、11 场景；历史快照保留但标注过期。
+**2026-11-05 已修**：AGENTS / README / 一页纸 / friday-plan 的当前数字同步为 406 tests、11 场景；历史快照保留但标注过期。
 
 ### 12. 质量页的 benchmark 视图只认 BFCL / RGB / τ²
 
@@ -156,7 +157,7 @@ if judged is not None:
   失败集中在 `missing` 2/10（无工具时模型直接心算，不说明“工具不可用”）——这是要抓的幻觉；
 - permission：approve ✅、reject ✅（真实 HITL 中断 + resume）；
 - selfbuilt 迁移：`robot_vacuum` 8 条单轮/多轮 fixture **8/8**；
-- 测试：401 passed。
+- 测试：406 passed。
 
 ## 2026-11-05 晚二次修复
 

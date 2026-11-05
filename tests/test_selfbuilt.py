@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """自建任务集：结构校验与汇总逻辑（不调用模型）。"""
+from core.quality import selfbuilt
 from core.quality.selfbuilt import (
     KINDS,
     _score,
@@ -130,3 +131,116 @@ def test_render_markdown_contains_summary():
     assert "自建任务集评测" in text
     assert "pass^k" in text
     assert "c1" in text
+
+
+class _FakeFixture:
+    def __init__(self, source_id: str):
+        self.id = f"selfbuilt-{source_id}"
+        self.metadata = {"source_id": source_id}
+
+
+def _fixture_row() -> dict:
+    return {
+        "passed": True,
+        "answer": "评测要看 pass^k",
+        "calls": [{"name": "search_notes", "args": {"query": "评测"}}],
+        "coverage": 1.0,
+        "matched_points": ["pass^k"],
+        "any_tools_ok": True,
+        "call_count_ok": True,
+        "variant": "clean",
+        "fixture_status": "ok",
+    }
+
+
+def test_run_single_turn_uses_task_fixture(monkeypatch, tmp_path):
+    tasks = [_task(id="s1", kind="single_turn", scenario="robot_vacuum")]
+    monkeypatch.setattr(selfbuilt, "load_tasks", lambda: tasks)
+    monkeypatch.setattr(
+        selfbuilt,
+        "build_selfbuilt_fixtures",
+        lambda scenario=None: [_FakeFixture("s1")],
+    )
+    monkeypatch.setattr(selfbuilt, "run_fixture", lambda fixture: _fixture_row())
+    monkeypatch.setattr(selfbuilt, "OUT_DIR", tmp_path)
+
+    report = selfbuilt.run(trials=1)
+    row = report["results"][0]
+    assert row["id"] == "s1"
+    assert row["passed"] is True
+    assert row["tool_names"] == ["search_notes"]
+    assert row["fixture_variant"] == "clean"
+    assert report["summary"]["passed"] == 1
+
+
+def test_run_retrieval_keeps_rag_path(monkeypatch, tmp_path):
+    tasks = [{
+        "id": "r1",
+        "kind": "retrieval",
+        "cell": "单轮×检索",
+        "scenario": "robot_vacuum",
+        "question": "q",
+        "expected_sources": ["a.txt"],
+    }]
+    monkeypatch.setattr(selfbuilt, "load_tasks", lambda: tasks)
+    monkeypatch.setattr(selfbuilt, "_rag_retrieve_tool", lambda: object())
+    monkeypatch.setattr(
+        selfbuilt,
+        "evaluate_task",
+        lambda agent, task, trial, tool: {
+            "id": task["id"],
+            "kind": "retrieval",
+            "cell": task["cell"],
+            "trial": trial,
+            "passed": True,
+            "hit": True,
+            "mrr": 1.0,
+            "sources": ["a.txt"],
+        },
+    )
+    monkeypatch.setattr(
+        selfbuilt,
+        "build_selfbuilt_fixtures",
+        lambda **_: (_ for _ in ()).throw(AssertionError("retrieval 不应构建 fixture")),
+    )
+    monkeypatch.setattr(selfbuilt, "OUT_DIR", tmp_path)
+
+    report = selfbuilt.run(trials=1)
+    assert report["results"][0]["id"] == "r1"
+    assert report["summary"]["by_kind"]["retrieval"]["passed"] == 1
+
+
+def test_limit_applies_before_kind_split(monkeypatch, tmp_path):
+    tasks = [
+        {
+            "id": "r1",
+            "kind": "retrieval",
+            "cell": "单轮×检索",
+            "scenario": "robot_vacuum",
+            "question": "q",
+            "expected_sources": ["a.txt"],
+        },
+        _task(id="s1", kind="single_turn", scenario="robot_vacuum"),
+    ]
+    monkeypatch.setattr(selfbuilt, "load_tasks", lambda: tasks)
+    monkeypatch.setattr(selfbuilt, "_rag_retrieve_tool", lambda: object())
+    monkeypatch.setattr(
+        selfbuilt,
+        "evaluate_task",
+        lambda agent, task, trial, tool: {
+            "id": task["id"],
+            "kind": "retrieval",
+            "cell": task["cell"],
+            "trial": trial,
+            "passed": True,
+        },
+    )
+    monkeypatch.setattr(
+        selfbuilt,
+        "build_selfbuilt_fixtures",
+        lambda **_: (_ for _ in ()).throw(AssertionError("limit=1 时只应跑 retrieval")),
+    )
+    monkeypatch.setattr(selfbuilt, "OUT_DIR", tmp_path)
+
+    report = selfbuilt.run(limit=1)
+    assert [row["id"] for row in report["results"]] == ["r1"]

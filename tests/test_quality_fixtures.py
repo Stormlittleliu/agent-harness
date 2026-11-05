@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """任务级 fixture：工具桩、变体构造、判分，不调模型。"""
+import json
+
 from core.benchmarks.schema import BenchTask
+from core.quality import fixtures as fixtures_module
 from core.quality.fixtures import (
     ToolStub,
     _args_match,
@@ -146,3 +149,38 @@ def test_selfbuilt_fixtures_cover_all_scenarios():
         "workspace_assistant",
     }
     assert all(fixture.tools for fixture in fixtures)
+
+
+def test_selfbuilt_extra_tools_are_added_to_pool_only():
+    fixtures = build_selfbuilt_fixtures(scenario="workspace_assistant")
+    fixture = next(item for item in fixtures if item.id == "selfbuilt-sb-multi-005")
+    names = {tool.name for tool in fixture.tools}
+    assert {"search_notes", "remember"} <= names
+    assert len(names) == len(fixture.tools)
+    assert fixture.metadata["extra_tools"] == ["remember"]
+    assert "remember" not in fixture.metadata["missing_tools"]
+    # 前置工具只进工具池，不作为 expected call 的硬断言
+    assert all(call["name"] != "remember" for call in fixture.expected["calls"])
+
+
+def test_selfbuilt_missing_extra_tool_is_not_fabricated(tmp_path, monkeypatch):
+    data_dir = tmp_path / "selfbuilt"
+    data_dir.mkdir()
+    task = {
+        "id": "sb-extra-missing",
+        "kind": "multi_turn",
+        "scenario": "workspace_assistant",
+        "turns": ["先记住：我喜欢简洁的回答。", "再根据笔记回答。"],
+        "expected_points": [],
+        "expected_tools": ["search_notes"],
+        "extra_tools": ["ghost_tool"],
+        "should_refuse": False,
+    }
+    (data_dir / "tasks.jsonl").write_text(json.dumps(task, ensure_ascii=False) + "\n", encoding="utf-8")
+    monkeypatch.setattr(fixtures_module, "DATASETS_DIR", tmp_path)
+
+    fixture = build_selfbuilt_fixtures(scenario="workspace_assistant")[0]
+    names = {tool.name for tool in fixture.tools}
+    assert "search_notes" in names
+    assert "ghost_tool" not in names
+    assert fixture.metadata["missing_tools"] == ["ghost_tool"]

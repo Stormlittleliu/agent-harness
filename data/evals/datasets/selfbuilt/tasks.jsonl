@@ -22,5 +22,5 @@
 {"id":"sb-multi-002","kind":"multi_turn","cell":"多轮×文本","scenario":"robot_vacuum","turns":["滤网多久换一次？","那边刷呢？"],"expected_points":["边刷"],"expected_tools":["rag_summarize"],"should_refuse":false}
 {"id":"sb-multi-003","kind":"multi_turn","cell":"多轮×文本","scenario":"robot_vacuum","turns":["我的机器人连不上 WiFi。","我确认连的是 2.4G 网络，还是连不上。"],"expected_points":["重启"],"expected_tools":["rag_summarize"],"should_refuse":false}
 {"id":"sb-multi-004","kind":"multi_turn","cell":"多轮×报告","scenario":"robot_vacuum","turns":["帮我看看用户 1001 这个月用了多少次。","把这些整理成一份简短的使用报告。"],"expected_points":["报告"],"expected_tools":["fetch_external_data"],"should_refuse":false}
-{"id":"sb-multi-005","kind":"multi_turn","cell":"多轮×文本","scenario":"workspace_assistant","turns":["请记住：我喜欢简洁的回答。","根据笔记，Agent 评测应该关注哪些指标？"],"expected_points":["pass^k"],"expected_tools":["search_notes"],"should_refuse":false}
+{"id":"sb-multi-005","kind":"multi_turn","cell":"多轮×文本","scenario":"workspace_assistant","turns":["请记住：我喜欢简洁的回答。","根据笔记，Agent 评测应该关注哪些指标？"],"expected_points":["pass^k"],"expected_tools":["search_notes"],"extra_tools":["remember"],"should_refuse":false}
 {"id":"sb-multi-006","kind":"multi_turn","cell":"多轮×文本","scenario":"workspace_assistant","turns":["把「Agent 评测要看 outcome」写成一条笔记。","再把它读出来给我看看。"],"expected_points":["outcome"],"expected_tools":["write_note"],"should_refuse":false}
