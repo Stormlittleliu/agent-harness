@@ -6,12 +6,17 @@
 """
 from __future__ import annotations
 
+import uuid
+
+from core.observability.tracer import TraceCallbackHandler
+
 
 class WorkflowRuntime:
     def __init__(self, scenario):
         self.scenario = scenario
         factory = getattr(scenario, "workflow_factory", None)
         self.graphs = factory(scenario) if factory else {}
+        self.last_trace_id: str | None = None
 
     def list_workflows(self) -> list[str]:
         return sorted(self.graphs)
@@ -20,4 +25,17 @@ class WorkflowRuntime:
         if name not in self.graphs:
             available = ", ".join(self.list_workflows()) or "（无）"
             raise FileNotFoundError(f"工作流不存在：{name}（可用：{available}）")
-        return self.graphs[name].invoke({"input": input_text})
+        tracer = TraceCallbackHandler(
+            trace_id=f"run-{uuid.uuid4().hex}",
+            thread_id=f"workflow-{uuid.uuid4().hex}",
+            scenario=getattr(self.scenario, "name", None),
+        )
+        self.last_trace_id = tracer.trace_id
+        try:
+            return self.graphs[name].invoke(
+                {"input": input_text},
+                config={"callbacks": [tracer]},
+            )
+        finally:
+            tracer.finalize_if_needed()
+

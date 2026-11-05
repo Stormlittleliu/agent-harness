@@ -49,6 +49,19 @@ def test_call_tool_interpolates_args_and_saves():
     assert out["answer"] == "found:滤网"
 
 
+def test_call_tool_escapes_multiline_answer_in_json_args():
+    scenario = _FakeScenario()
+    answer = '第一行\n第二行 "带引号"'
+    out = call_tool(
+        {"answer": answer, "scratch": {}},
+        scenario=scenario,
+        tool="lookup",
+        args='{"query": "{answer}"}',
+        save_to="answer",
+    )
+    assert out["answer"] == f"found:{answer}"
+
+
 def test_call_tool_writes_scratch_key():
     scenario = _FakeScenario()
     out = call_tool(

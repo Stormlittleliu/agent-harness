@@ -443,6 +443,23 @@ def render_template(text: Any, state: dict[str, Any]) -> str:
     return PLACEHOLDER.sub(lambda match: _lookup(state, match.group(1)), str(text or ""))
 
 
+def render_json_template(text: Any, state: dict[str, Any]) -> dict[str, Any]:
+    """渲染 JSON 参数模板。
+
+    直接字符串替换会把 answer 里的换行/引号塞进 JSON 字符串，导致解析失败。
+    先按普通模板解析；失败时把占位符替换成 JSON 转义后的内容再解析。
+    """
+    raw = str(text or "{}")
+    try:
+        return json.loads(render_template(raw, state) or "{}")
+    except json.JSONDecodeError:
+        escaped = PLACEHOLDER.sub(
+            lambda match: json.dumps(_lookup(state, match.group(1)), ensure_ascii=False)[1:-1],
+            raw,
+        )
+        return json.loads(escaped or "{}")
+
+
 def _save(result: dict[str, Any], state: dict[str, Any], save_to: str, text: str) -> dict[str, Any]:
     """按 ``save_to`` 把文本写回 state（answer / tool_result / scratch.<key>）。"""
     target = (save_to or "answer").strip()
@@ -485,7 +502,7 @@ def call_tool(
     if scenario is None:
         return {"scratch": _merge_scratch(state, error="call_tool 缺少场景")}
     try:
-        payload = json.loads(render_template(args or "{}", state) or "{}")
+        payload = render_json_template(args or "{}", state)
     except json.JSONDecodeError as exc:
         return {"scratch": _merge_scratch(state, error=f"call_tool 参数不是合法 JSON：{exc}")}
     if not isinstance(payload, dict):

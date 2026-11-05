@@ -31,7 +31,9 @@ from core.agent.middleware import classify_intent  # noqa: E402
 from core.quality.agent_eval import extract_final_answer, extract_tool_calls  # noqa: E402
 from core.quality.paths import OUTPUTS_DIR  # noqa: E402
 from core.scenarios.registry import get_scenario  # noqa: E402
-from core.scenarios.router.scenario import ROUTER_POLICY  # noqa: E402
+from core.scenarios.router import routes as route_table  # noqa: E402
+
+ROUTER_POLICY = route_table.build_policy(route_table.load_routes("router"))
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -116,6 +118,7 @@ def run_variant(name: str, trials: int) -> list[dict]:
                 "index": index,
                 "prompt": prompt,
                 "expected": expected,
+                "trace_id": getattr(agent, "last_trace_id", None),
                 "selected_target": selected,
                 "selected_tool": next(
                     (tool for tool in reversed(tool_names) if tool in TOOL_TARGETS), None
@@ -203,6 +206,8 @@ def write_markdown(path: Path, summaries: dict, rows: list[dict]) -> None:
         "- baseline 不用 policy，完全由模型决定是否调用 route_to_*。",
         "- policy 只在规则唯一命中时注入工具调用；平局/无命中 abstain，交回模型。",
         "- 这是 12 条小样本行为实验，不是统计显著结论；准确率以实际路由目标为准。",
+        "- 每条结果的 `trace_id` 在 JSON 的 `results[]` 里，可用 "
+        "`python -m core.observability.trace_report --trace-id <id>` 回查执行轨迹。",
     ]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 

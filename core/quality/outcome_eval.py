@@ -328,6 +328,7 @@ def evaluate_case(scenario_name: str, case: dict, trial: int) -> dict:
         scenario = get_scenario(scenario_name)
         runtime = WorkflowRuntime(scenario)
         final_state = runtime.run(workflow_name, question)
+        trace_id = getattr(runtime, "last_trace_id", None)
         answer = str(
             final_state.get("answer")
             or final_state.get("report")
@@ -369,6 +370,7 @@ def aggregate_trials(case: dict, rows: list[dict]) -> dict:
         "pass_rate": round(sum(trial_passes) / len(trial_passes), 4),
         "trial_passes": trial_passes,
         "trial_run_ids": [row["run_id"] for row in rows],
+        "trial_trace_ids": [row.get("trace_id") for row in rows],
         "trials": len(trial_passes),
     })
     return result

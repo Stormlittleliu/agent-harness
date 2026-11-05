@@ -26,6 +26,16 @@ def test_router_scenario_wires_planning_policy():
     assert [rule.tool for rule in policy.rules] == [rule.tool for rule in ROUTER_POLICY.rules]
 
 
+def test_planner_eval_reuses_current_router_policy():
+    """A/B 实验必须跟路由表同源，不能 import 已删掉的 ROUTER_POLICY。"""
+    from core.experiments.planner_eval import PROMPTS, ROUTER_POLICY as EXPERIMENT_POLICY
+
+    assert len(PROMPTS) == 12
+    assert [rule.tool for rule in EXPERIMENT_POLICY.rules] == [
+        rule.tool for rule in ROUTER_POLICY.rules
+    ]
+
+
 def test_router_policy_classifies_four_intents():
     cases = {
         "根据笔记帮我整理一份 Agent 评测的学习计划": "route_to_workspace",

@@ -4,6 +4,7 @@
 > 用途：把散落在 `outputs/` 的结果集中到一页，作为面试/复盘口径。
 > 原则：所有公开 benchmark 都是抽样 + 简化/替代评分，不冒充官方榜单。
 > **本页不是唯一口径**：面试主结果页见 `docs/interview/jd-results-2026-11-04.md`；本页旧数字（3203、11/13、RAG 42）保留为历史快照。
+> **2026-11-05 复核**：workspace / planner / outcome 三组结果到 trace 的链路见 [eval-traceability.md](eval-traceability.md)。
 
 ## 1. 统一 Benchmark 样例集
 
