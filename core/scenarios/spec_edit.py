@@ -177,7 +177,8 @@ def remove_node(draft: dict[str, Any], workflow: str, index: int) -> None:
     nodes.pop(index)
     edges = draft["workflows"][workflow]["edges"]
     draft["workflows"][workflow]["edges"] = [
-        edge for edge in edges if removed not in (str(edge[0]), str(edge[1]))
+        edge for edge in edges
+        if removed not in (split_edge(edge)[0], split_edge(edge)[1])
     ]
 
 
@@ -196,8 +197,11 @@ def rename_node(draft: dict[str, Any], workflow: str, old: str, new: str) -> str
             node["id"] = new
             break
     workflow_draft["edges"] = [
-        [new if str(edge[0]) == old else str(edge[0]), new if str(edge[1]) == old else str(edge[1])]
-        for edge in workflow_draft["edges"]
+        [new if source == old else source, new if target == old else target]
+        + ([when] if when else [])
+        for source, target, when in (
+            split_edge(edge) for edge in workflow_draft["edges"]
+        )
     ]
     return new
 
@@ -301,9 +305,7 @@ def _levels(nodes: list[dict], edges: list[list[str]]) -> dict[str, int]:
     ids = [str(node.get("id")) for node in nodes]
     parents: dict[str, list[str]] = {node_id: [] for node_id in ids}
     for edge in edges:
-        if len(edge) != 2:
-            continue
-        source, target = str(edge[0]), str(edge[1])
+        source, target, _when = split_edge(edge)
         if source in parents and target in parents:
             parents[target].append(source)
     levels: dict[str, int] = {}
@@ -512,7 +514,10 @@ def canvas_payload(
     """
     workflow_draft = draft["workflows"][workflow]
     nodes = list(workflow_draft["nodes"])
-    edges = [list(edge) for edge in workflow_draft["edges"]]
+    edges = []
+    for edge in workflow_draft["edges"]:
+        source, target, when = split_edge(edge)
+        edges.append([source, target] if not when else [source, target, when])
     positions = node_positions(name, workflow, nodes, edges, root)
 
     canvas_nodes = [

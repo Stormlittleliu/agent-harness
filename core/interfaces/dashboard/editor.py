@@ -36,7 +36,7 @@ from core.interfaces.dashboard.layout import (
 from core.scenarios import spec_edit
 from core.scenarios.generic import CODE_ROOT, spec_scenario_names, spec_tool_names
 from core.scenarios.ownership import OWNER_CODE, eject, status
-from core.scenarios.spec import SpecError, SPEC_ROOT, build_workflows
+from core.scenarios.spec import SpecError, SPEC_ROOT, build_workflows, split_edge
 from core.scenarios.spec_nodes import block_desc, block_label, block_params, registered_nodes
 
 NAME_HINT = "只用小写字母、数字和下划线，例如 note_qa"
@@ -625,7 +625,10 @@ def _render_edges(name: str, draft: dict, workflow: str, prefix: str) -> None:
     workflow_draft = draft["workflows"][workflow]
     node_ids = [str(node.get("id")) for node in workflow_draft["nodes"]]
     options = ["__start__", *node_ids, "__end__"]
-    rows = [{"从": str(edge[0]), "到": str(edge[1])} for edge in workflow_draft["edges"]]
+    rows = []
+    for edge in workflow_draft["edges"]:
+        source, target, when = split_edge(edge)
+        rows.append({"从": source, "到": target, "条件": when or ""})
     if not rows:
         st.caption("还没有边；加一条 START 到第一个节点的边，流程才能开始。")
         if st.button("加第一条边", key=f"{prefix}-edge-first"):
@@ -634,6 +637,7 @@ def _render_edges(name: str, draft: dict, workflow: str, prefix: str) -> None:
             _bump_generation()
             st.rerun()
         return
+    st.caption("条件列填 branch 的 hit / miss 值；留空表示无条件边。同一个节点要么全有条件，要么全无条件。")
     before = copy.deepcopy(draft)
     edited = st.data_editor(
         rows,
@@ -643,14 +647,24 @@ def _render_edges(name: str, draft: dict, workflow: str, prefix: str) -> None:
         column_config={
             "从": st.column_config.SelectboxColumn("从", options=options, required=True),
             "到": st.column_config.SelectboxColumn("到", options=options, required=True),
+            "条件": st.column_config.TextColumn(
+                "条件",
+                help="branch 写入 scratch.route 的值，例如 robot / clothing / hit / miss",
+                width="small",
+            ),
         },
     )
     pairs: list[list[str]] = []
     for row in _rows_of(edited):
         source, target = str(row.get("从") or ""), str(row.get("到") or "")
+        when = str(row.get("条件") or "").strip()
         if source and target:
-            pairs.append([source, target])
-    if pairs != before["workflows"][workflow]["edges"]:
+            pairs.append([source, target] if not when else [source, target, when])
+    old_pairs = []
+    for edge in before["workflows"][workflow]["edges"]:
+        source, target, when = split_edge(edge)
+        old_pairs.append([source, target] if not when else [source, target, when])
+    if pairs != old_pairs:
         _push_undo(name, before)
     workflow_draft["edges"] = pairs
 

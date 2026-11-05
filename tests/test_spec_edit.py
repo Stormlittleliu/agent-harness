@@ -349,3 +349,22 @@ def test_rename_node_updates_edges():
     assert ["write_answer", "verify"] in workflow["edges"]
     with pytest.raises(SpecError):
         spec_edit.rename_node(draft, "qa", "verify", "write_answer")
+
+
+def test_merge_canvas_preserves_conditional_edge_labels():
+    draft = _draft()
+    workflow = draft["workflows"]["qa"]
+    workflow["edges"] = [
+        ["__start__", "search"],
+        ["search", "answer", "hit"],
+        ["search", "verify", "miss"],
+        ["answer", "__end__"],
+        ["verify", "__end__"],
+    ]
+    payload = spec_edit.canvas_payload("demo", "qa", draft)
+    assert ["search", "answer", "hit"] in payload["edges"]
+    # 模拟画布只回传 from/to（条件标签不在画布 DOM 里）
+    payload["edges"] = [[edge[0], edge[1]] for edge in payload["edges"]]
+    spec_edit.merge_canvas(draft, "qa", payload)
+    assert ["search", "answer", "hit"] in workflow["edges"]
+    assert ["search", "verify", "miss"] in workflow["edges"]
