@@ -1,0 +1,148 @@
+# 优化案例 B：两个可复盘的单点改动
+
+> 项目已冻结，边界见 [scope-freeze-2026-11-05.md](../design/scope-freeze-2026-11-05.md)。
+> 本文只复盘冻结前已经发生的两个案例，不提出新功能，也不把抽样结果说成通用能力提升。
+
+## 案例一：BFCL 参数语义，`x^2` → `x**2`
+
+### 现象
+
+BFCL 60 条优化集（45 simple + 15 irrelevance）里，`simple_python_13/15/16` 三条
+在 3 trial 中都是 `wrong_args`：
+
+- 期望：`calculate_area_under_curve(function="x**2", interval=[1,3])`
+- 实际：`function="x^2"`
+
+工具名选对了，工具也调用了，错在参数值。
+
+### 数据
+
+| 配置 | BFCL pass^k | mean | 说明 |
+|---|---:|---:|---|
+| hybrid baseline | 55/60 | 92.8% | 3 trial |
+| python_syntax | 59/60 | 98.3% | 只改提示 |
+| bfcl_fixes | 60/60 | 100% | 提示 + 重复调用抑制；两轮独立 3-trial 复跑 |
+| hybrid_validation | 56/60 | 93.3% | 隔离实验：只加参数校验 |
+
+出处：[demo_bfcl/report.md](../../outputs/demo_bfcl/report.md)、
+[demo_bfcl_rep/report.md](../../outputs/demo_bfcl_rep/report.md)、
+[current-results.md](../benchmarks/current-results.md) 的 BFCL 修复段。
+样本量 60，每个 case 3 trial，主指标是 pass^k；工具是 stub，评分是简化评分。
+
+### 归因
+
+坏在**参数语义层**，不是 schema 层：
+
+- schema 只约束“`function` 是字符串”，`"x^2"` 类型合法，校验器抓不到；
+- 模型把数学写法 `^` 当成 Python 乘方，参数值错了，但工具调用结构没错；
+- 因此这不是“模型不会选工具”，也不是“参数校验缺失”。
+
+### 改动
+
+- 只改工具描述/提示：明确“函数参数使用 Python 表达式，乘方用 `**` 而不是 `^`”。
+- 没改：模型、工具实现、评分器、case 集、schema 校验器。
+- 第二个 +1 来自“同工具重复调用抑制”，它修的是 `simple_python_377` / `irrelevance_236`
+  这类循环，不是参数语义。
+
+### 证据
+
+- 55/60 → 59/60：`simple_python_13/15/16` 被修复，且没有回归；
+- 59/60 → 60/60：加入重复调用抑制后，剩余 `irrelevance_236` 被修复；
+- 反向证据：单独加参数校验是 **56/60，并回归 4 条**（`hybrid_validation`），
+  说明“校验器”不是这个问题的解；
+- RAG 侧保持 44/45，没有因为 BFCL 修改而回归。
+
+### 代价 / 边界
+
+- 60 条是抽样，工具是 stub，评分不是官方 AST；**不能叫 BFCL 官方 60/60**；
+- 第一轮的提示同时影响了 `simple_python_377`，不能把 59/60 全部归因于“乘方提示”；
+- 第二轮“重复调用抑制”的独立贡献没有隔离实验，`377/236` 的修复也可能含方差；
+- 3 trial 不足以做统计显著性声明。
+
+### 可复用范式
+
+> 先判断是“选错工具”还是“参数语义错”；如果是后者，只改工具描述，不要动校验器，
+> 再用“单独加校验器”的隔离实验证明它不是解。
+
+---
+
+## 案例二：selfbuilt 检索，FAQ 宽泛 chunk 稀释单条事实
+
+### 现象
+
+selfbuilt 全量 26 条，基线 1-trial **22/26**；检索 10 条只有 **7/10**。
+三条失败都是“期望的源文件没有进 top-k”：
+
+| ID | 期望源 | 实际召回 |
+|---|---|---|
+| `sb-rag-001` | `故障排除.txt` | 100问2 / 维护保养 |
+| `sb-rag-006` | `维护保养.txt` | 100问.pdf / 100问2 |
+| `sb-rag-010` | `选购指南.txt` | 100问.pdf / 100问2 |
+
+### 数据
+
+| 项 | baseline | after |
+|---|---:|---:|
+| 检索 | 7/10 | **10/10** |
+| 全量 selfbuilt | 22/26 | **26/26**（1-trial） |
+| chunks | 78 | **835** |
+
+出处：[selfbuilt-badcases-2026-11-05.md](../benchmarks/selfbuilt-badcases-2026-11-05.md)、
+`outputs/selfbuilt/selfbuilt_20261105_192014.json`（baseline）、
+`outputs/selfbuilt/selfbuilt_20261105_192631.json`（检索复跑）、
+`outputs/selfbuilt/selfbuilt_20261105_192922.json`（全量复跑）。
+检索 10 条、全量 26 条都是 **1-trial**，不是 pass^k。
+
+### 归因
+
+坏在**检索的 chunk 粒度**，不是 embedding 模型或评分器：
+
+- `100问` / `故障排除` / `选购指南` / `维护保养` 这些 txt 用 1000 字 chunk；
+- 一个 chunk 里混了多条问答，向量更像“整篇 FAQ 的摘要”；
+- 单条故障/保养/选购事实的语义被宽泛块稀释，top-k 被 100问 的大块占据；
+- `score_retrieval` 按“期望源文件是否命中”判分，所以直接暴露为 0 hit。
+
+### 改动
+
+- 在 `core/tools/rag/vector_store.py` 增加 `_split_numbered_entries`：
+  对上述编号型 txt，按 `1.` / `2.` 这类条目边界切块；
+- 不再合并短条目，避免编号边界被重新抹掉；
+- 只对这类文档生效，其他文档仍走原 splitter；
+- 没改：embedding 模型、检索评分、expected_sources、rerank、生成链。
+- 重建 Chroma 索引。
+
+### 证据
+
+- 检索：7/10 → **10/10**，三条 badcase 全部修复；
+- 全量：22/26 → **26/26**（同日 1-trial）；
+- chunks：78 → **835**；
+- 回归：全量测试 **408 passed**，检索之外的 single_turn 10/10、multi_turn 6/6。
+
+### 代价 / 边界
+
+- chunk 数约 10 倍，embedding 和检索延迟都会上升；这是“单条事实可召回”换来的成本；
+- 10/10 是“源文件命中”，不是最终回答质量；
+- 26/26 是**单次 1-trial**，不能当稳定性结论；
+- 全量 26/26 还依赖另一个改动：`sb-multi-005` 补了 `remember` 前置工具和任务级 prompt，
+  所以不能把 26/26 全部归因于 FAQ 切块。
+
+### 可复用范式
+
+> 先看“宽泛 chunk 是否稀释了单条事实”，按文档天然边界切块；不要一上来换 embedding
+> 或加 rerank，先用 source hit 证明是召回粒度问题。
+
+---
+
+## 优化范式（3–5 条）
+
+1. **先分层归因，再改**：参数语义 / 工具选择 / 检索 chunk / 评分口径，先判断坏在哪一层。
+2. **只改一层，保留隔离实验**：BFCL 的“单独加校验器 56/60 且回归 4 条”就是反例证据。
+3. **先修 chunk 粒度，再谈换模型**：宽泛块会伪装成“检索不行/模型不行”。
+4. **主动写清分母与 trial**：60 条 ×3 trial、26 条 ×1 trial、10 条检索，不能混着讲。
+5. **把代价写出来**：835 chunks、stub 工具、任务级 prompt 泄漏，都是收益的一部分成本。
+
+## 不要把它讲成什么
+
+> 不要讲成“BFCL 官方 60/60”或“26/26 说明模型/ Harness 全面变强”。这两个都是
+> 抽样 + 简化评分 + 小样本（其中一个还是 1-trial）；它们证明的是“这类 badcase 可以被定位和修复”，
+> 不是通用能力提升，也不是官方榜单成绩。
