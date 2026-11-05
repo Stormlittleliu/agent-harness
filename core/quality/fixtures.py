@@ -554,6 +554,7 @@ def build_selfbuilt_fixtures(
             turns=task.get("turns") or [],
             tools=tools,
             expected=expected,
+            system_prompt=task.get("system_prompt") or DEFAULT_SYSTEM_PROMPT,
             metadata={
                 "source_id": task["id"],
                 "scenario": name,

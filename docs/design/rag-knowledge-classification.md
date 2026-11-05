@@ -130,5 +130,8 @@ python -m core.tools.rag.classification
 - 分类规则是静态的；新增领域要补 `SOURCE_RULES` / `CONTENT_RULES`；
 - 服装文档按语义分块后均匀取样（每篇最多 6 块），当前共 12 个分块；适合演示，不足以代表服装领域全量；
 - 检索过滤能保证“不串域”，但不能保证答案一定正确；
+- 100问 / 故障排除 / 选购指南 / 维护保养等编号型 txt 现在按“1. / 2.”条目切块，
+  避免 1000 字 chunk 把多条问答混在一起；重建后索引 835 chunks，
+  selfbuilt 检索从 7/10 到 10/10。代价是 chunk 数明显增加，检索延迟和 embedding 成本会上升。
 - 两个 spec 场景已有抽样用例（clothing 6 条、retail 5 条），3-trial pass^k 分别为 6/6、5/5；
   样本仍小，不能当领域全量质量结论。

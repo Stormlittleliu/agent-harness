@@ -7,6 +7,7 @@
 4. 兼容 DashScope text-embedding-v4 的单批 10 条限制；本地 BGE 同样分批写入。
 """
 import os
+import re
 import uuid
 from datetime import datetime
 
@@ -41,6 +42,22 @@ def _sample_evenly(chunks: list[str], limit: int) -> list[str]:
     return [chunks[position] for position in picked]
 
 
+_FAQ_ENTRY = re.compile(r"(?m)^(?=\s*\d+[.、]\s*)")
+
+
+def _split_numbered_entries(text: str, *, min_entries: int = 3) -> list[str]:
+    """按 ``1.`` / ``2.、`` 这类编号条目切 FAQ；不满足时返回空列表。
+
+    100问 / 故障排除这类文档的编号条目是天然语义边界。按 1000 字切片会把
+    多条问答塞进一个 chunk，检索时整块命中，单条事实反而被稀释。
+    """
+    parts = [part.strip() for part in _FAQ_ENTRY.split(text) if part.strip()]
+    if len(parts) < min_entries:
+        return []
+    # 每条问答单独成块；不合并短文，否则编号边界又会被抹掉。
+    return parts
+
+
 class VectorStoreService:
     def __init__(self):
         self.persist_directory = get_abs_path(chroma_conf["persist_directory"])
@@ -73,13 +90,29 @@ class VectorStoreService:
             )
         return self._splitters[file_type]
 
-    def split_text(self, data: str, file_type: str, domain: str | None = None) -> list[str]:
+    def split_text(
+        self,
+        data: str,
+        file_type: str,
+        domain: str | None = None,
+        source: str | None = None,
+    ) -> list[str]:
         """按文件类型切片；短文本整段入库，避免被切得过碎。
 
         服装域文档很小，但希望保留语义段落而不是整篇一个 chunk：
         用更小的 separator 切片，再按位置均匀取样（首/尾必留），
         这样既覆盖全文结构，又不用把每篇都塞进向量库。
+
+        FAQ / 故障排除文档优先按编号条目切，避免 1000 字 chunk 把多条问答
+        混在一起，导致检索只命中宽泛块、单条事实被稀释。
         """
+        if source and file_type == "txt" and any(
+            key in os.path.basename(source)
+            for key in ("100问", "故障排除", "选购指南", "维护保养")
+        ):
+            entries = _split_numbered_entries(data)
+            if entries:
+                return entries
         if domain == "clothing":
             chunks = [
                 item.strip()
@@ -197,7 +230,9 @@ class VectorStoreService:
                     continue
 
                 doc_class = classify(filename, text)
-                knowledge_chunks = self.split_text(text, file_type, domain=doc_class.domain)
+                knowledge_chunks = self.split_text(
+                    text, file_type, domain=doc_class.domain, source=filename
+                )
                 if not knowledge_chunks:
                     logger.warning(f"[加载知识库]{filename} 分片后没有有效文本内容，跳过")
                     continue

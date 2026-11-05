@@ -159,6 +159,7 @@ def test_selfbuilt_extra_tools_are_added_to_pool_only():
     assert len(names) == len(fixture.tools)
     assert fixture.metadata["extra_tools"] == ["remember"]
     assert "remember" not in fixture.metadata["missing_tools"]
+    assert "pass^k" in fixture.system_prompt
     # 前置工具只进工具池，不作为 expected call 的硬断言
     assert all(call["name"] != "remember" for call in fixture.expected["calls"])
 

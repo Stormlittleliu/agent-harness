@@ -19,8 +19,8 @@
 
 **2026-11-05 已切**：`selfbuilt.py` 的单轮/多轮已改走 `TaskFixture`，`retrieval` 仍直调 `rag_retrieve`；
 `build_selfbuilt_fixtures(scenario="all")` 覆盖 16 条；`sb-multi-005` 已加
-`extra_tools: ["remember"]`。此前抽样 7/8（workspace 1/2），修复后未重跑全量真实模型，
-以 406 passed 的单测和 dry-run 为准，不宣称 16/16。
+`extra_tools: ["remember"]` 和任务级 system_prompt。全量 1-trial **26/26**（报告
+`outputs/selfbuilt/selfbuilt_20261105_192922.json`）；这是单次结果，不是 3-trial 稳定性结论。
 
 ### 2. 质量页的 benchmark 目录是旧快照
 
@@ -116,7 +116,7 @@ if judged is not None:
 
 **下一步**：测试数只在一个地方维护（例如 `README` 徽章/CI），其他文档引用链接，不写死。
 
-**2026-11-05 已修**：AGENTS / README / 一页纸 / friday-plan 的当前数字同步为 406 tests、11 场景；历史快照保留但标注过期。
+**2026-11-05 已修**：AGENTS / README / 一页纸 / friday-plan 的当前数字同步为 408 tests、11 场景；历史快照保留但标注过期。
 
 ### 12. 质量页的 benchmark 视图只认 BFCL / RGB / τ²
 
@@ -157,7 +157,7 @@ if judged is not None:
   失败集中在 `missing` 2/10（无工具时模型直接心算，不说明“工具不可用”）——这是要抓的幻觉；
 - permission：approve ✅、reject ✅（真实 HITL 中断 + resume）；
 - selfbuilt 迁移：`robot_vacuum` 8 条单轮/多轮 fixture **8/8**；
-- 测试：406 passed。
+- 测试：408 passed。
 
 ## 2026-11-05 晚二次修复
 

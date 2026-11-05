@@ -3,7 +3,7 @@
 from core.scenarios.pools import tool_names
 from core.scenarios.spec import load_active_spec, split_edge, validate_spec
 from core.tools.rag.classification import classify
-from core.tools.rag.vector_store import _sample_evenly
+from core.tools.rag.vector_store import _sample_evenly, _split_numbered_entries
 
 
 def test_classify_clothing_sources():
@@ -36,6 +36,19 @@ def test_clothing_chunks_are_sampled_evenly():
     assert picked[-1] == "chunk-9"
     assert len(picked) == 4
     assert len(_sample_evenly(chunks[:3], 6)) == 3
+
+
+def test_numbered_faq_entries_split_at_question_boundaries():
+    text = "标题\n\n1. 开机没反应怎么办？\n检查电源。\n\n2. 连不上 WiFi 怎么办？\n检查 2.4G。\n\n3. 回充失败怎么办？\n检查充电座。"
+    chunks = _split_numbered_entries(text)
+    assert len(chunks) == 4
+    assert chunks[1].startswith("1.")
+    assert chunks[2].startswith("2.")
+    assert chunks[3].startswith("3.")
+
+
+def test_numbered_faq_entries_ignore_plain_text():
+    assert _split_numbered_entries("这不是编号文档，只有一段话。") == []
 
 
 def test_domain_specs_validate_against_their_toolbox():
