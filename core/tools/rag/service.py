@@ -14,9 +14,9 @@ from core.utils.prompt_loader import load_rag_prompts
 
 
 class RagSummarizeService:
-    def __init__(self, retrieval_mode: str = None, retriever=None):
+    def __init__(self, retrieval_mode: str = None, retriever=None, where: dict | None = None):
         # retriever 可注入：评测用内存 Chroma，业务用持久化 Chroma
-        self.retriever = retriever or get_retriever(retrieval_mode)
+        self.retriever = retriever or get_retriever(retrieval_mode, where=where)
         self.prompt_text = load_rag_prompts()
         self.prompt_template = PromptTemplate.from_template(self.prompt_text)
         self.model = chat_model

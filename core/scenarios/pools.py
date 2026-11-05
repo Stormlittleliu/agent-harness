@@ -175,7 +175,7 @@ def _robot_vacuum() -> Toolbox:
     configure_business_tools(config.get("external_data_path"))
     policy = config.get("tool_policy", {}) or {}
     approval = policy.get("require_approval") or ["reset_device"]
-    rag_summarize, _ = build_rag_tools()
+    rag_summarize, _ = build_rag_tools(where={"domain": "robot"})
     tools = (
         rag_summarize,
         get_weather,
@@ -206,6 +206,44 @@ def _robot_vacuum() -> Toolbox:
         "checkpoint_path": config.get("checkpoint_path", "data/runtime/agent_checkpoints.sqlite"),
     }
     return Toolbox("robot_vacuum", tools, middleware=middleware, defaults=defaults)
+
+
+def _retail_expert() -> Toolbox:
+    """评测/演示用：同一工具箱里放两套按 domain 过滤的 RAG 检索。
+
+    两个 spec 场景（clothing_service / retail_router）共用这个工具箱；
+    场景只通过 ``tools`` 白名单选择自己看得到的那一个。
+    """
+    from core.agent.middleware import log_before_model, monitor_tool
+    from core.tools.rag.tools import build_rag_tools
+
+    _, robot_retrieve = build_rag_tools(
+        where={"domain": "robot"},
+        summarize_name="robot_rag",
+        retrieve_name="robot_retrieve",
+    )
+    _, clothing_retrieve = build_rag_tools(
+        where={"domain": "clothing"},
+        summarize_name="clothing_rag",
+        retrieve_name="clothing_retrieve",
+    )
+    return Toolbox(
+        "retail_expert",
+        (robot_retrieve, clothing_retrieve),
+        middleware=(monitor_tool, log_before_model),
+        defaults={
+            "middleware": [monitor_tool, log_before_model],
+            "tool_policy": {
+                "default": "allow",
+                "risk_levels": {
+                    "robot_retrieve": "low",
+                    "clothing_retrieve": "low",
+                },
+            },
+            "tool_timeout_seconds": 60,
+            "checkpoint_backend": "memory",
+        },
+    )
 
 
 def _research_assistant() -> Toolbox:
@@ -285,11 +323,14 @@ def _router() -> Toolbox:
 
 
 _BUILDERS = {
+    "clothing_service": _retail_expert,
     "coding_demo": _coding_demo,
     "general": _general,
     "mcp_demo": _mcp_demo,
     "office": _office,
     "research_assistant": _research_assistant,
+    "retail_expert": _retail_expert,
+    "retail_router": _retail_expert,
     "robot_vacuum": _robot_vacuum,
     "router": _router,
     "structured_demo": _structured_demo,

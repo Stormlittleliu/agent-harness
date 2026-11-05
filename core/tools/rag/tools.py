@@ -31,12 +31,22 @@ def _artifact(query: str, docs) -> dict:
     }
 
 
-def build_rag_tools(service: RagSummarizeService | None = None):
-    """按 service 构造 RAG 工具；不传 service 时使用业务持久化向量库。"""
-    service = service or RagSummarizeService()
+def build_rag_tools(
+    service: RagSummarizeService | None = None,
+    *,
+    where: dict | None = None,
+    summarize_name: str = "rag_summarize",
+    retrieve_name: str = "rag_retrieve",
+):
+    """按 service / where 构造 RAG 工具；名字可覆盖，便于同一 toolbox 放多套域。
+
+    ``where={"domain": "clothing"}`` 时，向量检索和 BM25 语料都只取服装分块；
+    不传则查全库（通用调试用）。
+    """
+    service = service or RagSummarizeService(where=where)
 
     @tool(
-        "rag_summarize",
+        summarize_name,
         description="从向量存储中检索参考资料并总结回答",
         response_format="content_and_artifact",
     )
@@ -45,7 +55,7 @@ def build_rag_tools(service: RagSummarizeService | None = None):
         return answer, _artifact(query, docs)
 
     @tool(
-        "rag_retrieve",
+        retrieve_name,
         description="检索知识库并返回原始资料片段（评测用）",
         response_format="content_and_artifact",
     )

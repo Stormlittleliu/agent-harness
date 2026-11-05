@@ -1101,7 +1101,9 @@ def render_editor(current: str | None = None, *, embedded: bool = False) -> None
     if notice:
         st.success(notice)
 
-    tools = spec_tool_names()
+    from core.scenarios import pools
+
+    tools = pools.tool_names(choice)
     if st.session_state.setdefault("editor-wide", False):
         st.markdown(
             "<style>.block-container{max-width:calc(100vw - 2rem) !important;"

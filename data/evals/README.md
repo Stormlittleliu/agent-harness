@@ -99,6 +99,8 @@ python -m core.quality.fixtures --family selfbuilt --limit 8
 ## 数据来源与许可
 
 - 业务集：按 `KnowledgeBase-RAG-LLM-System` 的服装客服文档构造，自有数据。
+  四份文档同时复制到 `data/knowledge/服装-*.{txt,md}`，入库标 `domain=clothing`；
+  原文件保留在本目录，评测集不受影响。
 - RGB：<https://github.com/chen700564/RGB>，**CC BY-NC-SA 4.0**（仅限非商业使用）。
 - MultiHop-RAG：<https://github.com/yixuantt/MultiHop-RAG>，**ODC-BY 1.0**。
 - BFCL：<https://github.com/ShishirPatil/gorilla>，**Apache-2.0**；原抽样为 simple_python + irrelevance，简化评分。

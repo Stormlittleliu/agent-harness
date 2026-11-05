@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "name": "clothing_service",
+  "description": "服装尺码 / 颜色 / 洗护 / 新品问答；只召回服装知识库",
+  "kind": "agent",
+  "tools": [
+    "clothing_retrieve"
+  ],
+  "system_prompt": "你是服装顾问。只回答尺码、颜色、洗护、新品相关问题；先检索服装知识库，再用 [来源id] 标注引用。资料不足就明确说无法确定；与服装无关的问题，说明只处理服装问题。",
+  "prompt": null,
+  "cases_path": null,
+  "response_format": null,
+  "harness": {
+    "enable_todo": false,
+    "enable_summarization": true,
+    "tool_call_limit": 8,
+    "token_budget": 20000
+  },
+  "policies": null,
+  "workflows": {
+    "qa": {
+      "nodes": [
+        {
+          "id": "triage",
+          "fn": "branch",
+          "args": {
+            "mode": "keywords",
+            "field": "input",
+            "keywords": [
+              "尺码",
+              "身高",
+              "体重",
+              "颜色",
+              "肤色",
+              "洗",
+              "新品",
+              "外套",
+              "搭配",
+              "面料"
+            ],
+            "hit": "clothing",
+            "miss": "out_of_scope"
+          }
+        },
+        {
+          "id": "search",
+          "fn": "retrieve",
+          "args": {
+            "tool": "clothing_retrieve",
+            "limit": 4
+          }
+        },
+        {
+          "id": "answer",
+          "fn": "llm_answer",
+          "args": {}
+        },
+        {
+          "id": "verify",
+          "fn": "require_citation",
+          "args": {}
+        },
+        {
+          "id": "refuse",
+          "fn": "constant",
+          "args": {
+            "text": "我只处理服装相关的问题：尺码、颜色、洗护和新品。请换一个服装问题。",
+            "save_to": "answer"
+          }
+        }
+      ],
+      "edges": [
+        [
+          "__start__",
+          "triage"
+        ],
+        {
+          "from": "triage",
+          "to": "search",
+          "when": "clothing"
+        },
+        {
+          "from": "triage",
+          "to": "refuse",
+          "when": "out_of_scope"
+        },
+        [
+          "search",
+          "answer"
+        ],
+        [
+          "answer",
+          "verify"
+        ],
+        [
+          "verify",
+          "__end__"
+        ],
+        [
+          "refuse",
+          "__end__"
+        ]
+      ]
+    }
+  },
+  "provenance": null
+}

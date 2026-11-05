@@ -5,11 +5,11 @@
 ## 环境
 
 - Python 用 conda 环境 **`langchain`**；裸 `python` 是 3.8，跑不了测试。
-- 测试：`python -m pytest -q`（当前 383 passed）。
+- 测试：`python -m pytest -q`（当前 388 passed）。
 
 ## 场景归属（硬约束）
 
-场景的**结构**在 `data/specs/<name>/`（9 个场景已全部由 spec 接管），归属写在
+场景的**结构**在 `data/specs/<name>/`（11 个场景已全部由 spec 接管），归属写在
 `data/specs/<name>/state.json`：
 
 | owner | 含义 | 允许的操作 |

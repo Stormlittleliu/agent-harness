@@ -92,8 +92,8 @@ def _scenario_card(info: library.ScenarioEntry, published: bool) -> None:
         tags = [
             (info.badge, "ah-tag-blue"),
             ("已发布" if published else "草稿", "ah-tag-ok" if published else "ah-tag-draft"),
-            (f"{info.cases} 用例", ""),
         ]
+        tags.append((f"{info.cases} 用例", "") if info.cases else ("未配置用例", ""))
         st.markdown(
             '<div class="ah-card-badges">'
             + "".join(f'<span class="ah-tag {cls}">{escape(text)}</span>' for text, cls in tags)
@@ -217,11 +217,16 @@ def _detail_header(name: str, info: library.ScenarioEntry, item: entries.ChatEnt
             f'<span class="ah-tag {"ah-tag-ok" if text == "已发布" else ""}">{escape(text)}</span>'
             for text in badges
         )
+        cases_tag = (
+            f'<span class="ah-tag">{info.cases} 用例</span>'
+            if info.cases
+            else '<span class="ah-tag">未配置用例</span>'
+        )
         st.markdown(
             '<div class="ah-card-badges">'
             + tag_html
             + f'<span class="ah-tag">{escape(name)}</span>'
-            + f'<span class="ah-tag">{info.cases} 用例</span>'
+            + cases_tag
             + "</div>",
             unsafe_allow_html=True,
         )

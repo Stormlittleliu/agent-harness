@@ -13,6 +13,7 @@ from datetime import datetime
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from core.tools.rag.classification import classify
 from core.tools.rag.embedding import embed_model
 from core.utils.config_handler import chroma_conf, rag_conf
 from core.utils.file_handler import (
@@ -67,11 +68,12 @@ class VectorStoreService:
         return self._get_splitter(file_type).split_text(data)
 
     # ===================== 检索器 =====================
-    def get_retriever(self, k: int = None):
-        """纯向量检索器（语义检索）。"""
-        return self.vector_store.as_retriever(
-            search_kwargs={"k": int(k or rag_conf["retrieval_k"])}
-        )
+    def get_retriever(self, k: int = None, where: dict | None = None):
+        """纯向量检索器；``where`` 是 Chroma metadata 过滤（如 {"domain":"clothing"}）。"""
+        search_kwargs: dict = {"k": int(k or rag_conf["retrieval_k"])}
+        if where:
+            search_kwargs["filter"] = dict(where)
+        return self.vector_store.as_retriever(search_kwargs=search_kwargs)
 
     # ===================== md5 去重记录 =====================
     @property
@@ -175,6 +177,7 @@ class VectorStoreService:
                     "file_type": file_type,
                     "create_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "operator": "客户",
+                    **classify(filename, text).__dict__,
                 }
 
                 # 同一来源内容变化：先取旧分块 id，新内容写入成功后再删除（更新替换）
@@ -200,9 +203,31 @@ class VectorStoreService:
                 logger.error(f"[加载知识库]{filename} 加载失败：{str(e)}", exc_info=True)
 
 
+    def rebuild(self) -> None:
+        """清空当前 collection 与 md5 记录，按 data/knowledge 重新入库。
+
+        只用于本地知识库结构升级（例如新增 domain/category 元数据）。
+        不是增量加载：会重新计算 embedding。
+        """
+        data = self.vector_store.get()
+        ids = data.get("ids") or []
+        if ids:
+            self.vector_store.delete(ids=ids)
+            logger.info(f"[重建知识库]已删除旧分块 {len(ids)} 个")
+        md5_path = self.md5_store_path
+        if os.path.exists(md5_path):
+            os.remove(md5_path)
+        self.load_document()
+
+
 if __name__ == '__main__':
+    import sys
+
     vs = VectorStoreService()
-    vs.load_document()
+    if "--rebuild" in sys.argv:
+        vs.rebuild()
+    else:
+        vs.load_document()
 
     retriever = vs.get_retriever()
     res = retriever.invoke("迷路")

@@ -1,0 +1,8 @@
+enabled: true
+title: 服装顾问
+tagline: 尺码 / 颜色 / 洗护 / 新品，只查服装知识库
+starters:
+- 身高 175、体重 140 斤，建议穿什么码？
+- 黄皮适合什么颜色的外套？
+order: 25
+published_hash: 32770eb35f6510f6

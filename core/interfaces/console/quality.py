@@ -18,6 +18,7 @@ from core.interfaces.dashboard.common import load_agent
 from core.interfaces.dashboard.cost import render_cost
 from core.interfaces.dashboard.evaluation import render_evaluation
 from core.interfaces.dashboard.history import render_history
+from core.interfaces.dashboard.knowledge import render_knowledge
 from core.interfaces.dashboard.layout import page_header, sync_widget
 from core.interfaces.dashboard.optimization import render_optimization
 from core.interfaces.dashboard.patterns import render_patterns
@@ -28,7 +29,7 @@ from core.scenarios import library
 # 9 个视图不再横排成一排 radio；按"跑一次 / 看资产 / 查记录"分组。
 VIEW_GROUPS = {
     "跑一次": ("评测", "复核", "优化", "自检"),
-    "看资产": ("数据集", "基准", "成本", "范式"),
+    "看资产": ("数据集", "知识库", "基准", "成本", "范式"),
     "查记录": ("记录",),
 }
 GROUP_KEY = "quality:group"
@@ -45,6 +46,15 @@ def render(route: routes.Route) -> None:
     if not names:
         st.info("场景库是空的。")
         return
+
+    # 深链：?app=quality&tab=知识库 直接落到对应视图；不认识的 tab 忽略。
+    requested_view = route.tab
+    if requested_view:
+        for candidate_group, candidate_views in VIEW_GROUPS.items():
+            if requested_view in candidate_views:
+                st.session_state[GROUP_KEY] = candidate_group
+                st.session_state[VIEW_KEY] = requested_view
+                break
 
     with st.container(border=True, key="quality-context"):
         top = st.columns([2.15, 4.15], gap="large", vertical_alignment="bottom")
@@ -92,6 +102,8 @@ def render(route: routes.Route) -> None:
         render_tests(agent)
     elif view == "数据集":
         render_catalog()
+    elif view == "知识库":
+        render_knowledge()
     elif view == "基准":
         render_benchmarks()
     elif view == "成本":

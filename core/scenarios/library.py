@@ -157,6 +157,29 @@ _STATIC: dict[str, dict] = {
         "has_workflow": True,
         "pool": "office",
     },
+    "clothing_service": {
+        "label": "服装顾问",
+        "icon": "👕",
+        "description": "尺码 / 颜色 / 洗护 / 新品；只召回服装知识库",
+        "examples": (
+            "身高 175、体重 140 斤，建议穿什么码？",
+            "黄皮适合什么颜色的外套？",
+            "新品的防风外套怎么洗？",
+        ),
+        "has_workflow": True,
+        "pool": "retail_expert",
+    },
+    "retail_router": {
+        "label": "零售分流",
+        "icon": "🧭",
+        "description": "按问题关键词分流到扫地机器人或服装知识库",
+        "examples": (
+            "扫地机器人回充失败怎么办？",
+            "身高 175、体重 140 斤穿什么码？",
+        ),
+        "has_workflow": True,
+        "pool": "retail_expert",
+    },
 }
 
 

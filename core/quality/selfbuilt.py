@@ -123,7 +123,7 @@ def _rag_retrieve_tool():
     """检索类任务直接用 RAG 工具集的 rag_retrieve，不依赖场景有没有注册它。"""
     from core.tools.rag.tools import build_rag_tools
 
-    return build_rag_tools()[1]
+    return build_rag_tools(where={"domain": "robot"})[1]
 
 
 def evaluate_task(agent: FrameworkAgent, task: dict, trial: int = 0, retrieval_tool=None) -> dict:

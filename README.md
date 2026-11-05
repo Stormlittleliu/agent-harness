@@ -30,7 +30,7 @@
 本项目是基础项目 **KnowledgeBase-RAG-LLM-System** 的 Agent 演进版，定位是一个**带评测的 Agent Harness**：
 
 - **基础项目**负责 RAG 底座：四格式文档解析、按类型切片、MD5 去重、Chroma 持久化、纯向量 / 混合检索对比；
-- **本项目**负责把裸模型包装成可运行、可约束、可评测的 Agent：ReAct 循环、8 个场景 / 40+ 工具注册与调度、参数校验与错误重注入、确定性 planning policy、上下文压缩、PII 脱敏、HITL 审批、多轮记忆、步数与工具调用上限；
+- **本项目**负责把裸模型包装成可运行、可约束、可评测的 Agent：ReAct 循环、11 个场景 / 47 个工具注册与调度、参数校验与错误重注入、确定性 planning policy、上下文压缩、PII 脱敏、HITL 审批、多轮记忆、步数与工具调用上限；
 - **多场景验证**：办公 / 学习 / 内容 / 跨语言（workspace_assistant）、研究调研（research_assistant）、编码运行时（coding_demo）、模拟智能硬件客服（robot_vacuum）；框架与业务通过 `Scenario` 注册机制解耦，换业务只需新增场景，不需要改运行时。
 
 系统能根据用户意图自动路由到目标场景，再由场景 Agent 调用工具和知识库完成推理；同时内置行为评测、outcome 断言、BFCL / τ²-bench / RAG 抽样与失败集，能定位 Agent 在哪一层坏掉。
@@ -181,7 +181,7 @@ python test_entry.py benchmark public
 > BFCL 为 v4 抽样；τ²-bench 的 NL assertion judge 使用 DeepSeek 替代默认 OpenAI judge，
 > 不是官方评分口径。失败案例统一归档在 `data/evals/failures/`。
 > Agent 回归为单次运行，生成有波动；`agent-rag-006` 是已知的覆盖判定争议案例。
-> RAG 42 条业务集是服装域历史结果，与当前扫地机器人知识库不匹配，不应作为当前结果引用。
+> RAG 42 条业务集是服装域；服装文档已按 `domain=clothing` 重新入库，但上表是旧库结果，重新跑之前不应作为当前结果引用。
 
 ## Harness 能力补全（参考 learn-claude-code）
 

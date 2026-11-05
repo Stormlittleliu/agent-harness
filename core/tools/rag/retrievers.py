@@ -72,9 +72,12 @@ def _content_chunk_id(content: str) -> str:
 
 
 # ===================== BM25 关键词检索器 =====================
-def _load_chroma_corpus() -> list[Document]:
-    """从 Chroma 拉取全部已入库分块，作为 BM25 的检索语料。"""
-    data = VectorStoreService().vector_store.get(include=["documents", "metadatas"])
+def _load_chroma_corpus(where: dict | None = None) -> list[Document]:
+    """从 Chroma 拉取已入库分块；``where`` 与向量检索使用同一套 metadata 过滤。"""
+    kwargs = {"include": ["documents", "metadatas"]}
+    if where:
+        kwargs["where"] = dict(where)
+    data = VectorStoreService().vector_store.get(**kwargs)
     documents = []
     for chunk_id, content, metadata in zip(
         data.get("ids", []),
@@ -240,16 +243,16 @@ class TopKEnsembleRetriever(EnsembleRetriever):
 
 
 # ===================== 工厂函数 =====================
-def get_vector_retriever() -> BaseRetriever:
+def get_vector_retriever(where: dict | None = None) -> BaseRetriever:
     """纯向量检索器（Chroma 语义检索）。"""
-    return VectorStoreService().get_retriever()
+    return VectorStoreService().get_retriever(where=where)
 
 
-def get_hybrid_retriever() -> BaseRetriever:
+def get_hybrid_retriever(where: dict | None = None) -> BaseRetriever:
     """混合检索器：向量检索 + BM25 关键词兜底，按配置权重做 RRF 融合。"""
-    vector_retriever = ChunkIdRetriever(inner=get_vector_retriever())
+    vector_retriever = ChunkIdRetriever(inner=get_vector_retriever(where=where))
     keyword_retriever = KeywordBM25Retriever(
-        corpus_loader=_load_chroma_corpus,
+        corpus_loader=lambda: _load_chroma_corpus(where),
         k=int(rag_conf["retrieval_k"]),
         tokenize=get_tokenizer(),
     )
@@ -265,13 +268,13 @@ def get_hybrid_retriever() -> BaseRetriever:
     )
 
 
-def get_retriever(mode: str = None) -> BaseRetriever:
+def get_retriever(mode: str = None, where: dict | None = None) -> BaseRetriever:
     """按模式返回检索器；mode 缺省时使用 config/rag.yml 中的默认检索模式。"""
     mode = str(mode or rag_conf["retrieval_mode"] or "vector").lower()
     if mode == "vector":
-        return get_vector_retriever()
+        return get_vector_retriever(where=where)
     if mode == "hybrid":
-        return get_hybrid_retriever()
+        return get_hybrid_retriever(where=where)
     raise ValueError(f"未知的检索模式：{mode}（可选：vector / hybrid）")
 
 

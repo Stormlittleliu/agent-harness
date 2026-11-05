@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "name": "retail_router",
+  "description": "零售分流：扫地机器人问题走机器人库，服装问题走服装库",
+  "kind": "agent",
+  "tools": [
+    "robot_retrieve",
+    "clothing_retrieve"
+  ],
+  "system_prompt": "你是零售客服分流助手。先根据问题判断属于扫地机器人还是服装；只使用对应知识库检索，回答必须用 [来源id] 标注引用。",
+  "prompt": null,
+  "cases_path": null,
+  "response_format": null,
+  "harness": {
+    "enable_todo": false,
+    "enable_summarization": true,
+    "tool_call_limit": 8,
+    "token_budget": 20000
+  },
+  "policies": null,
+  "workflows": {
+    "triage": {
+      "nodes": [
+        {
+          "id": "classify",
+          "fn": "branch",
+          "args": {
+            "mode": "keywords",
+            "field": "input",
+            "keywords": [
+              "扫地",
+              "机器人",
+              "回充",
+              "滤网",
+              "拖布",
+              "吸力",
+              "充电",
+              "故障",
+              "维护",
+              "建图"
+            ],
+            "hit": "robot",
+            "miss": "clothing"
+          }
+        },
+        {
+          "id": "robot_search",
+          "fn": "retrieve",
+          "args": {
+            "tool": "robot_retrieve",
+            "limit": 4
+          }
+        },
+        {
+          "id": "clothing_search",
+          "fn": "retrieve",
+          "args": {
+            "tool": "clothing_retrieve",
+            "limit": 4
+          }
+        },
+        {
+          "id": "answer",
+          "fn": "llm_answer",
+          "args": {}
+        },
+        {
+          "id": "verify",
+          "fn": "require_citation",
+          "args": {}
+        }
+      ],
+      "edges": [
+        [
+          "__start__",
+          "classify"
+        ],
+        {
+          "from": "classify",
+          "to": "robot_search",
+          "when": "robot"
+        },
+        {
+          "from": "classify",
+          "to": "clothing_search",
+          "when": "clothing"
+        },
+        [
+          "robot_search",
+          "answer"
+        ],
+        [
+          "clothing_search",
+          "answer"
+        ],
+        [
+          "answer",
+          "verify"
+        ],
+        [
+          "verify",
+          "__end__"
+        ]
+      ]
+    }
+  },
+  "provenance": null
+}
