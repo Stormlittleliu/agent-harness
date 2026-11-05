@@ -50,7 +50,7 @@ def _library() -> None:
     items = library.entries()
     published = set(entries.published_names())
     page_header(
-        "构建 / 场景库",
+        "场景库",
         "所有场景都在这里：打开一个就能改结构、看工具与策略、发布成对话入口。",
         meta=f"{len(items)} 个场景 · {len(published)} 个已发布",
     )
@@ -58,25 +58,54 @@ def _library() -> None:
         empty_state("场景库是空的。")
         return
 
-    header = st.columns([3.2, 5.8, 1.2], vertical_alignment="bottom")
-    header[0].caption("场景")
-    header[1].caption("说明 / 状态")
-    for info in items:
-        item = entries.load_entry(info.name)
-        row = st.columns([3.2, 5.8, 1.2], vertical_alignment="center")
-        row[0].markdown(f"**{info.icon} {info.label}**  \n`{info.name}`")
-        row[1].caption(info.description or "（没有描述）")
-        badges = [
-            info.badge,
-            "已发布" if item.name in published else "未发布",
-            f"用例 {info.cases}",
-        ]
-        row[1].caption(" · ".join(badges))
-        if row[2].button("打开 →", key=f"build-open-{info.name}", use_container_width=True):
-            routes.navigate("build", info.name)
-        st.divider()
+    published_items = [item for item in items if item.name in published]
+    draft_items = [item for item in items if item.name not in published]
+    for label, group in (("已发布", published_items), ("草稿", draft_items)):
+        if not group:
+            continue
+        section(label, f"{len(group)} 个")
+        columns = 4 if label == "已发布" and len(group) >= 4 else 3
+        for start in range(0, len(group), columns):
+            cols = st.columns(columns, gap="medium")
+            for col, info in zip(cols, group[start:start + columns]):
+                with col:
+                    _scenario_card(info, info.name in published)
 
     _create_form()
+
+
+def _scenario_card(info: library.ScenarioEntry, published: bool) -> None:
+    """一张场景卡：身份 / 说明 / 状态 / 用例 / 打开；不再用整行 divider。"""
+    from html import escape
+
+    with st.container(border=True, key=f"build-card-{info.name}"):
+        st.markdown(
+            f'<div class="ah-card-head"><span class="ah-card-icon">{info.icon}</span>'
+            f'<div><div class="ah-card-title">{escape(info.label)}</div>'
+            f'<div class="ah-card-id">{escape(info.name)}</div></div></div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div class="ah-card-desc">{escape(info.description or "（没有描述）")}</div>',
+            unsafe_allow_html=True,
+        )
+        tags = [
+            (info.badge, "ah-tag-blue"),
+            ("已发布" if published else "草稿", "ah-tag-ok" if published else "ah-tag-draft"),
+            (f"{info.cases} 用例", ""),
+        ]
+        st.markdown(
+            '<div class="ah-card-badges">'
+            + "".join(f'<span class="ah-tag {cls}">{escape(text)}</span>' for text, cls in tags)
+            + "</div>",
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            "打开 →",
+            key=f"build-open-{info.name}",
+            use_container_width=True,
+        ):
+            routes.navigate("build", info.name)
 
 
 def _create_form() -> None:
@@ -168,26 +197,46 @@ def _detail(name: str, route: routes.Route) -> None:
 
 
 def _detail_header(name: str, info: library.ScenarioEntry, item: entries.ChatEntry) -> None:
+    from html import escape
+
+    st.markdown(
+        f'<div class="ah-breadcrumb">构建 / 场景库 / <b>{escape(info.label)}</b></div>',
+        unsafe_allow_html=True,
+    )
     left, right = st.columns([3.4, 2.6], vertical_alignment="center")
     with left:
-        st.markdown(f"### {info.icon} {info.label}")
+        st.markdown(
+            f'<div class="ah-detail-title">{info.icon} {escape(info.label)}</div>',
+            unsafe_allow_html=True,
+        )
         st.caption(info.description or "（没有描述）")
-        badges = [info.badge, "已发布" if item.enabled else "未发布"]
+        badges = [info.badge, "已发布" if item.enabled else "草稿"]
         if item.enabled and entries.drifted(name):
             badges.append("有未发布改动")
-        st.caption(f"`{name}` · " + " · ".join(badges) + f" · 用例 {info.cases}")
+        tag_html = "".join(
+            f'<span class="ah-tag {"ah-tag-ok" if text == "已发布" else ""}">{escape(text)}</span>'
+            for text in badges
+        )
+        st.markdown(
+            '<div class="ah-card-badges">'
+            + tag_html
+            + f'<span class="ah-tag">{escape(name)}</span>'
+            + f'<span class="ah-tag">{info.cases} 用例</span>'
+            + "</div>",
+            unsafe_allow_html=True,
+        )
     with right:
-        buttons = st.columns(3)
-        if buttons[0].button("返回场景库", key=f"build-back:{name}", use_container_width=True):
+        buttons = st.columns(3, gap="small")
+        if buttons[0].button("返回场景库", key=f"build-back:{name}", use_container_width=False):
             routes.navigate("build")
         if buttons[1].button(
             "对话入口" if item.enabled else "未发布",
             key=f"build-chat:{name}",
             disabled=not item.enabled,
-            use_container_width=True,
+            use_container_width=False,
         ):
             routes.navigate("chat", name)
-        if buttons[2].button("复制链接", key=f"build-link:{name}", use_container_width=True):
+        if buttons[2].button("复制链接", key=f"build-link:{name}", use_container_width=False):
             st.session_state[f"build:show-link:{name}"] = True
     if st.session_state.get(f"build:show-link:{name}"):
         st.code(routes.link("chat", name), language=None)

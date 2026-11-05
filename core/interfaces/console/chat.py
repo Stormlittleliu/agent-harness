@@ -43,9 +43,10 @@ def render(route: routes.Route) -> None:
     _header(item, info)
     # 入口列表放在内容左列（不再用 sidebar）：三个产品统一无 sidebar，
     # 切换产品时整条顶部导航不会横移。
-    rail, panel = st.columns([1.05, 3.95], gap="large")
+    rail, panel = st.columns([0.95, 4.05], gap="large")
     with rail:
-        _entry_rail(published, current)
+        with st.container(border=True, key="chat-rail-card"):
+            _entry_rail(published, current)
     with panel:
         _conversation(current)
 
@@ -56,7 +57,11 @@ def render(route: routes.Route) -> None:
 def _entry_rail(published: list[entries.ChatEntry], current: str) -> None:
     """左栏：已发布入口列表；当前入口高亮，点其它入口切过去。"""
     with st.container(key="chat-rail"):
-        st.caption("对话入口")
+        st.markdown(
+            f'<div class="ah-section"><div class="ah-section-title">对话入口</div>'
+            f'<div class="ah-section-caption">{len(published)} 个已发布</div></div>',
+            unsafe_allow_html=True,
+        )
         for item in published:
             info = library.entry(item.name)
             icon = info.icon if info else "💬"
@@ -141,19 +146,33 @@ def _conversation(name: str) -> None:
     if _render_interrupt(name):
         return
 
-    if not _messages(name) and item.starters:
-        with st.container(key="chat-starters"):
-            st.pills(
-                "可以这样开始",
-                item.starters[:3],
-                key=f"chat-starter:{name}",
-                format_func=lambda value: value.split("\n")[0][:40],
-                on_change=_pick_starter,
-                args=(name,),
-                selection_mode="single",
+    if not _messages(name):
+        with st.container(border=True, key="chat-welcome"):
+            st.markdown(
+                '<div class="ah-chat-welcome"><h3>从这里开始</h3>'
+                '<p>直接问，或点一个开场白。回答下面可以展开「这次怎么答的」，'
+                "看模型、工具和审批分别走了哪一步。</p></div>",
+                unsafe_allow_html=True,
             )
-    elif not _messages(name):
-        st.caption("直接输入问题开始；回答下面可以展开「这次怎么答的」。")
+            if item.starters:
+                with st.container(key="chat-starters"):
+                    st.pills(
+                        "可以这样开始",
+                        item.starters[:3],
+                        key=f"chat-starter:{name}",
+                        format_func=lambda value: value.split("\n")[0][:40],
+                        on_change=_pick_starter,
+                        args=(name,),
+                        selection_mode="single",
+                    )
+            st.markdown(
+                '<div class="ah-chat-capabilities">'
+                '<div class="ah-chat-cap"><b>工具调用</b><span>按场景注册；高风险动作先审批</span></div>'
+                '<div class="ah-chat-cap"><b>知识库</b><span>检索结果带来源，回答可展开调用链</span></div>'
+                '<div class="ah-chat-cap"><b>可观测</b><span>每次运行都有 trace，不做黑盒</span></div>'
+                "</div>",
+                unsafe_allow_html=True,
+            )
 
     prompt = st.session_state.pop(f"chat:pending:{name}", None) or st.chat_input(
         "输入消息（Enter 发送）"
@@ -164,9 +183,16 @@ def _conversation(name: str) -> None:
 
 
 def _header(item: entries.ChatEntry, info: library.ScenarioEntry) -> None:
+    st.markdown(
+        '<div class="ah-breadcrumb">对话 / 已发布入口</div>',
+        unsafe_allow_html=True,
+    )
     left, right = st.columns([3.6, 2.4], vertical_alignment="center")
     with left:
-        st.markdown(f"#### {info.icon} {item.display_title}")
+        st.markdown(
+            f'<div class="ah-detail-title">{info.icon} {item.display_title}</div>',
+            unsafe_allow_html=True,
+        )
         st.caption(item.tagline or info.description)
     buttons = right.columns(2)
     if buttons[0].button("新会话", key=f"chat-new:{item.name}", use_container_width=True):

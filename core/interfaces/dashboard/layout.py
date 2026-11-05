@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from html import escape
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -21,7 +22,7 @@ from core.interfaces.dashboard.common import (
 TABLE_HEIGHT = 340
 COMPACT_TABLE_HEIGHT = 260
 LOG_HEIGHT = 420
-KPI_COLUMNS = 4
+KPI_COLUMNS = 5
 
 _CSS = """
 <style>
@@ -200,7 +201,271 @@ header[data-testid="stHeader"] [data-testid="stAppDeployButton"] {
     font-weight: 600;
 }
 [data-testid="stBaseButton-secondary"] { border-color: rgba(128,128,128,.26); }
-div[data-testid="stButton"] > button { border-radius: 8px; font-weight: 500; }
+div[data-testid="stButton"] > button {
+    border-radius: 8px;
+    font-weight: 500;
+    min-height: 2.15rem;
+    padding: .28rem .7rem;
+    font-size: .84rem;
+}
+.st-key-chat-rail-card [data-testid="stButton"] button {
+    justify-content: flex-start;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: .82rem !important;
+    min-height: 2rem;
+}
+</style>
+"""
+
+
+_CSS_EXTRA = """
+<style>
+:root {
+    --ah-bg: #F5F6F8;
+    --ah-surface: #FFFFFF;
+    --ah-border: #E4E7EC;
+    --ah-ink: #101828;
+    --ah-muted: #667085;
+    --ah-accent: #2F5BD3;
+    --ah-accent-soft: #EEF4FF;
+    --ah-radius: 14px;
+}
+.stApp { background: var(--ah-bg); color: var(--ah-ink); }
+[data-testid="stAppViewContainer"], [data-testid="stMain"], .main, section.main {
+    background: var(--ah-bg) !important;
+}
+.block-container {
+    padding-top: 4.35rem;
+    padding-bottom: 3rem;
+    max-width: 1440px;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+[data-testid="stVerticalBlock"] { gap: .55rem; }
+h1, h2, h3, h4 { letter-spacing: -.012em; }
+
+/* 页面标题：所有产品共用一套节奏，避免每个页面自己拼 H4 + caption */
+.ah-page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 2rem;
+    padding: .15rem 0 .9rem;
+    margin-bottom: .15rem;
+    border-bottom: 1px solid var(--ah-border);
+}
+.ah-page-head h1 {
+    font-size: 1.55rem !important;
+    line-height: 1.2 !important;
+    margin: .12rem 0 .28rem !important;
+    font-weight: 650 !important;
+}
+.ah-page-head p {
+    margin: 0;
+    color: var(--ah-muted);
+    font-size: .86rem;
+    line-height: 1.65;
+    max-width: 74ch;
+}
+.ah-page-meta {
+    color: var(--ah-muted);
+    font-size: .78rem;
+    white-space: nowrap;
+    padding-bottom: .12rem;
+}
+.ah-eyebrow {
+    font-size: .66rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--ah-accent);
+    font-weight: 700;
+}
+.ah-section {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1.05rem 0 .4rem;
+}
+.ah-section-title { font-weight: 650; font-size: .94rem; }
+.ah-section-caption { color: var(--ah-muted); font-size: .78rem; text-align: right; }
+
+/* 导航条：品牌 / 产品 / 环境，三段对齐；背景压低，不再是一条纯白通栏 */
+.st-key-ah-nav {
+    background: rgba(255, 255, 255, .92);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--ah-border);
+    box-shadow: 0 1px 0 rgba(16, 24, 40, .02);
+    padding: .48rem max(1rem, calc((100vw - 1440px) / 2)) .48rem;
+}
+.ah-brand { display: flex; align-items: center; gap: .58rem; line-height: 1.05; }
+.ah-brand-mark {
+    width: 27px; height: 27px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #2F5BD3, #5B8DEF);
+    color: #fff; font-size: .8rem; font-weight: 750;
+    box-shadow: 0 2px 5px rgba(47, 91, 211, .25);
+}
+.ah-brand b { font-size: .9rem; font-weight: 650; letter-spacing: -.01em; }
+.ah-brand small { display: block; color: var(--ah-muted); font-size: .64rem; margin-top: .16rem; letter-spacing: .02em; }
+.ah-nav-status { text-align: right; color: var(--ah-muted); font-size: .7rem; letter-spacing: .04em; }
+.ah-nav-status span {
+    display: inline-flex; align-items: center; gap: .3rem;
+    border: 1px solid var(--ah-border); border-radius: 999px;
+    padding: .16rem .5rem; background: var(--ah-surface);
+}
+.ah-nav-status i { width: 6px; height: 6px; border-radius: 50%; background: #12B76A; display: inline-block; }
+
+/* 容器卡片只作用于显式带 key 的卡片，避免给每个 vertical block 都套边框 */
+[data-testid="stMetric"] {
+    background: var(--ah-surface);
+    border: 1px solid var(--ah-border);
+    border-radius: 12px;
+    padding: .62rem .75rem .56rem;
+    min-height: 68px;
+}
+[data-testid="stMetricLabel"] { color: var(--ah-muted); font-size: .72rem !important; }
+[data-testid="stMetricValue"] { font-size: 1.28rem !important; font-weight: 650; letter-spacing: -.02em; }
+[data-testid="stDataFrame"] { background: var(--ah-surface); }
+
+/* 场景卡：构建库用，不再是一行一行的 divider */
+.ah-scenario-card { min-height: 100%; }
+.ah-card-head { display: flex; align-items: flex-start; gap: .55rem; }
+.ah-card-icon {
+    width: 30px; height: 30px; border-radius: 9px; flex: 0 0 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--ah-accent-soft); font-size: 1rem;
+}
+.ah-card-title { font-weight: 650; font-size: .92rem; line-height: 1.35; }
+.ah-card-id { color: var(--ah-muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .68rem; }
+.ah-card-desc { color: var(--ah-muted); font-size: .78rem; line-height: 1.55; min-height: 2.45rem; margin: .45rem 0 .5rem; }
+.ah-card-badges { display: flex; flex-wrap: wrap; gap: .28rem; margin-bottom: .55rem; }
+.ah-tag {
+    border: 1px solid var(--ah-border); border-radius: 999px;
+    padding: .08rem .42rem; font-size: .66rem; color: var(--ah-muted);
+    background: #FAFBFC; white-space: nowrap;
+}
+.ah-tag-ok { color: #067647; border-color: #ABEFC6; background: #ECFDF3; }
+.ah-tag-draft { color: #B54708; border-color: #FEDF89; background: #FFFAEB; }
+.ah-tag-blue { color: var(--ah-accent); border-color: #C7D7FE; background: var(--ah-accent-soft); }
+[class*="st-key-build-card-"] [data-testid="stVerticalBlockBorderWrapper"] {
+    height: 100%;
+    padding: .85rem .9rem .55rem;
+    background: var(--ah-surface);
+    border: 1px solid var(--ah-border) !important;
+    border-radius: var(--ah-radius) !important;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .025);
+}
+[class*="st-key-build-card-"] [data-testid="stButton"] button {
+    justify-content: flex-end;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--ah-accent) !important;
+    font-weight: 550;
+    padding: .18rem .2rem;
+}
+[class*="st-key-build-card-"] [data-testid="stButton"] button:hover {
+    background: var(--ah-accent-soft) !important;
+}
+[class*="st-key-build-back"] button,
+[class*="st-key-build-link"] button {
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--ah-muted) !important;
+    box-shadow: none !important;
+    padding-left: 0 !important;
+}
+[class*="st-key-build-back"] button:hover,
+[class*="st-key-build-link"] button:hover {
+    color: var(--ah-accent) !important;
+    background: transparent !important;
+}
+[class*="st-key-build-chat"] button {
+    border-radius: 999px !important;
+    padding-left: .85rem !important;
+    padding-right: .85rem !important;
+}
+[class*="st-key-editor-workflow-del"] button {
+    border: 0 !important;
+    background: transparent !important;
+    color: #B42318 !important;
+    justify-content: flex-start;
+    padding-left: 0 !important;
+    font-size: .78rem !important;
+    min-height: 1.8rem !important;
+}
+[class*="st-key-chat-new"] button,
+[class*="st-key-chat-edit"] button {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--ah-muted) !important;
+}
+[class*="st-key-chat-new"] button:hover,
+[class*="st-key-chat-edit"] button:hover {
+    color: var(--ah-accent) !important;
+    background: var(--ah-accent-soft) !important;
+}
+
+/* 构建详情 / 质量页上下文条 */
+.ah-context {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; padding: .1rem 0 .2rem;
+}
+.ah-breadcrumb { color: var(--ah-muted); font-size: .72rem; margin-bottom: .2rem; }
+.ah-breadcrumb b { color: var(--ah-ink); font-weight: 600; }
+.ah-detail-title {
+    font-size: 1.5rem !important;
+    line-height: 1.2 !important;
+    font-weight: 650 !important;
+    letter-spacing: -.02em;
+    margin: .05rem 0 .22rem !important;
+}
+
+/* 对话页：入口栏是一张卡，不再是裸按钮列表；空态有明确起点 */
+.st-key-chat-rail-card { padding: .65rem .6rem .55rem; }
+.st-key-chat-rail-card [data-testid="stVerticalBlockBorderWrapper"] {
+    padding: .55rem .45rem .35rem;
+    background: var(--ah-surface);
+    border: 1px solid var(--ah-border) !important;
+    border-radius: var(--ah-radius) !important;
+}
+.st-key-chat-welcome [data-testid="stVerticalBlockBorderWrapper"] {
+    padding: .65rem .75rem .55rem;
+    background: var(--ah-surface);
+    border: 1px solid var(--ah-border) !important;
+    border-radius: var(--ah-radius) !important;
+}
+.st-key-chat-rail-card [data-testid="stButton"] button { justify-content: flex-start; }
+.st-key-chat-welcome { padding: .85rem 1rem .75rem; }
+.st-key-chat-welcome [data-testid="stVerticalBlockBorderWrapper"] { padding: .65rem .75rem .55rem; }
+.ah-chat-welcome { padding: 1.4rem 1.5rem 1.2rem; }
+.ah-chat-welcome h3 { margin: 0 0 .2rem !important; font-size: 1.05rem !important; }
+.ah-chat-welcome p { margin: 0 0 .85rem; color: var(--ah-muted); font-size: .82rem; line-height: 1.6; }
+.ah-chat-capabilities { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; margin-top: .8rem; }
+.ah-chat-cap {
+    border: 1px solid var(--ah-border); border-radius: 10px;
+    padding: .55rem .6rem; background: #FAFBFC;
+}
+.ah-chat-cap b { display: block; font-size: .76rem; margin-bottom: .12rem; }
+.ah-chat-cap span { color: var(--ah-muted); font-size: .7rem; line-height: 1.45; }
+
+/* 质量页控制条：场景选择与两级视图放进同一张卡，避免控件散落 */
+.st-key-quality-context { padding: .7rem .8rem .55rem; }
+.st-key-quality-context [data-testid="stVerticalBlockBorderWrapper"] {
+    background: var(--ah-surface);
+    border: 1px solid var(--ah-border) !important;
+    border-radius: var(--ah-radius) !important;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .025);
+    padding: .7rem .8rem .5rem;
+}
+.st-key-quality-context [data-testid="stSelectbox"] { margin-bottom: 0; }
+.st-key-quality-context [data-testid="stButtonGroup"] { margin: 0; }
+.ah-quality-view { color: var(--ah-muted); font-size: .74rem; margin: .3rem 0 .1rem; }
 </style>
 """
 
@@ -214,7 +479,7 @@ class Kpi:
 
 def inject_css() -> None:
     """在 set_page_config 之后注入一次；只用主题中立颜色。"""
-    st.markdown(_CSS, unsafe_allow_html=True)
+    st.markdown(_CSS + _CSS_EXTRA, unsafe_allow_html=True)
 
 
 def sync_widget(key: str, value: Any) -> None:
@@ -233,21 +498,23 @@ def page_header(
     description: str | None = None,
     meta: str | None = None,
 ) -> None:
-    """页面标题 + 一行说明 + 右侧数据时间，替代重复的 title/subheader/caption。"""
-    left, right = st.columns([3.4, 1], gap="small", vertical_alignment="top")
-    with left:
-        st.markdown(f"#### {title}")
-        if description:
-            st.caption(description)
-    with right:
-        if meta:
-            st.caption(meta)
+    """页面标题 + 一行说明 + 右侧数据时间；统一走一套 HTML 节奏。"""
+    description_html = f"<p>{escape(description)}</p>" if description else ""
+    meta_html = f'<div class="ah-page-meta">{escape(meta)}</div>' if meta else ""
+    st.markdown(
+        f'<div class="ah-page-head"><div><h1>{escape(title)}</h1>'
+        f"{description_html}</div>{meta_html}</div>",
+        unsafe_allow_html=True,
+    )
 
 
 def section(title: str, caption: str | None = None) -> None:
-    st.markdown(f"**{title}**")
-    if caption:
-        st.caption(caption)
+    caption_html = f'<div class="ah-section-caption">{escape(caption)}</div>' if caption else ""
+    st.markdown(
+        f'<div class="ah-section"><div class="ah-section-title">{escape(title)}</div>'
+        f"{caption_html}</div>",
+        unsafe_allow_html=True,
+    )
 
 
 def kpi_row(items: Sequence[Kpi], columns: int = KPI_COLUMNS) -> None:
@@ -258,7 +525,7 @@ def kpi_row(items: Sequence[Kpi], columns: int = KPI_COLUMNS) -> None:
     columns = max(1, int(columns))
     for start in range(0, len(items), columns):
         chunk = items[start:start + columns]
-        cols = st.columns(columns, gap="small", vertical_alignment="top")
+        cols = st.columns(len(chunk), gap="small", vertical_alignment="top")
         for col, item in zip(cols, chunk):
             col.metric(item.label, item.value, help=item.help or None)
 

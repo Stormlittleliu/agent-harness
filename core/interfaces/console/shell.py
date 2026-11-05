@@ -52,8 +52,12 @@ def _product_bar(route: routes.Route) -> None:
     吸顶容器解决"滚下去就点不到"，route→widget 的单向同步解决"深链被旧值盖住"。
     """
     with st.container(key="ah-nav"):
-        brand, tabs, _status_space = st.columns([2.0, 3.4, 2.0], vertical_alignment="center")
-        brand.markdown("**🛠 Agent Harness**")
+        brand, tabs, status = st.columns([2.0, 3.4, 2.0], vertical_alignment="center")
+        brand.markdown(
+            '<div class="ah-brand"><span class="ah-brand-mark">A</span>'
+            "<span><b>Agent Harness</b><small>Runtime &amp; Eval</small></span></div>",
+            unsafe_allow_html=True,
+        )
         sync_widget(PRODUCT_KEY, route.product)
         with tabs:
             st.segmented_control(
@@ -64,6 +68,10 @@ def _product_bar(route: routes.Route) -> None:
                 on_change=_on_product_change,
                 label_visibility="collapsed",
             )
+        status.markdown(
+            '<div class="ah-nav-status"><span><i></i>本地控制台</span></div>',
+            unsafe_allow_html=True,
+        )
     if route.unknown_product:
         st.caption(f"未知的产品：`{route.unknown_product}`，已回到对话。")
 

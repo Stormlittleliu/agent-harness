@@ -18,7 +18,7 @@ from core.interfaces.dashboard.common import load_agent
 from core.interfaces.dashboard.cost import render_cost
 from core.interfaces.dashboard.evaluation import render_evaluation
 from core.interfaces.dashboard.history import render_history
-from core.interfaces.dashboard.layout import sync_widget
+from core.interfaces.dashboard.layout import page_header, sync_widget
 from core.interfaces.dashboard.optimization import render_optimization
 from core.interfaces.dashboard.patterns import render_patterns
 from core.interfaces.dashboard.review import render_review
@@ -37,42 +37,48 @@ VIEW_KEY = "quality:view"
 
 def render(route: routes.Route) -> None:
     names = library.names()
-    # 不在这里再放一个「质量」H4：视图自己已经有标题，两个标题摞在一起就是重复。
-    st.caption(
-        "这一页的对象是「一次运行」，场景只是维度；场景选择只影响质量页。"
-        + (f" · {len(names)} 个场景可选" if names else "")
+    page_header(
+        "质量",
+        "以一次运行作为工作对象：先跑评测，再看资产，最后查记录；场景只是维度。",
+        meta=f"{len(names)} 个场景可选" if names else None,
     )
     if not names:
         st.info("场景库是空的。")
         return
 
-    scenario = st.selectbox(
-        "场景",
-        names,
-        index=names.index(library.default_name()),
-        format_func=library.label,
-        key="quality:scenario",
-        help="只影响质量页的评测对象；不会改变对话或构建里正在用的场景。",
-    )
-    group = st.segmented_control(
-        "分组",
-        list(VIEW_GROUPS),
-        key=GROUP_KEY,
-        label_visibility="collapsed",
-    )
-    if group not in VIEW_GROUPS:
-        group = next(iter(VIEW_GROUPS))
-    views = VIEW_GROUPS[group]
-    if st.session_state.get(VIEW_KEY) not in views:
-        sync_widget(VIEW_KEY, views[0])
-    view = st.segmented_control(
-        "视图",
-        list(views),
-        key=VIEW_KEY,
-        label_visibility="collapsed",
-    )
-    if view not in views:
-        view = views[0]
+    with st.container(border=True, key="quality-context"):
+        top = st.columns([2.15, 4.15], gap="large", vertical_alignment="bottom")
+        with top[0]:
+            scenario = st.selectbox(
+                "当前场景",
+                names,
+                index=names.index(library.default_name()),
+                format_func=library.label,
+                key="quality:scenario",
+                help="只影响质量页的评测对象；不会改变对话或构建里正在用的场景。",
+            )
+        with top[1]:
+            st.markdown('<div class="ah-quality-view">视图分组</div>', unsafe_allow_html=True)
+            group = st.segmented_control(
+                "分组",
+                list(VIEW_GROUPS),
+                key=GROUP_KEY,
+                label_visibility="collapsed",
+            )
+        if group not in VIEW_GROUPS:
+            group = next(iter(VIEW_GROUPS))
+        views = VIEW_GROUPS[group]
+        if st.session_state.get(VIEW_KEY) not in views:
+            sync_widget(VIEW_KEY, views[0])
+        st.markdown('<div class="ah-quality-view">当前视图</div>', unsafe_allow_html=True)
+        view = st.segmented_control(
+            "视图",
+            list(views),
+            key=VIEW_KEY,
+            label_visibility="collapsed",
+        )
+        if view not in views:
+            view = views[0]
 
     if view == "评测":
         render_evaluation(scenario)

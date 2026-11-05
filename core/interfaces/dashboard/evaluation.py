@@ -8,9 +8,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import streamlit as st
-
-from core.interfaces.dashboard.benchmarks import render_benchmarks
 from core.interfaces.dashboard.common import (
     file_mtime,
     latest_agent_report,
@@ -18,22 +15,17 @@ from core.interfaces.dashboard.common import (
     load_cases_cached,
     load_json,
 )
-from core.interfaces.dashboard.cost import render_cost
-from core.interfaces.dashboard.history import render_history
 from core.interfaces.dashboard.layout import (
     Kpi,
     compact_table,
     empty_state,
     kpi_row,
-    page_header,
     section,
     source_footer,
 )
 from core.quality.outcome_eval import load_outcome_cases
 from core.quality.paths import OUTPUTS_DIR
 from core.scenarios.registry import get_scenario
-
-MODES = ["场景评测", "成本 / 时延", "公开基准", "评测记录"]
 
 
 def _latest_json(pattern: str) -> tuple[dict | None, Path | None]:
@@ -188,17 +180,6 @@ def _render_scenario_eval(scenario_name: str) -> None:
 
 
 def render_evaluation(scenario_name: str) -> None:
-    page_header(
-        "评测",
-        f"当前场景：{scenario_name}；场景报告、成本/时延、公开基准和评测记录合在一个入口。",
-        meta="数据视图只读已有报告，不触发模型调用。",
-    )
-    mode = st.radio("评测视图", MODES, horizontal=True, key="evaluation-mode")
-    if mode == "场景评测":
-        _render_scenario_eval(scenario_name)
-    elif mode == "成本 / 时延":
-        render_cost(embedded=True, scenario_name=scenario_name)
-    elif mode == "公开基准":
-        render_benchmarks(embedded=True)
-    else:
-        render_history(embedded=True, scenario_name=scenario_name)
+    # 外层质量页已经有页头和「跑一次 / 看资产 / 查记录」两级视图；
+    # 这里只负责“当前场景的行为 + outcome”，不再放第二套 radio。
+    _render_scenario_eval(scenario_name)

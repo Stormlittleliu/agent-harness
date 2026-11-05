@@ -968,7 +968,11 @@ def _render_workbench(name: str, draft: dict, prefix: str, tools: list[str]) -> 
         )
         _render_block_library(name, draft, workflow, prefix)
         if workflow and len(workflow_names) > 1:
-            if st.button(f"删除工作流 {workflow}", key=f"{prefix}-workflow-del"):
+            if st.button(
+                "删除当前工作流",
+                key=f"{prefix}-workflow-del",
+                help=f"删除 {workflow} 及其边；不会自动重连",
+            ):
                 _remember(name, draft)
                 try:
                     spec_edit.remove_workflow(draft, workflow)
@@ -1098,13 +1102,13 @@ def render_editor(current: str | None = None, *, embedded: bool = False) -> None
         st.success(notice)
 
     tools = spec_tool_names()
-    if st.session_state.setdefault("editor-wide", True):
+    if st.session_state.setdefault("editor-wide", False):
         st.markdown(
             "<style>.block-container{max-width:calc(100vw - 2rem) !important;"
             "padding-left:1rem !important;padding-right:1rem !important;}</style>",
             unsafe_allow_html=True,
         )
-    structure_tab, basics_tab, advanced_tab = st.tabs(["结构", "基本信息", "策略与版本"])
+    structure_tab, basics_tab, advanced_tab = st.tabs(["画布", "配置", "策略与版本"])
     with structure_tab:
         _render_workbench(choice, draft, prefix, tools)
     with basics_tab:
