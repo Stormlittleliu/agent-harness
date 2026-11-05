@@ -125,7 +125,7 @@ python -m core.quality.runner outcome --all --trials 3
 python -m core.observability.trace_report --trace-id <trace_id>
 ```
 
-测试：**399 passed**。
+测试：**401 passed**。
 
 ## 7. 还没补的链路缺口
 

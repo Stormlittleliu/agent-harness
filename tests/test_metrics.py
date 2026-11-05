@@ -41,3 +41,13 @@ def test_refusal_case_accepts_scope_boundary():
     }
     answer = "我只处理服装相关的问题，写代码不在我的服务范围内。"
     assert score_case(case, answer, [])["passed"] is True
+
+
+def test_refusal_case_accepts_retrieval_uncertainty():
+    case = {
+        "question": "return policy",
+        "expected_points": [],
+        "should_refuse": True,
+    }
+    answer = "知识库中未检索到七天无理由退货的条款，无法确认这项政策。"
+    assert score_case(case, answer, [])["passed"] is True

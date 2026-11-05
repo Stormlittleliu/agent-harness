@@ -245,8 +245,8 @@ Subagent：父 Agent 通过 `subagent` 工具派生单层子 Agent，子 Agent �
   + Todo + 任务图 + subagent，共 7 条行为用例。
 - `workspace_assistant` 有 4 条 LangGraph 工作流，`research_assistant` 有 1 条
   `deep_research` 工作流，`router` 是对话式场景级路由，不合并目标场景工具。
-- **2026-11-05 新场景抽样**：`clothing_service` 6 条 6/6、`retail_router` 5 条 5/5；
-  这是 1-trial sanity，不是 pass^k，只说明用例链路能跑通。
+- **2026-11-05 新场景 3-trial**：`clothing_service` 6/6、`retail_router` 5/5（pass^k）。
+  这仍是小样本；retail 的拒答用例补了“未检索到 / 需要先确认”这类安全表达后 3/3。
 
 ### 4.4 Outcome 评测（12 条用例 / 13 个断言，2026-11-02）
 

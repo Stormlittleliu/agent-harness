@@ -7,6 +7,7 @@ from core.quality.fixtures import (
     _normalize_schema,
     build_bfcl_fixtures,
     build_permission_fixtures,
+    build_selfbuilt_fixtures,
     render_markdown,
     score_fixture,
     summarize,
@@ -131,3 +132,17 @@ def test_summarize_groups_by_variant_and_renders_failures():
     markdown = render_markdown(summary, "bfcl")
     assert "| missing | 0 | 1 |" in markdown
     assert "b" in markdown
+
+
+def test_selfbuilt_fixtures_cover_all_scenarios():
+    fixtures = build_selfbuilt_fixtures(scenario="all")
+    assert len(fixtures) == 16
+    scenarios = {fixture.metadata["scenario"] for fixture in fixtures}
+    assert scenarios == {
+        "robot_vacuum",
+        "research_assistant",
+        "coding_demo",
+        "router",
+        "workspace_assistant",
+    }
+    assert all(fixture.tools for fixture in fixtures)

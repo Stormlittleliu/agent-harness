@@ -130,5 +130,5 @@ python -m core.tools.rag.classification
 - 分类规则是静态的；新增领域要补 `SOURCE_RULES` / `CONTENT_RULES`；
 - 服装文档按语义分块后均匀取样（每篇最多 6 块），当前共 12 个分块；适合演示，不足以代表服装领域全量；
 - 检索过滤能保证“不串域”，但不能保证答案一定正确；
-- 两个 spec 场景已有抽样用例（clothing 6 条、retail 5 条），但只有 1-trial sanity，不是 pass^k；
-  要当质量结论还需补更多边界 case 和 3-trial。
+- 两个 spec 场景已有抽样用例（clothing 6 条、retail 5 条），3-trial pass^k 分别为 6/6、5/5；
+  样本仍小，不能当领域全量质量结论。

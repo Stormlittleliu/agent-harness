@@ -17,6 +17,10 @@
 10 条 retrieval 留在能力层；`research_assistant` / `coding_demo` / `router` / `workspace_assistant`
 的任务定义还缺前置工具，先不硬迁。产品场景保留做端到端回归，不再冒充任务级评测。
 
+**2026-11-05 二次进展**：`build_selfbuilt_fixtures(scenario="all")` 已支持按各自工具箱构建全部
+16 条单轮/多轮任务；抽样 research 2/2、coding 2/2、router 2/2、workspace 1/2。
+`sb-multi-005` 缺 `remember` 前置工具，未把它硬改成通过。
+
 ### 2. 质量页的 benchmark 目录是旧快照
 
 **证据**：`data/benchmarks/manifest.json` 生成于 `2026-10-31`，只有 8 个源、320 条；现在适配器已有 11 个（新增 CFBench / HumanEval / MBPP）。`core/interfaces/dashboard/catalog.py:224` 硬编码“8 个来源”，`ADAPTER_PATHS` 也没有这三个新适配器。
@@ -111,7 +115,7 @@ if judged is not None:
 
 **下一步**：测试数只在一个地方维护（例如 `README` 徽章/CI），其他文档引用链接，不写死。
 
-**2026-11-05 已修**：AGENTS / README / 一页纸 / friday-plan 的当前数字同步为 399 tests、11 场景；历史快照保留但标注过期。
+**2026-11-05 已修**：AGENTS / README / 一页纸 / friday-plan 的当前数字同步为 401 tests、11 场景；历史快照保留但标注过期。
 
 ### 12. 质量页的 benchmark 视图只认 BFCL / RGB / τ²
 
@@ -152,7 +156,7 @@ if judged is not None:
   失败集中在 `missing` 2/10（无工具时模型直接心算，不说明“工具不可用”）——这是要抓的幻觉；
 - permission：approve ✅、reject ✅（真实 HITL 中断 + resume）；
 - selfbuilt 迁移：`robot_vacuum` 8 条单轮/多轮 fixture **8/8**；
-- 测试：399 passed。
+- 测试：401 passed。
 
 ## 2026-11-05 晚二次修复
 
@@ -166,7 +170,7 @@ if judged is not None:
   `*_required` 当执行结果。
 - **P1-11 / P1-13 文档口径**：AGENTS 测试数、README 场景/用例数、ARCHITECTURE / PROJECT
   的 catalog 数同步为当前值。
-- **新场景**：`clothing_service` 6 条、`retail_router` 5 条行为用例；1-trial 抽样分别 6/6、5/5。
+- **新场景**：`clothing_service` 6 条、`retail_router` 5 条行为用例；3-trial pass^k 分别 **6/6**、**5/5**。
 - **branch**：支持 `cases` 多路 + `default`，旧 `hit/miss` 兼容；编译期校验
   “branch 可能写出的 route 必须有对应条件边”。同时修正了 robot_vacuum / workspace_assistant
   旧 spec 里 `branch` 写 `verify/answer`、边上却写 `miss` 的真实错位。

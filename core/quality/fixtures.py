@@ -498,14 +498,14 @@ def build_permission_fixtures() -> list[TaskFixture]:
 
 def build_selfbuilt_fixtures(
     *,
-    scenario: str = "robot_vacuum",
+    scenario: str | None = "robot_vacuum",
     kinds: tuple[str, ...] = ("single_turn", "multi_turn"),
     limit: int = 0,
 ) -> list[TaskFixture]:
     """把 selfbuilt 的单轮/多轮任务变成按任务配工具的 fixture。
 
-    工具仍用产品工具箱里的实现（它们已经能跑），但 prompt、中间件、业务 case
-    不再来自产品场景；这就是“任务归任务，产品归产品”。
+    ``scenario=None`` / ``"all"`` 时覆盖所有单轮/多轮任务；每个任务用自己
+    ``task["scenario"]`` 的同名工具箱，不再借用产品场景的 prompt / cases。
     """
     from core.scenarios import pools
 
@@ -515,27 +515,30 @@ def build_selfbuilt_fixtures(
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
-    tasks = [
-        task for task in tasks
-        if task.get("scenario") == scenario and task.get("kind") in kinds
-    ]
+    tasks = [task for task in tasks if task.get("kind") in kinds]
+    if scenario and scenario != "all":
+        tasks = [task for task in tasks if task.get("scenario") == scenario]
     if limit:
         tasks = tasks[:limit]
 
-    box = pools.toolbox(scenario)
-    available = {str(getattr(tool, "name", "")): tool for tool in box.tools}
-
+    boxes: dict[str, Any] = {}
     fixtures: list[TaskFixture] = []
     for task in tasks:
+        name = str(task.get("scenario") or "")
+        box = boxes.get(name)
+        if box is None:
+            box = pools.toolbox(name)
+            boxes[name] = box
+        available = {str(getattr(tool, "name", "")): tool for tool in box.tools}
         required = list(dict.fromkeys(task.get("expected_tools") or []))
         any_tools = list(dict.fromkeys(task.get("expected_tools_any") or []))
         tools = [
-            available[name]
-            for name in required + any_tools
-            if name in available
+            available[tool_name]
+            for tool_name in required + any_tools
+            if tool_name in available
         ]
         expected: dict[str, Any] = {
-            "calls": [{"name": name, "args": {}} for name in required],
+            "calls": [{"name": tool_name, "args": {}} for tool_name in required],
             "expected_points": task.get("expected_points") or [],
         }
         if any_tools:
@@ -552,10 +555,14 @@ def build_selfbuilt_fixtures(
             expected=expected,
             metadata={
                 "source_id": task["id"],
-                "scenario": scenario,
+                "scenario": name,
                 "kind": task["kind"],
                 "eval_scope": "scenario_tool",
-                "missing_tools": [name for name in required + any_tools if name not in available],
+                "missing_tools": [
+                    tool_name
+                    for tool_name in required + any_tools
+                    if tool_name not in available
+                ],
             },
         ))
     return fixtures
@@ -658,7 +665,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--distractors", type=int, default=3)
     parser.add_argument("--variants", default="", help="逗号分隔；空表示全部")
     parser.add_argument("--case", default="", help="按 id 子串过滤，便于复跑单条")
-    parser.add_argument("--scenario", default="robot_vacuum", help="selfbuilt 只跑该场景")
+    parser.add_argument("--scenario", default="robot_vacuum", help="selfbuilt 只跑该场景；all 表示全部")
     parser.add_argument("--dry-run", action="store_true", help="只打印夹具，不调模型")
     parser.add_argument("--out", default=str(OUT_DIR))
     args = parser.parse_args(argv)
