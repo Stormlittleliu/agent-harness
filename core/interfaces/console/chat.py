@@ -22,6 +22,8 @@ from core.quality.agent_eval import extract_final_answer
 from core.scenarios import entry as entries
 from core.scenarios import library
 
+CHAT_LAST_KEY = "chat:last"
+
 
 def render(route: routes.Route) -> None:
     published = entries.published_entries()
@@ -33,7 +35,12 @@ def render(route: routes.Route) -> None:
     if requested and requested not in names:
         _closed(requested)
         return
-    current = requested or names[0]
+    # 切到构建/质量再切回来时，route 会丢掉 scenario；用上次入口恢复，
+    # 而不是每次都回到第一个入口。每个入口的消息仍按 name 独立保存。
+    if not requested:
+        requested = st.session_state.get(CHAT_LAST_KEY)
+    current = requested if requested in names else names[0]
+    st.session_state[CHAT_LAST_KEY] = current
     item = entries.load_entry(current)
     info = library.entry(current)
     if info is None or not item.enabled:
@@ -174,8 +181,13 @@ def _conversation(name: str) -> None:
                 unsafe_allow_html=True,
             )
 
+    st.markdown(
+        '<div class="ah-composer-label"><span>继续对话</span>'
+        "<small>Enter 发送 · Shift+Enter 换行</small></div>",
+        unsafe_allow_html=True,
+    )
     prompt = st.session_state.pop(f"chat:pending:{name}", None) or st.chat_input(
-        "输入消息（Enter 发送）"
+        "继续对话…（Enter 发送）"
     )
     if not prompt:
         return

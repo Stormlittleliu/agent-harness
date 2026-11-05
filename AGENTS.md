@@ -5,7 +5,7 @@
 ## 环境
 
 - Python 用 conda 环境 **`langchain`**；裸 `python` 是 3.8，跑不了测试。
-- 测试：`python -m pytest -q`（当前 382 passed）。
+- 测试：`python -m pytest -q`（当前 383 passed）。
 
 ## 场景归属（硬约束）
 

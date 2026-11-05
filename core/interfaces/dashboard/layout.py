@@ -452,7 +452,37 @@ h1, h2, h3, h4 { letter-spacing: -.012em; }
     padding: .55rem .6rem; background: #FAFBFC;
 }
 .ah-chat-cap b { display: block; font-size: .76rem; margin-bottom: .12rem; }
-.ah-chat-cap span { color: var(--ah-muted); font-size: .7rem; line-height: 1.45; }
+.ah-chat-cap span { color: var(--ah-muted); font-size: .74rem; line-height: 1.45; }
+.ah-composer-label {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 1rem; margin: 1rem 0 .35rem;
+}
+.ah-composer-label span { font-size: .84rem; font-weight: 600; }
+.ah-composer-label small { font-size: .7rem; color: var(--ah-muted); }
+[data-testid="stChatInput"] {
+    background: var(--ah-surface) !important;
+    border: 1px solid #D0D5DD !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 8px rgba(16, 24, 40, .06);
+    padding: .18rem .22rem;
+}
+[data-testid="stChatInput"]:focus-within {
+    border-color: var(--ah-accent) !important;
+    box-shadow: 0 0 0 3px rgba(47, 91, 211, .14) !important;
+}
+[data-testid="stChatInputTextArea"] {
+    font-size: .95rem !important;
+    line-height: 1.5 !important;
+    padding: .55rem .65rem !important;
+}
+[data-testid="stChatInputSubmitButton"] {
+    color: var(--ah-accent) !important;
+    border-radius: 10px !important;
+}
+[data-testid="stChatInputSubmitButton"]:hover {
+    background: var(--ah-accent) !important;
+    color: #fff !important;
+}
 
 /* 质量页控制条：场景选择与两级视图放进同一张卡，避免控件散落 */
 .st-key-quality-context { padding: .7rem .8rem .55rem; }

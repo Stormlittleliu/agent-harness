@@ -129,6 +129,31 @@ def test_quality_views_render():
             _ok(app, f"{group}/{view}")
 
 
+def test_chat_remembers_last_entry_across_product_switch():
+    app = _app(
+        routes.Route("chat", "workspace_assistant"),
+        {
+            "chat:messages:workspace_assistant": [
+                {"role": "user", "content": "先记住这句话"},
+                {"role": "assistant", "content": "记住了"},
+            ]
+        },
+    )
+    _ok(app)
+    assert app.session_state["chat:last"] == "workspace_assistant"
+
+    _group(app, "console:product").set_value(["build"])
+    app.run()
+    _ok(app, "build")
+    _group(app, "console:product").set_value(["chat"])
+    app.run()
+    _ok(app, "chat-back")
+    assert app.session_state["console:route"].product == "chat"
+    assert app.session_state["chat:last"] == "workspace_assistant"
+    assert len(app.session_state["chat:messages:workspace_assistant"]) == 2
+    assert len(app.chat_input) == 1
+
+
 def test_switching_chat_entry_keeps_other_threads():
     app = _app(
         routes.Route("chat", "router"),
