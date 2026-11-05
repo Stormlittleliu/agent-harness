@@ -6,6 +6,7 @@
 
 1. **[A · 项目演进](A-project-evolution.md)**：先建立整体叙事——RAG → Agent → Harness → 评测 → spec/低代码，以及 5 层结构和与其它项目的区别。
 2. **[B · 优化案例](B-optimization-cases.md)**：再用三个有数据的案例证明“会定位、会改、会留边界”。
+   先看这里；要挑别的案例，去 [B · 候选池](B-candidates.md)。
 3. **[C · 现场编辑剧本](C-live-edit-script.md)**：最后用 8–10 分钟 demo 证明“结构是数据，不是代码”。
 
 ## 一句话版本
