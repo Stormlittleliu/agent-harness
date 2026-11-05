@@ -29,6 +29,18 @@ from core.utils.path_tool import get_abs_path
 EMBEDDING_BATCH_SIZE = 10
 
 
+def _sample_evenly(chunks: list[str], limit: int) -> list[str]:
+    """按位置均匀取样；首尾必留，保持源文档的结构覆盖。"""
+    if len(chunks) <= limit:
+        return chunks
+    picked = []
+    for index in range(limit):
+        position = round(index * (len(chunks) - 1) / max(1, limit - 1))
+        if position not in picked:
+            picked.append(position)
+    return [chunks[position] for position in picked]
+
+
 class VectorStoreService:
     def __init__(self):
         self.persist_directory = get_abs_path(chroma_conf["persist_directory"])
@@ -61,8 +73,25 @@ class VectorStoreService:
             )
         return self._splitters[file_type]
 
-    def split_text(self, data: str, file_type: str) -> list[str]:
-        """按文件类型切片；短文本整段入库，避免被切得过碎。"""
+    def split_text(self, data: str, file_type: str, domain: str | None = None) -> list[str]:
+        """按文件类型切片；短文本整段入库，避免被切得过碎。
+
+        服装域文档很小，但希望保留语义段落而不是整篇一个 chunk：
+        用更小的 separator 切片，再按位置均匀取样（首/尾必留），
+        这样既覆盖全文结构，又不用把每篇都塞进向量库。
+        """
+        if domain == "clothing":
+            chunks = [
+                item.strip()
+                for item in RecursiveCharacterTextSplitter(
+                    chunk_size=420,
+                    chunk_overlap=50,
+                    separators=["\n\n", "\n", "。", "；", " ", ""],
+                    length_function=len,
+                ).split_text(data)
+                if item.strip()
+            ]
+            return _sample_evenly(chunks, 6)
         if len(data) <= int(chroma_conf["max_split_char_number"]):
             return [data]
         return self._get_splitter(file_type).split_text(data)
@@ -167,7 +196,8 @@ class VectorStoreService:
                     logger.warning(f"[加载知识库]{filename} 内没有有效文本内容，跳过")
                     continue
 
-                knowledge_chunks = self.split_text(text, file_type)
+                doc_class = classify(filename, text)
+                knowledge_chunks = self.split_text(text, file_type, domain=doc_class.domain)
                 if not knowledge_chunks:
                     logger.warning(f"[加载知识库]{filename} 分片后没有有效文本内容，跳过")
                     continue
@@ -177,7 +207,7 @@ class VectorStoreService:
                     "file_type": file_type,
                     "create_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "operator": "客户",
-                    **classify(filename, text).__dict__,
+                    **doc_class.__dict__,
                 }
 
                 # 同一来源内容变化：先取旧分块 id，新内容写入成功后再删除（更新替换）

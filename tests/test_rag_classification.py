@@ -3,6 +3,7 @@
 from core.scenarios.pools import tool_names
 from core.scenarios.spec import load_active_spec, split_edge, validate_spec
 from core.tools.rag.classification import classify
+from core.tools.rag.vector_store import _sample_evenly
 
 
 def test_classify_clothing_sources():
@@ -26,6 +27,15 @@ def test_classify_content_fallback():
     assert classify("未知文档.txt", "身高 175，体重 140 斤，选什么尺码").category == "size"
     assert classify("未知文档.txt", "回充失败、连不上 WiFi").category == "troubleshoot"
     assert classify("未知文档.txt", "今天天气不错").domain == "general"
+
+
+def test_clothing_chunks_are_sampled_evenly():
+    chunks = [f"chunk-{index}" for index in range(10)]
+    picked = _sample_evenly(chunks, 4)
+    assert picked[0] == "chunk-0"
+    assert picked[-1] == "chunk-9"
+    assert len(picked) == 4
+    assert len(_sample_evenly(chunks[:3], 6)) == 3
 
 
 def test_domain_specs_validate_against_their_toolbox():
