@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "name": "retail_router",
+  "description": "零售分流：扫地机器人问题走机器人库，服装问题走服装库",
+  "kind": "agent",
+  "tools": [
+    "robot_retrieve",
+    "clothing_retrieve"
+  ],
+  "system_prompt": "你是零售客服分流助手。先根据问题判断属于扫地机器人还是服装；只使用对应知识库检索，回答必须用 [来源id] 标注引用。",
+  "prompt": null,
+  "cases_path": null,
+  "response_format": null,
+  "harness": {
+    "enable_todo": false,
+    "enable_summarization": true,
+    "tool_call_limit": 8,
+    "token_budget": 20000
+  },
+  "policies": null,
+  "workflows": {
+    "triage": {
+      "nodes": [
+        {
+          "id": "classify",
+          "fn": "branch",
+          "args": {
+            "field": "input",
+            "cases": [
+              "robot=扫地|机器人|回充|滤网|拖布|吸力|充电|故障|维护|建图",
+              "clothing=尺码|身高|体重|颜色|肤色|洗|新品|外套|搭配|面料"
+            ],
+            "default": "other",
+            "mode": "keywords",
+            "hit": "hit",
+            "miss": "miss"
+          }
+        },
+        {
+          "id": "robot_search",
+          "fn": "retrieve",
+          "args": {
+            "tool": "robot_retrieve",
+            "limit": 4,
+            "query_key": "input"
+          }
+        },
+        {
+          "id": "clothing_search",
+          "fn": "retrieve",
+          "args": {
+            "tool": "clothing_retrieve",
+            "limit": 4,
+            "query_key": "input"
+          }
+        },
+        {
+          "id": "answer",
+          "fn": "llm_answer",
+          "args": {}
+        },
+        {
+          "id": "verify",
+          "fn": "require_citation",
+          "args": {
+            "pattern": "\\[[^\\]]+\\]"
+          }
+        },
+        {
+          "id": "refuse",
+          "fn": "constant",
+          "args": {
+            "text": "我只处理扫地机器人和服装问题。请换一个相关问题。",
+            "save_to": "answer"
+          }
+        },
+        {
+          "id": "llm1",
+          "fn": "llm_text",
+          "args": {
+            "save_to": "scratch.route",
+            "prompt": "判断用户问题属于哪一类，只输出一个词,不需要太深度的思考：robot、clothing、other。不要解释。\\n问题：{input}"
+          }
+        }
+      ],
+      "edges": [
+        [
+          "__start__",
+          "classify"
+        ],
+        [
+          "classify",
+          "robot_search",
+          "robot"
+        ],
+        [
+          "classify",
+          "clothing_search",
+          "clothing"
+        ],
+        [
+          "robot_search",
+          "answer"
+        ],
+        [
+          "clothing_search",
+          "answer"
+        ],
+        [
+          "answer",
+          "verify"
+        ],
+        [
+          "verify",
+          "__end__"
+        ],
+        [
+          "refuse",
+          "__end__"
+        ],
+        [
+          "classify",
+          "llm1",
+          "other"
+        ],
+        [
+          "llm1",
+          "robot_search",
+          "robot"
+        ],
+        [
+          "llm1",
+          "clothing_search",
+          "clothing"
+        ],
+        [
+          "llm1",
+          "refuse",
+          "other"
+        ]
+      ]
+    }
+  },
+  "provenance": null
+}
