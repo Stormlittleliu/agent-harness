@@ -134,11 +134,16 @@ core/scenarios/        # router / workspace_assistant / research_assistant / cod
 core/interfaces/       # CLI / Streamlit / 6 功能视图 + 总览工作台
 core/quality/          # 两层评测 + outcome / 公开基准 / 失败集 / 门禁 / 结构化评测
 core/observability/    # trace + token budget + 成本时延报告
-core/mcp/              # MCP client + Fetch server
-core/benchmarks/       # 11 个公开 benchmark 适配器
+core/resources/        # 工具 / 工作流 / 场景 / 块统一只读资源目录
+core/mcp/              # MCP client + Fetch server + 本地资源 server
+core/benchmarks/       # 11 个公开 benchmark 适配器 + 数据引用
+core/paths.py          # 数据 / 运行时 / 数据集 / benchmark 源的唯一定义
+dataset_ops/           # 数据集采样实现（stratified / sampling，移出 core）
 core/experiments/      # 最小优化循环 + 触发率 + planner A/B
 tests/                 # pytest：runtime / workspace / metrics / dashboard / 故障注入
-data/benchmarks/       # 132 条统一样例
+data/evals/            # 自有评测数据 + stratified provenance
+data/datasets/         # 公开样本 / catalog 正文（外置，默认不进 git）
+data/benchmarks/       # catalog manifest 引用（旧快照）
 docs/benchmarks/       # 结果总览 / 复盘
 ```
 

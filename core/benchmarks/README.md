@@ -1,21 +1,29 @@
 # 公开 Benchmark 适配层
 
-把 τ²-bench、BFCL、RGB、MultiHop-RAG、GAIA、SWE-bench、WebArena、OSWorld 的原始任务，
-统一成 `BenchTask`，再按来源 / 类别分层抽样，生成项目自己的样例集。
+把 τ²-bench、BFCL、RGB、MultiHop-RAG、CFBench、GAIA、HumanEval、MBPP、SWE-bench、
+WebArena、OSWorld 的原始任务统一成 `BenchTask`。
+
+> **采样已移出 `core`**：按来源 / 类别分层抽样的实现现在在
+> [`dataset_ops/sampling.py`](../../dataset_ops/sampling.py)；`core.benchmarks.sampling`
+> 只是兼容 shim。`core/benchmarks` 只保留适配器、schema、runner 与数据引用，
+> 不再承载采样算法。
 
 ## 目录
 
 ```text
 core/benchmarks/
 ├── schema.py          # BenchTask 统一字段
-├── sampling.py        # 分层抽样（固定 seed）
-├── catalog.py         # 加载 → 抽样 → catalog.jsonl / manifest.json / catalog.md
+├── sampling.py        # 兼容 shim → dataset_ops.sampling（旧 import 不炸）
+├── catalog.py         # 加载 → 调用 dataset_ops.sampling → catalog/manifest/md
 ├── runner.py          # 环境 runner 接口（external / native / data_only）
-├── paths.py           # 本地仓库位置，可用 BENCHMARK_ROOT 覆盖
+├── paths.py           # 本地 benchmark 源位置，来自 core.paths.BENCHMARK_ROOT
 └── adapters/
     ├── tau2.py        # τ²-bench retail
     ├── bfcl.py        # BFCL v4 simple_python + irrelevance
     ├── rag.py         # RGB + MultiHop-RAG
+    ├── cfbench.py     # CFBench
+    ├── humaneval.py   # HumanEval
+    ├── mbpp.py        # MBPP
     ├── gaia.py        # GAIA（需本地下载）
     ├── swebench.py    # SWE-bench（需本地数据 + Docker）
     ├── webarena.py    # WebArena（需本地 config + 自托管网站）
@@ -44,24 +52,31 @@ license / url / metadata
 
 ## 使用
 
+先准备本地 benchmark 源：`AH_BENCHMARK_ROOT` 指向上游仓库（默认为仓库内空的
+`benchmark_sources/`，详见 [benchmark_sources/README.md](../../benchmark_sources/README.md)）。
+
 ```bash
-# 查看各适配器是否可用
+# 查看各适配器是否可用（不加载数据；未安装时报告 download）
 python -m core.benchmarks.catalog --list
 
-# 每个来源抽 12 条，固定 seed
+# 每个来源抽 12 条，固定 seed；输出到外置数据根
 python -m core.benchmarks.catalog --build --per-source 12 --seed 42
 
 # 只构建某个来源
 python -m core.benchmarks.catalog --build --source tau2-bench
 ```
 
-输出：
+输出（`AH_DATASET_ROOT` 默认 `<repo>/data/datasets`，内容不进 git）：
 
 ```text
-data/benchmarks/catalog.jsonl
-data/benchmarks/manifest.json
-data/benchmarks/catalog.md
+data/datasets/benchmarks/catalog.jsonl
+data/datasets/benchmarks/manifest.json
+data/datasets/benchmarks/catalog.md
 ```
+
+旧 `data/benchmarks/manifest.json` 作为仓库内引用保留；dashboard 优先读外置
+catalog，读不到时回退旧布局。目录约定见
+[data/datasets/README.md](../../data/datasets/README.md)。
 
 ## 适配器状态
 

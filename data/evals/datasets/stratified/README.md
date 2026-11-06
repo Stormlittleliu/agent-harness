@@ -23,10 +23,12 @@
 | `selections.md` | 按类别汇总的出处表 |
 | `manifest.json` | seed、每类目标、各集合计数与源规模 |
 
-> `*_5per_*.jsonl` 是从本地 benchmark 源生成的原始样本，**不随仓库分发**
-> （RGB 源数据是 CC BY-NC-SA，不能直接塞进 MIT 仓库）。
-> 仓库只保留 `selections.jsonl` / `selections.md` / `manifest.json` 作为出处记录；
-> 在本地跑一次生成命令即可还原原始样本。
+> `*_5per_*.jsonl` 是从本地 benchmark 源生成的原始样本，**正文已经移到
+> `data/datasets/stratified/`**（默认外置数据根，可用 `AH_DATASET_ROOT` 覆盖），
+> **不随仓库分发**（RGB 源数据是 CC BY-NC-SA，不能直接塞进 MIT 仓库）。
+> 本目录只保留 `selections.jsonl` / `selections.md` / `manifest.json` 作为出处记录；
+> 在本地跑一次生成命令即可还原原始样本。目录约定见
+> [data/datasets/README.md](../../../datasets/README.md)。
 >
 > 当前（seed=42，每类 5 条）共 **381 条**：BFCL 95、RGB 30、τ² 20、MultiHop 20、
 > CFBench 21、GAIA 15、HumanEval 5、MBPP 5、SWE-bench 53、WebArena 47、OSWorld 70。
@@ -86,8 +88,10 @@ HumanEval / MBPP 的 `grader` 是 `unit_test`，`environment.runner` 是
 ## 重新生成
 
 ```powershell
-python -m core.quality.stratified --per-category 5 --seed 42
+# 采样实现已移到 dataset_ops；旧 core.quality.stratified 仍可转发
+python -m dataset_ops.stratified --per-category 5 --seed 42
 ```
 
-重新生成会覆盖本目录的 jsonl / selections / manifest，但不会动
-`data/evals/datasets/public/` 下的现有抽样集。
+样本正文写到 `data/datasets/stratified/`，provenance（`selections.jsonl` /
+`selections.md` / `manifest.json`）仍写回本目录。重新生成不会动
+`data/datasets/public/` 下的 RGB / MultiHop 抽样集。

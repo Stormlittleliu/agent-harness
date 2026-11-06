@@ -6,14 +6,22 @@ import json
 import random
 from pathlib import Path
 
-from core.benchmarks.paths import BFCL_ROOT, MULTIHOP_ROOT
+from core.paths import DatasetNotInstalled, benchmark_missing_message, benchmark_path
 
-BFCL_DATA = BFCL_ROOT / "bfcl_eval" / "data"
+BFCL_DATA = benchmark_path("BFCL", "berkeley-function-call-leaderboard", "bfcl_eval", "data")
 BFCL_SIMPLE = BFCL_DATA / "BFCL_v4_simple_python.json"
 BFCL_GT = BFCL_DATA / "possible_answer" / "BFCL_v4_simple_python.json"
 BFCL_IRRELEVANCE = BFCL_DATA / "BFCL_v4_irrelevance.json"
-MULTIHOP_QUERIES = MULTIHOP_ROOT / "data" / "MultiHopRAG.json"
-MULTIHOP_CORPUS = MULTIHOP_ROOT / "data" / "corpus.json"
+MULTIHOP_QUERIES = benchmark_path("MultiHop-RAG", "data", "MultiHopRAG.json")
+MULTIHOP_CORPUS = benchmark_path("MultiHop-RAG", "data", "corpus.json")
+
+
+def _require_source(path: Path, label: str = "") -> Path:
+    """benchmark 源缺失时抛可读错误，CLI 捕获后提示 AH_BENCHMARK_ROOT。"""
+    if not path.exists():
+        detail = f"{label}（{path}）" if label else str(path)
+        raise DatasetNotInstalled(benchmark_missing_message(detail))
+    return path
 
 
 def _read_jsonl(path: Path):
@@ -37,10 +45,10 @@ def load_bfcl_cases(n_simple: int = 15, n_irrelevance: int = 5, seed: int = 42):
     rng = random.Random(seed)
     ground_truth = {
         row["id"]: row.get("ground_truth", [])
-        for row in _read_jsonl(BFCL_GT)
+        for row in _read_jsonl(_require_source(BFCL_GT, "BFCL ground truth"))
     }
-    simple = list(_read_jsonl(BFCL_SIMPLE))
-    irrelevance = list(_read_jsonl(BFCL_IRRELEVANCE))
+    simple = list(_read_jsonl(_require_source(BFCL_SIMPLE, "BFCL simple")))
+    irrelevance = list(_read_jsonl(_require_source(BFCL_IRRELEVANCE, "BFCL irrelevance")))
 
     cases = []
     for item in rng.sample(simple, min(n_simple, len(simple))):
@@ -65,7 +73,9 @@ def load_bfcl_cases(n_simple: int = 15, n_irrelevance: int = 5, seed: int = 42):
 
 def load_multihop_cases(n_per_type: int = 5, seed: int = 42):
     rng = random.Random(seed)
-    queries = json.loads(MULTIHOP_QUERIES.read_text(encoding="utf-8"))
+    queries = json.loads(
+        _require_source(MULTIHOP_QUERIES, "MultiHop-RAG queries").read_text(encoding="utf-8")
+    )
     grouped = {}
     for item in queries:
         grouped.setdefault(item.get("question_type"), []).append(item)
@@ -89,4 +99,6 @@ def load_multihop_cases(n_per_type: int = 5, seed: int = 42):
 
 
 def load_multihop_corpus():
-    return json.loads(MULTIHOP_CORPUS.read_text(encoding="utf-8"))
+    return json.loads(
+        _require_source(MULTIHOP_CORPUS, "MultiHop-RAG corpus").read_text(encoding="utf-8")
+    )

@@ -8,7 +8,6 @@ from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 
-from core.llm.factory import chat_model
 from core.tools.rag.retrievers import get_retriever
 from core.utils.prompt_loader import load_rag_prompts
 
@@ -19,11 +18,17 @@ class RagSummarizeService:
         self.retriever = retriever or get_retriever(retrieval_mode, where=where)
         self.prompt_text = load_rag_prompts()
         self.prompt_template = PromptTemplate.from_template(self.prompt_text)
-        self.model = chat_model
-        self.chain = self._init_chain()
+        # 模型在第一次真正回答时才加载：资源目录 / 纯检索不需要 API key。
+        self.model = None
+        self.chain = None
 
-    def _init_chain(self):
-        return self.prompt_template | self.model | StrOutputParser()
+    def _ensure_chain(self):
+        if self.chain is None:
+            from core.llm.factory import chat_model
+
+            self.model = chat_model
+            self.chain = self.prompt_template | self.model | StrOutputParser()
+        return self.chain
 
     def retriever_docs(self, query: str) -> list[Document]:
         return self.retriever.invoke(query)
@@ -36,7 +41,7 @@ class RagSummarizeService:
         return context
 
     def _answer(self, query: str, context_docs: list[Document]) -> str:
-        return self.chain.invoke(
+        return self._ensure_chain().invoke(
             {
                 "input": query,
                 "context": self._format_context(context_docs),

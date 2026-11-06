@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from pathlib import Path
 from typing import Any
 
 import streamlit as st
 
 from core.interfaces.dashboard.common import (
-    ROOT,
     load_json,
     load_jsonl,
     rows_to_csv,
@@ -28,9 +26,19 @@ from core.interfaces.dashboard.layout import (
     text_block,
 )
 
-MANIFEST_PATH = ROOT / "data" / "benchmarks" / "manifest.json"
-CATALOG_PATH = ROOT / "data" / "benchmarks" / "catalog.jsonl"
+from core.paths import benchmark_catalog_manifest, benchmark_catalog_root
+
+# catalog 正文优先读外置数据根（AH_DATASET_ROOT），manifest 可留在 data/benchmarks；
+# 旧 data/benchmarks 同时作为只读回退，已有环境不用搬数据。
+CATALOG_ROOT = benchmark_catalog_root()
+MANIFEST_PATH = benchmark_catalog_manifest()
+CATALOG_PATH = CATALOG_ROOT / "catalog.jsonl"
 BUILD_CMD = "python -m core.benchmarks.catalog --build --per-source 40 --seed 42"
+INSTALL_HINT = (
+    "未安装数据集：请设置 AH_BENCHMARK_ROOT 指向本地 benchmark 源"
+    "（见 benchmark_sources/README.md），或把 catalog 放到 "
+    "AH_DATASET_ROOT/benchmarks/（见 data/datasets/README.md）。"
+)
 
 BUCKET_LABELS = {
     "capability": "能力",
@@ -212,7 +220,10 @@ def render_catalog() -> None:
 
     if manifest is None and rows is None:
         page_header("Benchmark 目录", "公开 benchmark 的统一任务目录。")
-        empty_state("未找到 benchmark 目录数据。先生成样例集：", "python -m core.benchmarks.catalog --list\n" + BUILD_CMD)
+        empty_state(
+            "未找到 benchmark 目录数据。" + INSTALL_HINT + " 先生成样例集：",
+            "python -m core.benchmarks.catalog --list\n" + BUILD_CMD,
+        )
         return
 
     rows = rows or []

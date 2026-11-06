@@ -1,0 +1,5 @@
+# 本目录是本地 benchmark 源挂载点（AH_BENCHMARK_ROOT 默认值）。
+# 原始数据体积大、许可各异，不随仓库分发；只保留 README 与忽略规则。
+*
+!.gitignore
+!README.md

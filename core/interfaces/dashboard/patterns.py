@@ -25,6 +25,7 @@ from core.quality.adoption import (
     last_adoption,
     rollback_last,
 )
+from core.paths import SPEC_ROOT
 from core.quality.paths import OUTPUTS_DIR
 from core.quality.shadow import run_shadow
 from core.scenarios.pattern_to_spec import (
@@ -109,7 +110,7 @@ def build_candidate_agent(spec, base_scenario):
     from core.agent.framework import FrameworkAgent
     from core.prompts.blocks import load_book
 
-    book_path = Path("data/specs") / spec.name / "prompt.yml"
+    book_path = SPEC_ROOT / spec.name / "prompt.yml"
     book = load_book(book_path)
     scenario = build_from_spec(
         spec,

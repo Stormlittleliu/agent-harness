@@ -31,8 +31,10 @@ from core.scenarios.spec import (
 )
 from core.scenarios.spec_nodes import NODE_REGISTRY, block_params, block_label
 
+from core.paths import runtime_path
+
 DEFAULT_WORKFLOW = "qa"
-LAYOUT_ROOT = Path("data/runtime/spec_layout")
+LAYOUT_ROOT = runtime_path("spec_layout")
 NODE_W = 184
 NODE_H = 64
 COL_GAP = 238

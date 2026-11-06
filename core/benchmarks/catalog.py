@@ -15,8 +15,8 @@ from pathlib import Path
 
 from core.benchmarks.adapters import ADAPTERS
 from core.benchmarks.paths import CATALOG_OUT
-from core.benchmarks.sampling import stratified_sample
 from core.benchmarks.schema import BenchTask
+from dataset_ops.sampling import stratified_sample
 
 try:
     import sys
@@ -77,6 +77,15 @@ def build(per_source: int, seed: int, out_dir: Path, only: str | None = None) ->
             "error": error,
         })
         print(f"[load] {adapter.name}: {len(tasks)} tasks", flush=True)
+
+    if not loaded:
+        # 空源不能生成空 catalog 覆盖已有产物；只打印可操作提示。
+        print("[abort] 没有加载到任何任务；保留现有 catalog 不动。", flush=True)
+        print(
+            "        请设置 AH_BENCHMARK_ROOT 后重试：python -m core.benchmarks.catalog --list",
+            flush=True,
+        )
+        return
 
     sampled = stratified_sample(loaded, per_source=per_source, seed=seed)
     summary = _summary(sampled)

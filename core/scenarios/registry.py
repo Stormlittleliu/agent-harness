@@ -86,7 +86,18 @@ def get_scenario(name: str = "robot_vacuum") -> Scenario:
 
 
 def _spec_names() -> list[str]:
-    """延迟 import：只读数据视图不该顺带加载工具链。"""
-    from core.scenarios.generic import spec_scenario_names
+    """只读扫描 spec 目录，不 import generic（否则会拉起模型/工具链）。"""
+    from core.paths import SPEC_ROOT
+    from core.scenarios.ownership import OWNER_CODE, load_state
 
-    return spec_scenario_names()
+    if not SPEC_ROOT.is_dir():
+        return []
+    names: list[str] = []
+    for directory in sorted(SPEC_ROOT.iterdir()):
+        if not directory.is_dir() or not (directory / "active.json").is_file():
+            continue
+        state = load_state(directory.name, SPEC_ROOT)
+        if state is not None and state.owner == OWNER_CODE:
+            continue
+        names.append(directory.name)
+    return names

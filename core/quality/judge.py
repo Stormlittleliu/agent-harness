@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from core.llm.factory import chat_model  # noqa: E402
+
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -74,6 +74,8 @@ def _parse_json(text: str) -> dict:
 
 
 def build_judge():
+    from core.llm.factory import chat_model
+
     prompt = ChatPromptTemplate.from_template(JUDGE_PROMPT)
     return prompt | chat_model | StrOutputParser()
 

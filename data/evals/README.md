@@ -5,21 +5,22 @@
 ```text
 data/evals/
 ├── datasets/
-│   ├── business/               # 服装客服业务集（42 条）+ 4 份文档
+│   ├── business/               # 服装客服业务集（42 条）+ 4 份文档（自有数据，进 git）
 │   │   ├── docs/
 │   │   ├── eval_set.jsonl      # 20 条原始
 │   │   ├── eval_set_hard.jsonl # 22 条困难/多跳/冲突
 │   │   └── eval_set_all.jsonl  # 42 条合并
-│   ├── public/                 # 公开 benchmark 抽样
-│   │   ├── rag_rgb_sample.jsonl
-│   │   ├── rag_multihop_sample.jsonl
-│   │   └── multihop_corpus.json
-│   └── stratified/             # 每类 5 条的平衡抽样（原始样本不随仓库分发）
+│   ├── selfbuilt/              # 自建跨分类任务集（自有数据，进 git）
+│   └── stratified/             # 只保留 provenance；正文在 data/datasets/stratified/
 │       ├── selections.jsonl    # 逐条出处：源文件 / hash / 行号 / id
 │       ├── selections.md
 │       └── manifest.json
 └── failures/                   # 失败集（RAG / Agent / BFCL / τ²）
 ```
+
+公开样本正文已**外置**：默认在 `data/datasets/`（可用 `AH_DATASET_ROOT` 指到
+仓库外），不随仓库分发；旧的 `data/evals/datasets/public` 仍作为只读 fallback。
+目录约定、生成命令和许可说明见 [data/datasets/README.md](../datasets/README.md)。
 
 报告目录：
 
@@ -112,13 +113,16 @@ python -m core.quality.fixtures --family selfbuilt --limit 8
 公开 benchmark 为抽样评测，不是官方完整榜单成绩。
 
 `stratified/` 的原始样本由本地 benchmark 源生成，**不随仓库分发**（RGB 是
-CC BY-NC-SA，不能直接复制进 MIT 仓库）。仓库只保留 `selections.jsonl` /
-`selections.md` / `manifest.json` 作为出处记录；当前 11 个源、381 条。
-每条样本带 `eval_scope`（`model_capability` / `scenario_tool`）和 `execution`
-（当前能不能跑），不要把两层混成一张分。重新生成命令：
+CC BY-NC-SA，不能直接复制进 MIT 仓库），正文已经移到
+`data/datasets/stratified/`。仓库只保留 `selections.jsonl` / `selections.md` /
+`manifest.json` 作为出处记录；当前 11 个源、381 条。每条样本带
+`eval_scope`（`model_capability` / `scenario_tool`）和 `execution`
+（当前能不能跑），不要把两层混成一张分。重新生成命令（采样实现已移到
+`dataset_ops`）：
 
 ```powershell
-python -m core.quality.stratified --per-category 5 --seed 42
+python -m dataset_ops.stratified --per-category 5 --seed 42
+# 兼容旧入口：python -m core.quality.stratified --per-category 5 --seed 42
 ```
 
 ## Failure Set

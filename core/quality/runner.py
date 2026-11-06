@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from core.paths import BENCHMARK_ROOT, DatasetNotInstalled  # noqa: E402
 from core.quality import agent_eval, bfcl_simplified as bfcl, failures, outcome_eval, public_sample as public, rag_eval, rag_judge, structured_eval  # noqa: E402
 from core.quality.paths import RAG_OUT  # noqa: E402
 
@@ -99,12 +100,14 @@ def _bfcl(args):
     ]
     if args.out_dir:
         cmd += ["--out-dir", args.out_dir]
-    bfcl.main(cmd)
+    code = bfcl.main(cmd)
+    if code:
+        raise SystemExit(code)
 
 
 def _tau2(_args):
     print("τ²-bench 是外部官方 harness，不在本仓库内重写评分。")
-    print(r"cd E:\CODE\benchmarks\tau2-bench")
+    print(f"cd {BENCHMARK_ROOT / 'tau2-bench'}")
     print(
         "python run_tau2_deepseek_judge.py run --domain retail "
         "--agent-llm deepseek/deepseek-chat --user-llm deepseek/deepseek-chat "
@@ -201,7 +204,11 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if getattr(args, "input", None) is None and hasattr(args, "input"):
         args.input = str(RAG_OUT / "eval_generation.json")
-    args.func(args)
+    try:
+        args.func(args)
+    except DatasetNotInstalled as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(2) from exc
 
 
 if __name__ == "__main__":

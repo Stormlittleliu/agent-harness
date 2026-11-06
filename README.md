@@ -162,8 +162,10 @@ python test_entry.py rag judge
 python test_entry.py benchmark public
 ```
 
-数据在 `data/evals/datasets/`（42 条业务集 + RGB 20 条 + MultiHop-RAG 12 条），
-报告输出到 `outputs/rag/`。详见 [data/evals/README.md](./data/evals/README.md)。
+业务集在 `data/evals/datasets/`（42 条）；RGB / MultiHop 公开样本已外置到
+`data/datasets/`（`AH_DATASET_ROOT` 可覆盖，不进 git），报告输出到 `outputs/rag/`。
+详见 [data/evals/README.md](./data/evals/README.md) 与
+[data/datasets/README.md](./data/datasets/README.md)。
 
 ### 当前评测结果（抽样，非官方完整分数）
 
@@ -446,7 +448,7 @@ python run_dashboard.py --port 8600
 - **工具与策略**：工具、风险等级、中间件链、LangGraph 工作流图；中间件链是一排中文胶囊（由外到内），**鼠标悬停**看每条策略的职责、分层（守卫 / 上下文 / 可靠性 / 成本）、slot 与源码位置；日志类合并成一行，展开可见配置；
 - **发布**：入口标题 / 一句话介绍 / 开场白 / 排序 + 校验 + 撤回；“开始对话”就是这条入口；
 - **对话**：多轮会话（checkpointer 记忆），每轮回答下可展开调用链与逐条 trace；高风险工具被 HITL 拦下时，直接在同一处批准 / 拒绝；
-- **质量页**：测试用例直接跑 `cases.jsonl` 并复用 `core.quality.agent_eval` 的评分（按通过/失败、判定依据、类别筛选，可点开看命中要点、工具调用、回答与 trace）；评测页合并场景行为/outcome 报告、成本/时延、公开基准与评测记录；复核页做 LLM judge + 人工标注；优化循环读 `outputs/demo/`；Benchmark 目录读 `data/benchmarks/`；
+- **质量页**：测试用例直接跑 `cases.jsonl` 并复用 `core.quality.agent_eval` 的评分（按通过/失败、判定依据、类别筛选，可点开看命中要点、工具调用、回答与 trace）；评测页合并场景行为/outcome 报告、成本/时延、公开基准与评测记录；复核页做 LLM judge + 人工标注；优化循环读 `outputs/demo/`；Benchmark 目录读外置 catalog，旧 `data/benchmarks/` 作回退；
 - **运行窗口**（`coding_demo`）：任务图看板、任务详情、命令日志，可对 ready 任务执行 Agent。
 
 数据页顶部会标注文件更新时间；报告、样例集与 trace 索引按 path + mtime 缓存，表格默认最多展示 200 行（下载 CSV 包含全部筛选结果），缺失或部分缺失时显示可执行的生成命令。测试用例详情新增“对象链路”：从案例直接定位场景、工具、中间件、评测函数与 trace 的 `module:line`；工具卡可跳转架构页，架构页工具表也可反查相关用例。另有“按对象浏览”，按工具聚合案例与通过率。评测记录页只读扫描 `outputs/`，不会重新运行评测或触发模型调用；超大 JSON 超过解析上限时退化为 summary 预览。优化循环页面每次加载只检查一次文件状态，不会自动轮询，后台评测写入后可手动刷新页面。
@@ -464,9 +466,10 @@ python -m core.benchmarks.catalog --build --per-source 12 --seed 42
 把 τ²-bench、BFCL、RGB、MultiHop-RAG、CFBench、GAIA、HumanEval、MBPP、SWE-bench、WebArena、OSWorld 等公开任务统一成 `BenchTask`，按来源和类别分层抽样，输出：
 
 ```text
-data/benchmarks/catalog.jsonl
-data/benchmarks/manifest.json
-data/benchmarks/catalog.md
+data/datasets/benchmarks/catalog.jsonl   # 外置数据根，不进 git
+data/datasets/benchmarks/manifest.json
+data/datasets/benchmarks/catalog.md
+data/benchmarks/manifest.json             # 仓库内的旧快照引用
 ```
 
 当前 catalog 是 **11 个来源 × 12 = 132 条**（2026-11-05 重建；`--per-source 40` 可生成更大样本）。
@@ -486,17 +489,25 @@ python -m core.experiments.optimize --iterations 5
 
 用 BFCL 工具调用 + MultiHop-RAG 检索跑一个完整的“跑 → badcase 归因 → 定向改 → 复跑 → 查回归”循环；默认 3 倍样本、每个 case 3 trial，优化方向按 prompt / tool / retrieval / query planning / loop 分类。当前最佳组合是 `bfcl_fixes`：BFCL 60/60（两轮 3-trial 复跑）、RAG 44/45（与 hybrid 一致，0 回归）。报告见 `outputs/demo/report.md`，复盘见 [docs/benchmarks/optimization-loop-3x.md](./docs/benchmarks/optimization-loop-3x.md) 和 [docs/benchmarks/bfcl-fixes.md](./docs/benchmarks/bfcl-fixes.md)。
 
-### 9. MCP 演示（Memory + Fetch）
+### 9. MCP：外部工具 + 本地素材目录
 
 ```bash
+# 外部 MCP 演示（Memory + Fetch）
 python -m core.quality.runner agent --scenario mcp_demo
+
+# 本地素材资源 server（stdio；给 agent 编辑查工具/工作流/场景/块）
+python -m core.mcp.resource_server
 ```
 
 - **Memory MCP**：官方 Node server，跨会话保存/检索用户偏好（JSONL 落盘）；
 - **Fetch MCP**：本地 server，读取 allowlist 域名下的网页文本，默认禁止私网，返回内容标记为 untrusted；
+- **Resources MCP**：只读资源目录，工具 `resource_kinds / resource_list / resource_get / resource_search`，URI 形如 `ah://tool/search_notes`、`ah://workflow/flow_demo/qa`；
 - MCP async 工具通过常驻事件循环包装成同步 LangChain 工具，原有 CLI / Streamlit / 评测链路不用改。
 
-控制台切到 `mcp_demo` 可以看架构、任务执行和 3 条测试用例。详见 [core/mcp/README.md](./core/mcp/README.md)。
+资源 server 的本地配置见根目录 `.mcp.json.example`（复制为 `.mcp.json`）；控制台切到
+`mcp_demo` 可以看架构、任务执行和 3 条测试用例。详见
+[core/mcp/README.md](./core/mcp/README.md) 与
+[docs/design/resource-catalog.md](./docs/design/resource-catalog.md)。
 
 ### 10. 运行时扩展：hooks / Todo / 任务图 / 文件 / 运行窗口
 
@@ -525,7 +536,7 @@ python -m streamlit run app_agent.py   # 打开构建页选 coding_demo
 python -m pytest
 ```
 
-当前 **283 passed**。覆盖任务图依赖 / 持久化、workspace 读取 / 写入 / 编辑 / grep 与受保护目录拒绝、workspace / research 场景工具、总路由 / 子场景入口、场景 / MCP / LangGraph 边界、planning policy、outcome 断言、trials 聚合、metrics 的
+当前 **453 passed**。覆盖任务图依赖 / 持久化、workspace 读取 / 写入 / 编辑 / grep 与受保护目录拒绝、workspace / research 场景工具、总路由 / 子场景入口、场景 / MCP / LangGraph 边界、资源目录与 MCP stdio、路径/数据集外置、planning policy、outcome 断言、trials 聚合、metrics 的
 `expected_tools_any`、subagent 子上下文 / 工具白名单、hook 触发与异常隔离、结构化输出
 schema、成本报告聚合、评测门禁、故障注入（超时 / 权限 / 参数 / 空检索 / 拒答）、
 对象索引（工具 / 中间件源码定位）、完整报告选择、中间件中文说明与顺序不变量、
@@ -577,10 +588,18 @@ agent-harness/
 │   │   ├── runner.py
 │   │   └── config.py
 │   │
-│   ├── mcp/                           #   外部 MCP 接入
+│   ├── mcp/                           #   MCP 接入
 │   │   ├── client.py                  #     async 工具 → 同步 LangChain 工具
 │   │   ├── fetch_server.py            #     本地 Fetch MCP server
+│   │   ├── resource_server.py         #     本地素材目录 MCP server
 │   │   └── runner.py                  #     常驻事件循环
+│   │
+│   ├── resources/                     #   统一只读素材目录
+│   │   ├── contracts.py               #     ResourceKind / URI / Descriptor
+│   │   ├── providers.py               #     工具 / 工作流 / 场景 / 块
+│   │   └── catalog.py                 #     list / get / search / kinds
+│   │
+│   ├── paths.py                       #   数据 / 运行时 / 数据集 / benchmark 根
 │   │
 │   ├── scenarios/                     #   L3 组合根
 │   │   ├── registry.py
@@ -645,9 +664,9 @@ agent-harness/
 │   │   ├── gate.py                    #     阈值门禁
 │   │   └── failures.py
 │   │
-│   ├── benchmarks/                    #   L5 公开 benchmark 适配层
-│   │   ├── catalog.py                 #     加载 → 分层抽样 → catalog
-│   │   ├── sampling.py
+│   ├── benchmarks/                    #   公开 benchmark 适配层 + 数据引用
+│   │   ├── catalog.py                 #     加载 → 调用 dataset_ops 抽样
+│   │   ├── sampling.py                #     兼容 shim → dataset_ops.sampling
 │   │   ├── schema.py                  #     统一 BenchTask
 │   │   ├── runner.py                  #     external / native / data_only
 │   │   └── adapters/                  #     τ² / BFCL / RGB / MultiHop / GAIA / SWE-bench ...
@@ -669,6 +688,17 @@ agent-harness/
 │   └── tests/                         #   演示
 │       ├── persistent_memory_demo.py
 │       └── demos/
+│
+├── dataset_ops/                       # 数据集采样实现（移出 core）
+│   ├── stratified.py                  #   按类别 5 条 + provenance
+│   └── sampling.py                    #   catalog 按来源分层抽样
+│
+├── data/datasets/                     # 外置数据集（git 忽略正文）
+│   ├── public/                        #   RGB / MultiHop 样本
+│   ├── stratified/                    #   每类 5 条正文
+│   └── benchmarks/                    #   catalog 正文
+│
+├── benchmark_sources/                 # AH_BENCHMARK_ROOT 默认挂载点（空目录 + README）
 │
 ├── config/                            # 全局能力配置
 │   ├── chroma.yml / rag.yml

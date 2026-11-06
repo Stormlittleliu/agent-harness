@@ -28,6 +28,6 @@
 
 ## 统一口径
 
-数字只认冻结文档：408 tests、selfbuilt 26/26（1-trial）、clothing 6/6、retail 5/5、workspace 5/5、planning 12/12、outcome 12/12、BFCL fixture 32/40、catalog 11/132、835 chunks。
+数字只认冻结文档：453 tests（2026-11-06 重构后）、selfbuilt 26/26（1-trial）、clothing 6/6、retail 5/5、workspace 5/5、planning 12/12、outcome 12/12、BFCL fixture 32/40、catalog 11/132、835 chunks。
 
 不要讲：生产级、多 Agent 平台、官方榜单、真实用户、300 条全量、26/26 稳定性。

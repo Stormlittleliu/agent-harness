@@ -7,11 +7,10 @@
 from __future__ import annotations
 
 import sqlite3
-from pathlib import Path
 
 from langgraph.checkpoint.memory import InMemorySaver
 
-ROOT = Path(__file__).resolve().parents[2]
+from core.paths import resolve_data_path
 
 
 def build_checkpointer(backend: str = "memory", path: str = "data/runtime/agent_checkpoints.sqlite"):
@@ -19,9 +18,7 @@ def build_checkpointer(backend: str = "memory", path: str = "data/runtime/agent_
     if backend == "sqlite":
         from langgraph.checkpoint.sqlite import SqliteSaver
 
-        db_path = Path(path)
-        if not db_path.is_absolute():
-            db_path = ROOT / db_path
+        db_path = resolve_data_path(path)
         db_path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(str(db_path), check_same_thread=False, timeout=10)
         return SqliteSaver(conn)

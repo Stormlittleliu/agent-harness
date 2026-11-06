@@ -19,8 +19,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-SPEC_ROOT = Path("data/specs")
-CODE_ROOT = Path("core/scenarios")
+from core.paths import PROJECT_ROOT, SPEC_ROOT as _SPEC_ROOT
+
+SPEC_ROOT = _SPEC_ROOT
+CODE_ROOT = PROJECT_ROOT / "core" / "scenarios"
 STATE_FILE = "state.json"
 
 OWNER_SPEC = "spec"

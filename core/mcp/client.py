@@ -11,9 +11,10 @@ from langchain_core.tools import StructuredTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from core.mcp.runner import run_async
+from core.paths import runtime_path
 
 ROOT = Path(__file__).resolve().parents[2]
-MEMORY_FILE = ROOT / "data" / "runtime" / "mcp_memory.json"
+MEMORY_FILE = runtime_path("mcp_memory.json")
 MAX_TOOL_CHARS = 6000
 
 
@@ -45,6 +46,17 @@ def fetch_connection(allowed_domains: list[str] | None = None, allow_local: bool
         "args": ["-m", "core.mcp.fetch_server"],
         "cwd": str(ROOT),
         "env": env,
+    }
+
+
+def resource_connection() -> dict:
+    """本地资源目录 server（只读；不启动模型 / 网络）。"""
+    return {
+        "transport": "stdio",
+        "command": sys.executable,
+        "args": ["-m", "core.mcp.resource_server"],
+        "cwd": str(ROOT),
+        "env": dict(os.environ),
     }
 
 
@@ -96,6 +108,11 @@ def load_memory_tools() -> list[StructuredTool]:
 
 def load_fetch_tools(allowed_domains: list[str] | None = None, allow_local: bool = False) -> list[StructuredTool]:
     return _safe_load({"fetch": fetch_connection(allowed_domains, allow_local)}, "fetch")
+
+
+def load_resource_tools() -> list[StructuredTool]:
+    """加载资源目录工具；失败时返回空列表，不影响默认 MCP 工具。"""
+    return _safe_load({"resources": resource_connection()}, "resources")
 
 
 def load_default_tools() -> list[StructuredTool]:

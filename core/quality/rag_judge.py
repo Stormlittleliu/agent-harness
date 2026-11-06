@@ -18,7 +18,6 @@ from langchain_core.output_parsers import StrOutputParser  # noqa: E402
 from langchain_core.prompts import ChatPromptTemplate  # noqa: E402
 
 from core.quality.paths import RAG_OUT  # noqa: E402
-from core.llm.factory import chat_model  # noqa: E402
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -89,6 +88,8 @@ def main(argv=None):
     results = payload["results"]
     if args.limit:
         results = results[:args.limit]
+
+    from core.llm.factory import chat_model
 
     prompt = ChatPromptTemplate.from_template(JUDGE_PROMPT)
     chain = prompt | chat_model | StrOutputParser()

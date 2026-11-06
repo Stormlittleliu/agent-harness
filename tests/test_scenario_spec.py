@@ -309,13 +309,17 @@ def test_summarize_truncates():
 
 
 def test_write_report_rejects_path_escape(tmp_path, monkeypatch):
+    import core.scenarios.spec_nodes as spec_nodes
+
+    report_root = tmp_path / "data" / "runtime" / "spec_reports"
+    monkeypatch.setattr(spec_nodes, "REPORT_ROOT", report_root)
     monkeypatch.chdir(tmp_path)
     blocked = write_report({"answer": "hi"}, path="../evil.md")
     assert "非法路径" in blocked["scratch"]["error"]
     assert not (tmp_path / "evil.md").exists()
 
     ok = write_report({"answer": "hi"}, path="sub/ok.md")
-    target = tmp_path / "data" / "runtime" / "spec_reports" / "sub" / "ok.md"
+    target = report_root / "sub" / "ok.md"
     assert target.read_text(encoding="utf-8") == "hi"
     assert ok["scratch"]["written"].endswith("ok.md")
 

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "agent-harness-resources": {
+      "command": "<conda-env-python>",
+      "args": ["-m", "core.mcp.resource_server"],
+      "cwd": "<repo-root>",
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}

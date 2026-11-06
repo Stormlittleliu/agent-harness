@@ -5,7 +5,23 @@
 ## 环境
 
 - Python 用 conda 环境 **`langchain`**；裸 `python` 是 3.8，跑不了测试。
-- 测试：`python -m pytest -q`（当前 414 passed）。
+- 测试：`python -m pytest -q`（当前 453 passed）。
+
+## 路径与数据边界
+
+所有路径从 `core/paths.py` 取，不再在业务模块里拼 `data/...`：
+
+| 环境变量 | 默认 | 用途 |
+|---|---|---|
+| `AH_DATA_ROOT` | `<repo>/data` | 项目数据根 |
+| `AH_RUNTIME_ROOT` | `<data>/runtime` | 可写运行时 |
+| `AH_SPEC_ROOT` | `<data>/specs` | 场景 spec |
+| `AH_DATASET_ROOT` | `<data>/datasets` | 外置数据集（正文不进 git） |
+| `AH_BENCHMARK_ROOT` | `<repo>/benchmark_sources` | 公开 benchmark 原始数据；无作者机器盘符 |
+
+公开样本 / 分层抽样 / catalog 正文放 `data/datasets/`（git 忽略）；仓库只保留
+`data/evals/datasets/stratified/` 的 provenance、`data/benchmarks/manifest.json`
+引用和 business / selfbuilt 自有数据。**不要把公开样本正文重新提交回仓库。**
 
 ## 场景归属（硬约束）
 
@@ -47,11 +63,31 @@ python -m core.scenarios.eject <name> --status
 - ❌ 在 spec-owned 场景里引用未注册的块（会被 `validate_spec` 拒绝）；
 - ❌ 在页面里再放一个"全局场景选择器"：场景由路由携带（`?app=build&scenario=...`），
   每个产品只读自己的上下文，否则又会回到"换场景清一堆状态"的老路；
-- ❌ 让未发布的场景出现在对话端：入口只认 `data/specs/<name>/entry.yml` 的 `enabled`。
+- ❌ 让未发布的场景出现在对话端：入口只认 `data/specs/<name>/entry.yml` 的 `enabled`；
+- ❌ 把公开数据集正文、分层抽样正文、benchmark catalog 正文提交回仓库：
+  它们属于 `data/datasets/`（git 忽略），仓库只留引用与 provenance；
+- ❌ 在代码里写死 `E:\CODE\benchmarks` 或作者机器路径：用 `core.paths` 的
+  `AH_BENCHMARK_ROOT` / `AH_DATA_ROOT`。
+
+## 资源目录 / MCP
+
+Agent 要查“有哪些工具 / 工作流 / 场景 / 块”时，先走统一资源目录，不要按模块
+内部结构猜：
+
+- Python：`from core.resources import ResourceCatalog`；
+- URI：`ah://tool/<name>`、`ah://scenario/<name>`、`ah://block/<fn>`、
+  `ah://workflow/<scenario>/<workflow>`；
+- MCP：`python -m core.mcp.resource_server`（stdio）；工具
+  `resource_kinds` / `resource_list` / `resource_get` / `resource_search`；
+- 资源目录是**只读**的，写入仍走 `spec_edit` / 编辑器；改场景代码前仍要 eject。
 
 ## 契约在哪
 
 - `core/agent/pipeline.py` — 中间件策略编排（slot + 顺序不变量 + `policies` 覆盖）；**策略的中文名 / 说明 / 分层写在 `POLICY_DOCS`**，UI 直接读它，别在别处再抄一份；
+- `core/paths.py` — 数据 / 运行时 / spec / 数据集 / benchmark 源的唯一定义；
+- `core/resources/` — 工具 / 工作流 / 场景 / 块的统一只读资源目录；
+- `core/mcp/resource_server.py` — 本地资源 MCP server（`resource_list/get/search/kinds`）；
+- `dataset_ops/` — 数据集采样实现（stratified / sampling），已移出 `core`；旧 `core.quality.stratified` / `core.benchmarks.sampling` 只是兼容 shim；
 - `core/quality/selfbuilt.py` — 自建跨分类任务集评测（检索 / 单轮 / 多轮），任务在 `data/evals/datasets/selfbuilt/tasks.jsonl`；
 - `core/quality/fixtures.py` — 任务级评测夹具：按任务配工具、`clean/distractor/missing/failure/permission` 变体，不注册产品场景；
 - `core/quality/mining.py` — 从 `outputs/runs/` 挖候选范式（序列 + 转移，只读，不自动采纳）；

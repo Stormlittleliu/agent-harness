@@ -50,7 +50,9 @@ temp/
 *.tmp
 
 # 分层抽样的原始样本：由本地 benchmark 源生成，不随仓库分发。
-# 出处记录（selections.jsonl / selections.md / manifest.json）进仓库；
+# 新布局的正文在 data/datasets/（由该目录自己的 .gitignore 忽略）；
+# 这里保留旧 data/evals 布局的忽略规则，保证 fallback 时不误提交。
+# 出处记录（selections.jsonl / selections.md / manifest.json）仍进仓库；
 # RGB 源数据是 CC BY-NC-SA，不能把抽样正文直接塞进 MIT 仓库。
 data/evals/datasets/stratified/*_5per_*.jsonl
 
@@ -64,6 +66,8 @@ data/evals/datasets/stratified/*_5per_*.jsonl
 # =========================
 .idea/
 .vscode/
+# Local MCP client config（机器相关路径；提交 .mcp.json.example）
+.mcp.json
 
 # =========================
 # OS junk

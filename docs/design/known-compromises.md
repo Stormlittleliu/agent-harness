@@ -3,7 +3,7 @@
 > 目的：把“曾经这么做”与“现在仍然合理”分开。
 > 每条都带证据、风险和下一步；不把历史选择当成设计依据。
 >
-> 审计日期：2026-11-04。
+> 审计日期：2026-11-04（2026-11-06 数据集外置后更新路径口径）。
 
 ## P0：会直接影响结论可信度
 
@@ -24,7 +24,7 @@
 
 ### 2. 质量页的 benchmark 目录是旧快照
 
-**证据**：`data/benchmarks/manifest.json` 生成于 `2026-10-31`，只有 8 个源、320 条；现在适配器已有 11 个（新增 CFBench / HumanEval / MBPP）。`core/interfaces/dashboard/catalog.py:224` 硬编码“8 个来源”，`ADAPTER_PATHS` 也没有这三个新适配器。
+**证据**：`data/benchmarks/manifest.json` 生成于 `2026-10-31`，只有 8 个源、320 条；现在适配器已有 11 个（新增 CFBench / HumanEval / MBPP）。catalog 正文已移到外置数据根 `data/datasets/benchmarks/`（不进 git），`core/interfaces/dashboard/catalog.py` 改读外置 catalog、旧 manifest 作回退；`ADAPTER_PATHS` 也已补上这三个新适配器。
 
 **后果**：页面显示的不是当前能力；新增的 3 个源在目录里不存在。这比“少显示”更糟：它会让人以为已经覆盖了。
 
@@ -102,7 +102,7 @@ if judged is not None:
 
 ### 10. 出处记录写的是绝对路径
 
-**证据**：`data/evals/datasets/stratified/selections.jsonl` 的 `source` 是 `E:/CODE/benchmarks/...`。
+**证据（历史）**：`data/evals/datasets/stratified/selections.jsonl` 的 `source` 曾是 `E:/CODE/benchmarks/...`。
 
 **后果**：换台机器、换盘符就无法按记录复现；仓库里留着一份“只有作者本机能用”的 provenance。
 
@@ -110,6 +110,9 @@ if judged is not None:
 
 **2026-11-05 已修**：`stratified.py` 写 `source` 时改为相对 `DEFAULT_BENCH_ROOT`，并写
 `source_root: BENCHMARK_ROOT`；现有 `selections.jsonl` 381 行已重写，`absolute_left=0`。
+
+**2026-11-06 补充**：`manifest.json` 的 `sets[].source` 也已改成相对路径，
+并标 `source_root=BENCHMARK_ROOT`；样本正文外置到 `data/datasets/stratified/`。
 
 ### 11. 文档里的测试数已经过期
 
@@ -120,6 +123,8 @@ if judged is not None:
 **下一步**：测试数只在一个地方维护（例如 `README` 徽章/CI），其他文档引用链接，不写死。
 
 **2026-11-05 已修**：AGENTS / README / 一页纸 / friday-plan 的当前数字同步为 408 tests、11 场景；历史快照保留但标注过期。
+
+**2026-11-06 再同步**：数据集/资源重构后全量为 **453 passed**；AGENTS、README、一页纸、friday-plan、narrative 索引已更新，历史快照保留。
 
 ### 12. 质量页的 benchmark 视图只认 BFCL / RGB / τ²
 
@@ -141,7 +146,7 @@ if judged is not None:
 
 ### 14. 统一 catalog 的构建命令没有进度和超时
 
-**证据**：`python -m core.benchmarks.catalog --list` / `--build` 在本机跑超过 2 分钟没有任何输出；`core/benchmarks/catalog.py` 是串行 `adapter.load()`，没有 per-adapter 超时、没有进度。`data/benchmarks/` 因此停在 2026-10-31 的 8 源快照。
+**证据**：`python -m core.benchmarks.catalog --list` / `--build` 在本机跑超过 2 分钟没有任何输出；`core/benchmarks/catalog.py` 是串行 `adapter.load()`，没有 per-adapter 超时、没有进度。`data/benchmarks/manifest.json` 因此停在 2026-10-31 的 8 源快照（catalog 正文已外置到 `data/datasets/benchmarks/`）。
 
 **后果**：新 adapter 加进来后，目录页无法可靠刷新；“统一 catalog”实际上是一次性脚本，不是可重复构建。
 
@@ -162,7 +167,7 @@ if judged is not None:
   失败集中在 `missing` 2/10（无工具时模型直接心算，不说明“工具不可用”）——这是要抓的幻觉；
 - permission：approve ✅、reject ✅（真实 HITL 中断 + resume）；
 - selfbuilt 迁移：`robot_vacuum` 8 条单轮/多轮 fixture **8/8**；
-- 测试：408 passed。
+- 测试：453 passed（2026-11-06）。
 
 ## 2026-11-05 晚二次修复
 
@@ -181,6 +186,28 @@ if judged is not None:
   “branch 可能写出的 route 必须有对应条件边”。同时修正了 robot_vacuum / workspace_assistant
   旧 spec 里 `branch` 写 `verify/answer`、边上却写 `miss` 的真实错位。
 
+## 2026-11-06 数据集外置
+
+- **采样实现移出 core**：`core/quality/stratified.py` → `dataset_ops/stratified.py`，
+  `core/benchmarks/sampling.py` → `dataset_ops/sampling.py`。旧路径只保留薄
+  shim（re-export + `python -m core.quality.stratified` 转发），现有测试和入口
+  不用改。
+- **公开样本外置**：`data/evals/datasets/public/*`、`stratified/*_5per_*.jsonl`、
+  `data/benchmarks/catalog.{jsonl,md}` 移到 `data/datasets/`（默认
+  `AH_DATASET_ROOT`，可指到仓库外）；`data/datasets/.gitignore` 忽略正文，
+  只放行 README / `.gitignore`。仓库保留 `selections.jsonl` / `selections.md` /
+  `manifest.json`、`data/benchmarks/manifest.json` 作为引用，以及
+  business / selfbuilt 自有数据。
+- **读取路径统一**：`core.paths.dataset_path` / `benchmark_catalog_root` /
+  `benchmark_catalog_manifest`；`public_sample`、`experiments/cases`、
+  dashboard catalog 已切换，旧 `data/evals` 布局是只读 fallback。
+- **缺数据不崩**：CLI 捕获 `DatasetNotInstalled`，打印“未安装数据集 +
+  导入/生成命令”；`AH_BENCHMARK_ROOT` 不再写死 `E:\CODE\benchmarks`，默认
+  `benchmark_sources/`（空目录 + README）。
+- **风险**：新克隆的仓库没有样本正文，必须显式导入或重新生成；catalog /
+  stratified 的正文不再进 git 是许可与体积约束。`data/datasets/README.md` /
+  `benchmark_sources/README.md` 是新的入口说明。
+
 ## 仍未修
 
 - P1-5 “300 条里大部分跑不了”的对外口径已改为按 `by_runner` 分组，但 60 条任务级样本
@@ -193,6 +220,7 @@ provenance 已改相对路径，公开基准页已有「其他（仅目录）」
 
 ## 不打算改的
 
-- `stratified` 原始样本不提交：RGB 是 CC BY-NC-SA，这是许可约束，不是妥协。
+- `stratified` / `public` 原始样本不提交：正文外置到 `data/datasets`（git 忽略），
+  仓库只留 provenance；RGB 是 CC BY-NC-SA，这是许可约束，不是妥协。
 - `spec` 不能声明工具：这是产品/评测分层的刻意边界，不是缺口。
 - 产品场景继续保留随机工具：演示需要多样性；评测用 fixture 固定。

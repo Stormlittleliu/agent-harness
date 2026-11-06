@@ -6,13 +6,12 @@ import json
 import re
 import sqlite3
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import tool
-
-from core.llm.factory import chat_model
 
 
 def _json(data) -> str:
@@ -186,21 +185,31 @@ class MemoryStore:
         })
 
 
-_TRANSLATE_CHAIN = (
-    PromptTemplate.from_template(
-        "把下面的文本翻译成 {target_language}。只输出译文，不要解释：\n\n{text}"
-    )
-    | chat_model
-    | StrOutputParser()
-)
+@lru_cache(maxsize=1)
+def _translate_chain():
+    """模型链延迟到真正调用翻译时才构造，目录/场景发现不应要求 API key。"""
+    from core.llm.factory import chat_model
 
-_SUMMARIZE_CHAIN = (
-    PromptTemplate.from_template(
-        "把下面的材料整理成{style}，保留关键事实和数字：\n\n{text}"
+    return (
+        PromptTemplate.from_template(
+            "把下面的文本翻译成 {target_language}。只输出译文，不要解释：\n\n{text}"
+        )
+        | chat_model
+        | StrOutputParser()
     )
-    | chat_model
-    | StrOutputParser()
-)
+
+
+@lru_cache(maxsize=1)
+def _summarize_chain():
+    from core.llm.factory import chat_model
+
+    return (
+        PromptTemplate.from_template(
+            "把下面的材料整理成{style}，保留关键事实和数字：\n\n{text}"
+        )
+        | chat_model
+        | StrOutputParser()
+    )
 
 
 def build_workspace_tools(store: NoteStore, memory: MemoryStore):
@@ -240,11 +249,11 @@ def build_workspace_tools(store: NoteStore, memory: MemoryStore):
 
     @tool("translate", description="把文本翻译成目标语言；只返回译文。")
     def translate(text: str, target_language: str = "中文") -> str:
-        return _TRANSLATE_CHAIN.invoke({"text": text, "target_language": target_language})
+        return _translate_chain().invoke({"text": text, "target_language": target_language})
 
     @tool("summarize", description="把材料总结成要点、学习笔记或简短摘要。")
     def summarize(text: str, style: str = "要点") -> str:
-        return _SUMMARIZE_CHAIN.invoke({"text": text, "style": style})
+        return _summarize_chain().invoke({"text": text, "style": style})
 
     return [
         list_notes,

@@ -1,5 +1,8 @@
 """
-为整个工程提供统一的绝对路径
+为整个工程提供统一的绝对路径。
+
+``data/...`` 走 ``core.paths.DATA_ROOT``，从而支持 ``AH_DATA_ROOT``
+把可写数据/数据集移到仓库外；其余路径仍相对仓库根。
 """
 import os
 
@@ -23,9 +26,24 @@ def get_abs_path(relative_path:str)->str:
     :param relative_path:
     :return:
     """
+    normalized = str(relative_path).replace("\\", "/")
+    if normalized == "data/runtime" or normalized.startswith("data/runtime/"):
+        from core.paths import RUNTIME_ROOT
+
+        suffix = normalized[len("data/runtime"):].lstrip("/")
+        return str(RUNTIME_ROOT / suffix if suffix else RUNTIME_ROOT)
+    if normalized == "data/specs" or normalized.startswith("data/specs/"):
+        from core.paths import SPEC_ROOT
+
+        suffix = normalized[len("data/specs"):].lstrip("/")
+        return str(SPEC_ROOT / suffix if suffix else SPEC_ROOT)
+    if normalized == "data" or normalized.startswith("data/"):
+        from core.paths import DATA_ROOT
+
+        suffix = normalized[4:].lstrip("/")
+        return str(DATA_ROOT / suffix if suffix else DATA_ROOT)
     project_root=get_project_root()
     return os.path.join(project_root,relative_path)
 
 if __name__ == '__main__':
     print(get_abs_path("config/config.txt"))
-

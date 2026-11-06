@@ -15,11 +15,14 @@ import glob
 import json
 from pathlib import Path
 
+from core.paths import benchmark_path
 from core.quality.paths import AGENT_OUT, BFCL_OUT, FAILURES_DIR, RAG_OUT
 
 FAILURES = FAILURES_DIR
-TAU2_RESULTS = Path(r"E:\CODE\benchmarks\tau2-bench\data\simulations\retail20_deepseek_judge\results.json")
-TAU2_TASKS = Path(r"E:\CODE\benchmarks\tau2-bench\data\tau2\domains\retail\tasks.json")
+TAU2_RESULTS = benchmark_path(
+    "tau2-bench", "data", "simulations", "retail20_deepseek_judge", "results.json"
+)
+TAU2_TASKS = benchmark_path("tau2-bench", "data", "tau2", "domains", "retail", "tasks.json")
 
 
 def load_json(path: Path):

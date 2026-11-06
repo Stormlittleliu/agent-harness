@@ -15,6 +15,7 @@ from pathlib import Path
 
 from core.experiments import bfcl_agent, rag_agent
 from core.experiments.cases import load_bfcl_cases, load_multihop_cases, load_multihop_corpus
+from core.paths import DatasetNotInstalled
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -346,9 +347,13 @@ def main(argv=None):
     parser.add_argument("--out", default=str(ROOT / "outputs" / "demo"))
     args = parser.parse_args(argv)
 
-    bfcl_cases = load_bfcl_cases(args.bfcl_simple, args.bfcl_irrelevance, args.seed)
-    rag_cases = load_multihop_cases(args.multihop_per_type, args.seed)
-    corpus = load_multihop_corpus()
+    try:
+        bfcl_cases = load_bfcl_cases(args.bfcl_simple, args.bfcl_irrelevance, args.seed)
+        rag_cases = load_multihop_cases(args.multihop_per_type, args.seed)
+        corpus = load_multihop_corpus()
+    except DatasetNotInstalled as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     print(f"BFCL cases={len(bfcl_cases)}  MultiHop cases={len(rag_cases)}  corpus={len(corpus)}")
 
     out_dir = Path(args.out)
@@ -394,4 +399,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

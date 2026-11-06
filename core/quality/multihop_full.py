@@ -19,15 +19,21 @@ if str(ROOT) not in sys.path:
 
 from langchain_core.documents import Document  # noqa: E402
 
+from core.paths import BENCHMARK_ROOT, benchmark_path
 from core.quality.datasets import build_store  # noqa: E402
 from core.quality.paths import PUBLIC_OUT  # noqa: E402
 
-MULTIHOP_REPO = Path(r"E:\CODE\benchmarks\MultiHop-RAG")
+MULTIHOP_REPO = benchmark_path("MultiHop-RAG")
 CORPUS_PATH = MULTIHOP_REPO / "data" / "corpus.json"
 QUERIES_PATH = MULTIHOP_REPO / "data" / "MultiHopRAG.json"
 
-sys.path.insert(0, str(MULTIHOP_REPO))
-from retrieval_evaluate import calculate_metrics  # noqa: E402
+# 官方指标脚本不在仓库里；缺失时不要让 import 失败，run() 给出可读提示。
+try:
+    if str(MULTIHOP_REPO) not in sys.path:
+        sys.path.insert(0, str(MULTIHOP_REPO))
+    from retrieval_evaluate import calculate_metrics  # noqa: E402
+except ImportError:
+    calculate_metrics = None
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -45,6 +51,14 @@ def main(argv=None):
     parser.add_argument("--k", type=int, default=10)
     parser.add_argument("--out-dir", default=str(PUBLIC_OUT))
     args = parser.parse_args(argv)
+
+    if calculate_metrics is None or not CORPUS_PATH.is_file() or not QUERIES_PATH.is_file():
+        print(
+            "未安装 MultiHop-RAG 原始数据 / 官方 retrieval_evaluate.py；"
+            f"请设置 AH_BENCHMARK_ROOT（当前 {BENCHMARK_ROOT}）。",
+            file=sys.stderr,
+        )
+        return 2
 
     corpus = load_json(CORPUS_PATH)
     queries = load_json(QUERIES_PATH)
@@ -154,4 +168,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

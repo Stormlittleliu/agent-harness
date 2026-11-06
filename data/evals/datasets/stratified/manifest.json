@@ -3,6 +3,8 @@
   "seed": 42,
   "per_category": 5,
   "note": "平衡抽样，不是官方 benchmark 成绩；类别/源规模见 sets。",
+  "source_root": "BENCHMARK_ROOT",
+  "samples_root": "data/datasets/stratified",
   "selection_record": {
     "jsonl": "selections.jsonl",
     "markdown": "selections.md",
@@ -42,7 +44,7 @@
   "sets": {
     "bfcl": {
       "file": "bfcl_5per_category.jsonl",
-      "source": "E:/CODE/benchmarks/BFCL/berkeley-function-call-leaderboard/bfcl_eval/data",
+      "source": "BFCL/berkeley-function-call-leaderboard/bfcl_eval/data",
       "counts": {
         "irrelevance": 5,
         "live_irrelevance": 5,
@@ -112,7 +114,7 @@
     },
     "rgb": {
       "file": "rgb_5per_category.jsonl",
-      "source": "E:/CODE/benchmarks/RGB/data",
+      "source": "RGB/data",
       "counts": {
         "zh_normal": 5,
         "en_normal": 5,
@@ -141,7 +143,7 @@
     },
     "tau2": {
       "file": "tau2_5per_domain.jsonl",
-      "source": "E:/CODE/benchmarks/tau2-bench/data/tau2/domains",
+      "source": "tau2-bench/data/tau2/domains",
       "counts": {
         "airline": 5,
         "banking_knowledge": 5,
@@ -163,7 +165,7 @@
     },
     "multihop": {
       "file": "multihop_5per_type.jsonl",
-      "source": "E:/CODE/benchmarks/MultiHop-RAG/data/MultiHopRAG.json",
+      "source": "MultiHop-RAG/data/MultiHopRAG.json",
       "counts": {
         "comparison_query": 5,
         "inference_query": 5,
@@ -183,7 +185,7 @@
     },
     "cfbench": {
       "file": "cfbench_5per_split.jsonl",
-      "source": "E:/CODE/benchmarks/CFBench/data/cfbench_data.json",
+      "source": "CFBench/data/cfbench_data.json",
       "source_file": "cfbench_data.json",
       "counts": {
         "easy_answerable": 5,
@@ -206,7 +208,7 @@
     },
     "gaia": {
       "file": "gaia_5per_level.jsonl",
-      "source": "E:/CODE/benchmarks/GAIA/gaia_validation.jsonl",
+      "source": "GAIA/gaia_validation.jsonl",
       "source_file": "gaia_validation.jsonl",
       "counts": {
         "level_1": 5,
@@ -222,7 +224,7 @@
     },
     "humaneval": {
       "file": "humaneval_5per_task.jsonl",
-      "source": "E:/CODE/benchmarks/human-eval/data/HumanEval.jsonl.gz",
+      "source": "human-eval/data/HumanEval.jsonl.gz",
       "source_file": "HumanEval.jsonl.gz",
       "counts": {
         "function_completion": 5
@@ -237,7 +239,7 @@
     },
     "mbpp": {
       "file": "mbpp_5per_task.jsonl",
-      "source": "E:/CODE/benchmarks/mbpp/mbpp.jsonl",
+      "source": "mbpp/mbpp.jsonl",
       "source_file": "mbpp.jsonl",
       "counts": {
         "function_generation": 5
@@ -252,7 +254,7 @@
     },
     "swebench": {
       "file": "swebench_5per_repo.jsonl",
-      "source": "E:/CODE/benchmarks/SWE-bench/swebench_verified.jsonl",
+      "source": "SWE-bench/swebench_verified.jsonl",
       "source_file": "swebench_verified.jsonl",
       "counts": {
         "astropy/astropy": 5,
@@ -286,7 +288,7 @@
     },
     "webarena": {
       "file": "webarena_5per_site.jsonl",
-      "source": "E:/CODE/benchmarks/WebArena/config_files",
+      "source": "WebArena/config_files",
       "source_file": "config_files/",
       "counts": {
         "gitlab": 5,
@@ -316,7 +318,7 @@
     },
     "osworld": {
       "file": "osworld_5per_category.jsonl",
-      "source": "E:/CODE/benchmarks/OSWorld/evaluation_examples/examples",
+      "source": "OSWorld/evaluation_examples/examples",
       "source_file": "evaluation_examples/examples/",
       "counts": {
         "os_chrome": 5,

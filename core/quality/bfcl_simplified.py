@@ -22,10 +22,12 @@ if str(ROOT) not in sys.path:
 
 from langchain_core.messages import HumanMessage  # noqa: E402
 
+from core.paths import benchmark_path  # noqa: E402
 from core.quality.paths import BFCL_OUT  # noqa: E402
-from core.llm.factory import chat_model  # noqa: E402
 
-BFCL_DATA = Path(r"E:\CODE\benchmarks\BFCL\berkeley-function-call-leaderboard\bfcl_eval\data")
+BFCL_DATA = benchmark_path(
+    "BFCL", "berkeley-function-call-leaderboard", "bfcl_eval", "data"
+)
 SIMPLE = BFCL_DATA / "BFCL_v4_simple_python.json"
 SIMPLE_GT = BFCL_DATA / "possible_answer" / "BFCL_v4_simple_python.json"
 IRRELEVANCE = BFCL_DATA / "BFCL_v4_irrelevance.json"
@@ -167,6 +169,15 @@ def main(argv=None):
     parser.add_argument("--out-dir", default=str(BFCL_OUT))
     args = parser.parse_args(argv)
 
+    missing = [path for path in (SIMPLE, SIMPLE_GT, IRRELEVANCE) if not path.is_file()]
+    if missing:
+        from core.paths import benchmark_missing_message
+
+        print(benchmark_missing_message(missing[0]), file=sys.stderr)
+        return 2
+
+    from core.llm.factory import chat_model
+
     simple_items = list(read_jsonl(SIMPLE))[: args.simple]
     gt = {row["id"]: row.get("ground_truth", []) for row in read_jsonl(SIMPLE_GT)}
     irrelevance_items = list(read_jsonl(IRRELEVANCE))[: args.irrelevance]
@@ -282,6 +293,7 @@ def main(argv=None):
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     print(f"report: {md_path}")
     print(f"details: {json_path}")
+    return 0
 
 
 if __name__ == "__main__":

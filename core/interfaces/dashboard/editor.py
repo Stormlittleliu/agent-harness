@@ -42,7 +42,9 @@ from core.scenarios.spec_nodes import block_desc, block_label, block_params, reg
 NAME_HINT = "只用小写字母、数字和下划线，例如 note_qa"
 MODE_CANVAS = "🎨 可视化画布"
 MODE_FORM = "📝 表单"
-DRAFT_ROOT = Path("data/runtime/spec_drafts")
+from core.paths import runtime_path
+
+DRAFT_ROOT = runtime_path("spec_drafts")
 HISTORY_LIMIT = 50
 
 

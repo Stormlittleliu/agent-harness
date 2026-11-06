@@ -11,7 +11,6 @@ import json
 from langchain_core.documents import Document
 
 from core.agent.framework import FrameworkAgent
-from core.llm.factory import chat_model
 from core.agent.contracts import Scenario
 from core.tools.rag.service import RagSummarizeService
 from core.tools.rag.tools import build_rag_tools
@@ -20,6 +19,8 @@ EVAL_SYSTEM_PROMPT = "你是 RAG 问答助手。只依据工具返回的资料�
 
 
 def build_eval_agent(retriever) -> FrameworkAgent:
+    from core.llm.factory import chat_model
+
     service = RagSummarizeService(retriever=retriever)
     rag_summarize, rag_retrieve = build_rag_tools(service)
     scenario = Scenario(

@@ -26,6 +26,7 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from core.agent.pipeline import available_policies
+from core.paths import SPEC_ROOT as _SPEC_ROOT
 from core.prompts.blocks import PromptBook, validate_book
 from core.prompts.assemble import context_from_scenario, get_assembled
 from core.scenarios.spec_nodes import (
@@ -39,7 +40,7 @@ from core.scenarios.spec_nodes import (
 )
 
 SPEC_VERSION = 1
-SPEC_ROOT = Path("data/specs")
+SPEC_ROOT = _SPEC_ROOT
 ACTIVE_FILE = "active.json"
 RESERVED_ARGS = {"scenario", "state", "config", "runtime"}
 

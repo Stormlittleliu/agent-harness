@@ -17,11 +17,12 @@ if str(ROOT) not in sys.path:
 
 from langchain_core.documents import Document  # noqa: E402
 
-from core.quality.datasets import (  # noqa: E402
-    DATASETS_DIR,
-    build_store,
-    load_jsonl,
+from core.paths import (  # noqa: E402
+    DatasetNotInstalled,
+    dataset_missing_message,
+    dataset_path,
 )
+from core.quality.datasets import build_store, load_jsonl  # noqa: E402
 from core.quality.metrics import format_context, score_retrieval  # noqa: E402
 from core.quality.paths import PUBLIC_OUT  # noqa: E402
 from core.quality.rag_harness import (  # noqa: E402
@@ -31,9 +32,20 @@ from core.quality.rag_harness import (  # noqa: E402
     sources_from_artifact,
 )
 
-PUBLIC_DIR = DATASETS_DIR / "public"
+# 外置数据根优先（AH_DATASET_ROOT），旧 data/evals/datasets/public 自动回退。
+PUBLIC_DIR = dataset_path("public")
+RGB_SAMPLE = PUBLIC_DIR / "rag_rgb_sample.jsonl"
+MULTIHOP_SAMPLE = PUBLIC_DIR / "rag_multihop_sample.jsonl"
 MULTIHOP_CORPUS = PUBLIC_DIR / "multihop_corpus.json"
 MAX_DOC_CHARS = 2000
+
+
+def _require_dataset(path: Path) -> Path:
+    """缺数据时抛可读错误；CLI 捕获后提示安装位置，而不是 traceback。"""
+    path = Path(path)
+    if not path.is_file():
+        raise DatasetNotInstalled(dataset_missing_message(path))
+    return path
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -42,7 +54,7 @@ except (AttributeError, OSError):
 
 
 def run_rgb(limit=0):
-    cases = load_jsonl(PUBLIC_DIR / "rag_rgb_sample.jsonl")
+    cases = load_jsonl(_require_dataset(RGB_SAMPLE))
     if limit:
         cases = cases[:limit]
     rows = []
@@ -101,10 +113,10 @@ def run_rgb(limit=0):
 
 
 def run_multihop(limit=0):
-    cases = load_jsonl(PUBLIC_DIR / "rag_multihop_sample.jsonl")
+    cases = load_jsonl(_require_dataset(MULTIHOP_SAMPLE))
     if limit:
         cases = cases[:limit]
-    corpus = json.loads(MULTIHOP_CORPUS.read_text(encoding="utf-8"))
+    corpus = json.loads(_require_dataset(MULTIHOP_CORPUS).read_text(encoding="utf-8"))
     documents = [
         Document(
             page_content=f"{item.get('title', '')}\n\n{item.get('body', '')}"[:MAX_DOC_CHARS],
@@ -212,8 +224,19 @@ def main(argv=None):
     selected = tuple(item.strip() for item in args.benchmarks.split(",") if item.strip())
     if args.skip_multihop:
         selected = tuple(item for item in selected if item != "multihop")
-    run(selected, args.rgb_limit, args.multihop_limit)
+    try:
+        run(selected, args.rgb_limit, args.multihop_limit)
+    except DatasetNotInstalled as exc:
+        print(str(exc), file=sys.stderr)
+        print(
+            "导入命令：把 public/ 样本放回 AH_DATASET_ROOT，或参考 "
+            "data/datasets/README.md；分层样本可用 "
+            "`python -m dataset_ops.stratified --per-category 5 --seed 42` 生成。",
+            file=sys.stderr,
+        )
+        return 2
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

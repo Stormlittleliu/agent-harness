@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from core.quality.stratified import build_all, sample_with_index
 
 
@@ -47,6 +49,26 @@ def _fake_root(tmp_path: Path) -> Path:
         rows.extend({"query": f"{kind}-{i}", "question_type": kind} for i in range(8))
     multihop.write_text(json.dumps(rows), encoding="utf-8")
     return root
+
+
+def test_partial_sources_do_not_overwrite_existing_samples(tmp_path):
+    root = _fake_root(tmp_path)
+    out = tmp_path / "out"
+    out.mkdir()
+    sentinel = out / "rgb_5per_category.jsonl"
+    sentinel.write_text("OLD-BODY\n", encoding="utf-8")
+
+    with pytest.raises(FileNotFoundError):
+        build_all(
+            root,
+            out,
+            per_category=5,
+            seed=42,
+            sources=("rgb", "cfbench"),
+        )
+
+    # 源缺失时正文必须保持旧内容，不能先写一半再报错。
+    assert sentinel.read_text(encoding="utf-8") == "OLD-BODY\n"
 
 
 def test_sample_with_index_is_deterministic():

@@ -21,7 +21,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-REPORT_ROOT = Path("data/runtime/spec_reports")
+from core.paths import runtime_path
+
+REPORT_ROOT = runtime_path("spec_reports")
 CITATION_PATTERN = r"\[[^\]]+\]"
 # 兜底节点查遍候选库仍然没有材料时的固定回答：宁可明确拒答，也不让模型凭空编。
 FALLBACK_EMPTY = "我把现有资料都查了一遍，没有找到能回答这个问题的内容。可以换个说法，或者告诉我具体的型号 / 尺码。"

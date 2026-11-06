@@ -17,7 +17,7 @@
 
 ## 2. 冻结时的数字
 
-- 测试：**408 passed**（不调真实模型）
+- 测试：**408 passed**（冻结时；2026-11-06 数据集/资源重构后为 **453 passed**）
 - selfbuilt：**26/26**（1-trial）
 - 新场景 3-trial：`clothing_service` **6/6**、`retail_router` **5/5**
 - workspace：**5/5**（3-trial，11/02 快照）
@@ -54,6 +54,29 @@
 - **回退**：删块 + 删测试；active spec 没动，回退成本为零。
 - **未做**：没有真实模型评测，没有 fallback 率的数字；多库全查的成本没有测量。
 - 设计见 [fallback-node](fallback-node.md)。
+
+### 例外 2：数据集外置 + 资源目录 MCP（2026-11-06）
+
+- **原因**：仓库不应携带公开 benchmark 抽样正文，也不应把作者机器的
+  `E:\CODE\benchmarks` 写死；同时 agent 编辑需要统一的工具 / 工作流 / 场景 /
+  块访问面，而不是按四个模块的内部结构猜。
+- **破了哪条**：第 4 节“不允许新能力”；严格说新增了只读资源目录和本地 MCP server。
+- **范围**：
+  - 采样实现移到 `dataset_ops/`，旧路径保留 shim；
+  - 公开样本 / 分层正文 / catalog 正文移到 `data/datasets/`（git 忽略），仓库只留
+    provenance 与 `data/benchmarks/manifest.json` 引用；
+  - 新增 `core/paths.py`、`core/resources/`、`core/mcp/resource_server.py`；
+  - **不动评测大框架**（runner / scorer / report 结构不变），只维护接口。
+- **证据**：`python -m pytest -q` **453 passed**；MCP stdio smoke 能列出 4 个工具并
+  返回 52 tools / 10 workflows / 11 scenarios / 12 blocks；旧
+  `python -m core.quality.stratified` 与 `python -m core.benchmarks.catalog --list` 仍可用。
+- **回退**：删除 `core/resources/` 与 `resource_server.py` 即回到无资源目录；
+  数据从 `data/datasets/` 移回旧路径即可；`dataset_ops` 可由 shim 反向依赖。
+- **未做**：没有把评测框架重构成统一 `EvalCase/Scorer`；没有向量语义检索；
+  没有资源写入 API；没有把用户本地 `retail_router` 改动纳入提交。
+- 设计见 [core-modularity](core-modularity.md)、
+  [resource-catalog](resource-catalog.md)、
+  [eval-interface-freeze](eval-interface-freeze.md)。
 
 ## 6. 叙事材料
 

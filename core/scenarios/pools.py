@@ -17,7 +17,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from core.llm.factory import chat_model
 from core.scenarios.workspace_assistant.tools import (
     MemoryStore,
     NoteStore,
@@ -111,6 +110,7 @@ def _structured_demo() -> Toolbox:
 
 def _coding_demo() -> Toolbox:
     from core.agent.subagent import build_subagent_tool
+    from core.llm.factory import chat_model
     from core.runtime.config import RuntimeConfig, SubagentConfig
     from core.runtime.task_tools import build_task_tools
     from core.runtime.tasks import TaskStore
@@ -248,6 +248,7 @@ def _retail_expert() -> Toolbox:
 
 def _research_assistant() -> Toolbox:
     from core.agent.subagent import build_subagent_tool
+    from core.llm.factory import chat_model
     from core.runtime.config import RuntimeConfig, SubagentConfig
     from core.scenarios.research_assistant.tools import SourceStore, build_research_tools
 

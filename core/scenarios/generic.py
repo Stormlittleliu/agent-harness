@@ -17,16 +17,15 @@ from __future__ import annotations
 from pathlib import Path
 
 from core.agent.contracts import Scenario
-from core.llm.factory import chat_model
 from core.prompts.blocks import load_book
 from core.scenarios import pools
 from core.scenarios.ownership import OWNER_CODE, ensure_spec_editable, load_state
 from core.scenarios.spec import SpecError, build_from_spec, load_active_spec, resolve_cases_path
 from core.scenarios.schemas import resolve as resolve_schema
-from core.utils.path_tool import get_abs_path
 
-SPEC_ROOT = Path(get_abs_path("data/specs"))
-CODE_ROOT = Path(get_abs_path("core/scenarios"))
+from core.paths import PROJECT_ROOT, SPEC_ROOT
+
+CODE_ROOT = PROJECT_ROOT / "core" / "scenarios"
 
 
 def spec_tool_pool() -> tuple:
@@ -65,6 +64,8 @@ def build_generic_spec_scenario(
     root: Path | str = SPEC_ROOT,
 ) -> Scenario:
     """用 spec + 同名工具箱构建一个场景。"""
+    from core.llm.factory import chat_model
+
     # spec 是权威：原代码目录（如果有）只剩参考价值，不再参与 hash 守卫。
     ensure_spec_editable(name, root=root, code_root=CODE_ROOT, track_code=False)
     spec = load_active_spec(name, root=root)

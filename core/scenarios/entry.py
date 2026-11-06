@@ -25,7 +25,7 @@ from pathlib import Path
 
 import yaml
 
-SPEC_ROOT = Path(__file__).resolve().parents[2] / "data" / "specs"
+from core.paths import SPEC_ROOT
 ENTRY_FILENAME = "entry.yml"
 DEFAULT_ORDER = 100
 
