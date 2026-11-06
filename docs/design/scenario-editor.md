@@ -64,11 +64,13 @@
 - 后端：`core/interfaces/dashboard/canvas.py` 只做 `declare_component` + 传参；
 - 交换格式：
   ```
-  后端 -> 前端  {nodes:[{id, fn, label, x, y, kind?}], edges:[[from,to]], blocks, errors, selected}
+  后端 -> 前端  {nodes:[{id, fn, label, x, y, kind?}], edges:[[from,to] 或 [from,to,when]], blocks, errors, selected}
   前端 -> 后端  {nodes:[{id, fn, x, y}], edges, anchors:{__start__:[x,y], __end__:[x,y]}, selected, version}
   ```
-- **画布只改拓扑和位置**：`merge_canvas` 把回传当不可信输入——未知块、重复 id、
+- **画布改拓扑、位置和边条件**：`merge_canvas` 把回传当不可信输入——未知块、重复 id、
   悬空边、空节点列表一律丢掉；节点参数只在"块没变"时保留，换块就重置为块默认值；
+- **边交互**：点一条边打开设置弹层，可填/清空条件；删除走弹层按钮或 Delete，
+  单击不再直接删边。新建边仍是无条件边，点开后再补条件；
 - 位置不进 spec（schema 拒绝多余字段），放 `data/runtime/spec_layout/<name>.json`，
   这个目录已被 `.gitignore` 覆盖；
 - 校验错误会把**出错节点标红**（`bad_node_ids` 从错误文本里认出节点 id），

@@ -368,3 +368,26 @@ def test_merge_canvas_preserves_conditional_edge_labels():
     spec_edit.merge_canvas(draft, "qa", payload)
     assert ["search", "answer", "hit"] in workflow["edges"]
     assert ["search", "verify", "miss"] in workflow["edges"]
+
+
+def test_merge_canvas_sets_and_clears_condition_from_canvas():
+    draft = _draft()
+    workflow = draft["workflows"]["qa"]
+    payload = spec_edit.canvas_payload("demo", "qa", draft)
+    payload["edges"] = [
+        ["__start__", "search"],
+        ["search", "answer", "size"],
+        ["answer", "verify"],
+        ["verify", "__end__"],
+    ]
+    spec_edit.merge_canvas(draft, "qa", payload)
+    assert ["search", "answer", "size"] in workflow["edges"]
+
+    payload["edges"] = [
+        ["__start__", "search"],
+        ["search", "answer", ""],
+        ["answer", "verify"],
+        ["verify", "__end__"],
+    ]
+    spec_edit.merge_canvas(draft, "qa", payload)
+    assert ["search", "answer"] in workflow["edges"]

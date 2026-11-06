@@ -637,7 +637,7 @@ def _render_edges(name: str, draft: dict, workflow: str, prefix: str) -> None:
             _bump_generation()
             st.rerun()
         return
-    st.caption("条件列填 branch 的 route 值（cases 里写的 route 或 default；旧版是 hit / miss）；留空表示无条件边。同一个节点要么全有条件，要么全无条件。")
+    st.caption("条件列填 branch 的 route 值（cases 里写的 route 或 default；旧版是 hit / miss）；留空表示无条件边。也可以在画布上点一条边，在弹层里设置条件。同一个节点要么全有条件，要么全无条件。")
     before = copy.deepcopy(draft)
     edited = st.data_editor(
         rows,

@@ -62,6 +62,28 @@
     font-size: 11px; padding: 2px 7px; border-radius: 5px;
   }
   .zoombar button:hover { background: rgba(76,125,240,.12); }
+  .edge-panel {
+    position: absolute; right: 10px; top: 46px; width: 268px;
+    background: rgba(255,255,255,.98); border: 1px solid rgba(76,125,240,.35);
+    border-radius: 10px; box-shadow: 0 8px 24px rgba(31,39,51,.14);
+    padding: 10px; z-index: 5; display: none;
+  }
+  .edge-panel h4 { margin: 0 0 4px; font-size: 12px; color: #2b3a55; }
+  .edge-panel .edge-route { color: #6b7a90; font-size: 11px; margin-bottom: 6px; word-break: break-all; }
+  .edge-panel label { display: block; color: #5b6b82; font-size: 11px; margin-bottom: 3px; }
+  .edge-panel input {
+    width: 100%; border: 1px solid #cfd8e6; border-radius: 6px; padding: 5px 7px;
+    font-size: 12px; margin-bottom: 7px; outline: none;
+  }
+  .edge-panel input:focus { border-color: #4c7df0; box-shadow: 0 0 0 2px rgba(76,125,240,.16); }
+  .edge-panel .edge-actions { display: flex; gap: 6px; }
+  .edge-panel button {
+    border: 1px solid #cfd8e6; background: #fff; color: #2b3a55;
+    border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer;
+  }
+  .edge-panel button.primary { background: #4c7df0; border-color: #4c7df0; color: #fff; }
+  .edge-panel button.danger { color: #c62f36; border-color: #f0c4c6; }
+  .edge-panel .edge-tip { color: #8a97a8; font-size: 10px; margin-top: 5px; }
   .box { fill: rgba(76,125,240,.10); stroke: #4c7df0; stroke-width: 1; stroke-dasharray: 4 3; }
   .resizer {
     position: absolute; right: 4px; bottom: 4px; width: 16px; height: 16px;
@@ -75,12 +97,24 @@
 <div class="wrap">
   <div class="palette" id="palette"><h4>块库（拖到画布）</h4></div>
   <div class="board">
-    <div class="hint">拖节点移动 · Shift/Alt+拖空白框选 · 右侧圆点连线 · Delete 删节点 · 滚轮缩放 · 空白拖动平移</div>
+    <div class="hint">拖节点移动 · Shift/Alt+拖空白框选 · 右侧圆点连线 · 点边设置条件 · Delete 删节点/边 · 滚轮缩放</div>
     <div class="zoombar">
       <button type="button" data-zoom="out" title="缩小">−</button>
       <button type="button" data-zoom="reset" title="恢复 100%">100%</button>
       <button type="button" data-zoom="in" title="放大">+</button>
       <button type="button" data-zoom="fit" title="适配视图">适配</button>
+    </div>
+    <div class="edge-panel" id="edgePanel">
+      <h4>边设置</h4>
+      <div class="edge-route" id="edgeRoute"></div>
+      <label for="edgeCondition">条件（留空 = 无条件边）</label>
+      <input id="edgeCondition" type="text" placeholder="例如 size / style / care / other" />
+      <div class="edge-actions">
+        <button type="button" class="primary" id="edgeApply">应用</button>
+        <button type="button" class="danger" id="edgeDelete">删除边</button>
+        <button type="button" id="edgeCancel">取消</button>
+      </div>
+      <div class="edge-tip">条件值必须和 branch 的 route / 条件边标签一致。</div>
     </div>
     <svg id="board" viewBox="0 0 1180 470" preserveAspectRatio="none"></svg>
     <div class="flash" id="flash"></div>
@@ -94,7 +128,8 @@
 
   var model = {
     nodes: [], edges: [], blocks: [], errors: [],
-    selected: null, selection: [], clipboard: null, showPalette: true
+    selected: null, selection: [], clipboard: null, showPalette: true,
+    selectedEdge: null
   };
   var drag = null;      // { id, start, origins, moved }
   var link = null;      // { from, x, y }
@@ -116,6 +151,9 @@
   var wrap = document.querySelector(".wrap");
   var flashBox = document.getElementById("flash");
   var resizer = document.getElementById("resizer");
+  var edgePanel = document.getElementById("edgePanel");
+  var edgeRoute = document.getElementById("edgeRoute");
+  var edgeCondition = document.getElementById("edgeCondition");
   var flashTimer = null;
   try { boardH = Number(localStorage.getItem("ah-canvas-height")) || 470; } catch (err) { boardH = 470; }
 
@@ -148,6 +186,8 @@
     });
     model.errors = Array.isArray(args.errors) ? args.errors : [];
     model.showPalette = args.show_palette !== false;
+    model.selectedEdge = null;
+    if (edgePanel) { edgePanel.style.display = "none"; }
     var keep = args.selected || null;
     if (keep && !findNode(keep)) { keep = null; }
     model.selected = keep;
@@ -324,6 +364,53 @@
       " " + x2 + "," + y2;
   }
 
+  function hideEdgePanel() {
+    model.selectedEdge = null;
+    if (edgePanel) { edgePanel.style.display = "none"; }
+  }
+
+  function showEdgePanel(index) {
+    var edge = model.edges[index];
+    if (!edge || !edgePanel) { return; }
+    edgeRoute.textContent = edge[0] + " → " + edge[1];
+    edgeCondition.value = edge[2] || "";
+    edgePanel.style.display = "block";
+    setTimeout(function () { try { edgeCondition.focus(); edgeCondition.select(); } catch (err) {} }, 0);
+  }
+
+  function selectEdge(index) {
+    if (!model.edges[index]) { return; }
+    model.selectedEdge = index;
+    model.selection = [];
+    model.selected = null;
+    draw();
+    showEdgePanel(index);
+  }
+
+  function applyEdgeCondition() {
+    var index = model.selectedEdge;
+    var edge = model.edges[index];
+    if (!edge) { hideEdgePanel(); draw(); return; }
+    var when = String(edgeCondition.value || "").trim();
+    // 始终带第三项：空字符串是“显式清空”，后端才会覆盖旧条件；
+    // 只发 [from,to] 会被 merge_canvas 当成“画布没传条件”而保留旧值。
+    model.edges[index] = [edge[0], edge[1], when];
+    hideEdgePanel();
+    draw();
+    emit();
+    flash(when ? ("已设置条件 " + when) : "已清空条件");
+  }
+
+  function deleteSelectedEdge() {
+    var index = model.selectedEdge;
+    if (index === null || !model.edges[index]) { return; }
+    model.edges.splice(index, 1);
+    hideEdgePanel();
+    draw();
+    emit();
+    flash("已删除连线");
+  }
+
   function draw() {
     var parts = [];
     parts.push('<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" ' +
@@ -332,7 +419,11 @@
       var source = findNode(edge[0]), target = findNode(edge[1]);
       if (!source || !target) { return; }
       var d = edgePath(source, target);
-      parts.push('<path d="' + d + '" fill="none" stroke="#8fa2c0" stroke-width="1.6" marker-end="url(#arrow)"/>');
+      var selected = model.selectedEdge === index;
+      var stroke = selected ? "#2f5bd3" : "#8fa2c0";
+      var width = selected ? 2.6 : 1.6;
+      parts.push('<path d="' + d + '" fill="none" stroke="' + stroke + '" stroke-width="' + width +
+        '" marker-end="url(#arrow)"/>');
       if (edge[2]) {
         var mx = (source.x + NODE_W + target.x) / 2;
         var my = (source.y + target.y) / 2 + NODE_H / 2;
@@ -340,12 +431,12 @@
         var lw = Math.max(44, label.length * 7 + 14);
         parts.push('<g style="pointer-events:none">' +
           '<rect x="' + (mx - lw / 2) + '" y="' + (my - 10) + '" width="' + lw + '" height="18" rx="9" ' +
-          'fill="#eef4ff" stroke="#c7d7fe"/>' +
+          'fill="' + (selected ? "#dbe7ff" : "#eef4ff") + '" stroke="#c7d7fe"/>' +
           '<text x="' + mx + '" y="' + (my + 3.5) + '" text-anchor="middle" font-size="10" ' +
           'fill="#2f5bd3">' + esc(label) + '</text></g>');
       }
       parts.push('<path data-edge="' + index + '" d="' + d + '" fill="none" stroke="transparent" ' +
-        'stroke-width="12" style="cursor:pointer"><title>点击删除这条连线</title></path>');
+        'stroke-width="14" style="cursor:pointer"><title>点击设置条件 / Delete 删除边</title></path>');
     });
     if (link) {
       var from = findNode(link.from);
@@ -365,6 +456,7 @@
 
   // ---------------- 交互 ----------------
   function selectOnly(id) {
+    hideEdgePanel();
     model.selection = id ? [id] : [];
     model.selected = id || null;
     draw();
@@ -401,6 +493,7 @@
     });
     model.selection = model.selection.filter(function (id) { return ids.indexOf(id) < 0; });
     if (ids.indexOf(model.selected) >= 0) { model.selected = null; }
+    hideEdgePanel();
     return true;
   }
   function copySelection() {
@@ -409,7 +502,9 @@
     var nodes = ids.map(function (id) { return Object.assign({}, findNode(id)); });
     var edges = model.edges.filter(function (edge) {
       return ids.indexOf(edge[0]) >= 0 && ids.indexOf(edge[1]) >= 0;
-    }).map(function (edge) { return [edge[0], edge[1]]; });
+    }).map(function (edge) {
+      return edge.length >= 3 ? [edge[0], edge[1], edge[2]] : [edge[0], edge[1]];
+    });
     model.clipboard = { nodes: nodes, edges: edges };
     flash("已复制 " + nodes.length + " 个节点");
     return true;
@@ -427,7 +522,9 @@
     });
     model.clipboard.edges.forEach(function (edge) {
       if (mapping[edge[0]] && mapping[edge[1]]) {
-        model.edges.push([mapping[edge[0]], mapping[edge[1]]]);
+        var item = [mapping[edge[0]], mapping[edge[1]]];
+        if (edge.length >= 3 && edge[2]) { item.push(edge[2]); }
+        model.edges.push(item);
       }
     });
     model.selection = newIds;
@@ -472,6 +569,7 @@
       var node = findNode(nodeEl.getAttribute("data-node"));
       if (!node) { return; }
       event.preventDefault();
+      hideEdgePanel();
       if (event.shiftKey || event.altKey) {
         toggleSelect(node.id);
         return;
@@ -496,17 +594,13 @@
     }
     var edgeEl = event.target.closest && event.target.closest("[data-edge]");
     if (edgeEl) {
-      var index = Number(edgeEl.getAttribute("data-edge"));
-      if (model.edges[index]) {
-        model.edges.splice(index, 1);
-        draw();
-        emit();
-        flash("已删除连线");
-      }
+      event.preventDefault();
+      selectEdge(Number(edgeEl.getAttribute("data-edge")));
       return;
     }
     // 空白处：Shift/Alt+拖 = 框选；普通拖 = 平移画布。
     event.preventDefault();
+    hideEdgePanel();
     var blank = toBoard(event);
     if (event.shiftKey || event.altKey) {
       box = { sx: blank.x, sy: blank.y, x: blank.x, y: blank.y };
@@ -628,7 +722,7 @@
         } else {
           model.edges.push(pair);
           emit();
-          flash("已连接 " + from + " → " + targetId);
+          flash("已连接 " + from + " → " + targetId + "；点边可设置条件");
         }
       }
     }
@@ -697,6 +791,12 @@
     if (ctrl && key === "v") { event.preventDefault(); pasteClipboard(28); return; }
     if (ctrl && key === "d") { event.preventDefault(); duplicateSelection(); return; }
 
+    if ((event.key === "Delete" || event.key === "Backspace") && model.selectedEdge !== null) {
+      event.preventDefault();
+      deleteSelectedEdge();
+      return;
+    }
+
     var ids = selectedNodeIds();
     if ((event.key === "Delete" || event.key === "Backspace") && ids.length) {
       event.preventDefault();
@@ -724,9 +824,19 @@
     }
   });
 
+  document.getElementById("edgeApply").addEventListener("click", applyEdgeCondition);
+  document.getElementById("edgeDelete").addEventListener("click", deleteSelectedEdge);
+  document.getElementById("edgeCancel").addEventListener("click", function () {
+    hideEdgePanel();
+    draw();
+  });
+  document.getElementById("edgeCondition").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") { event.preventDefault(); applyEdgeCondition(); }
+    if (event.key === "Escape") { event.preventDefault(); hideEdgePanel(); draw(); }
+  });
+
   var zoomButtons = document.querySelectorAll("[data-zoom]");
-  for (var zi = 0; zi < zoomButtons.length; zi++) {
-    zoomButtons[zi].addEventListener("click", function () {
+  for (var zi = 0; zi < zoomButtons.length; zi++) {    zoomButtons[zi].addEventListener("click", function () {
       var action = this.getAttribute("data-zoom");
       if (action === "fit") { fitView(); }
       else if (action === "reset") { view = { x: 0, y: 0, w: BOARD_W, h: BOARD_H }; applyView(); }
