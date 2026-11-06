@@ -23,6 +23,8 @@ from typing import Any, Callable
 
 REPORT_ROOT = Path("data/runtime/spec_reports")
 CITATION_PATTERN = r"\[[^\]]+\]"
+# 兜底节点查遍候选库仍然没有材料时的固定回答：宁可明确拒答，也不让模型凭空编。
+FALLBACK_EMPTY = "我把现有资料都查了一遍，没有找到能回答这个问题的内容。可以换个说法，或者告诉我具体的型号 / 尺码。"
 
 NodeFn = Callable[..., dict[str, Any]]
 NODE_REGISTRY: dict[str, NodeFn] = {}
@@ -422,6 +424,20 @@ def _invoke_tool(scenario: Any, name: str, args: dict[str, Any]) -> str:
     return _content(result)
 
 
+def _query_args(scenario: Any, name: str, query: str, limit: int) -> dict[str, Any]:
+    """按工具自己的参数名传条数：RAG 工具收 ``k``，任务类工具收 ``limit``。
+
+    不能写死成 ``limit``——``rag_retrieve`` 的签名是 ``(query, k=4)``，
+    多传一个 ``limit`` 会直接 TypeError。
+    """
+    schema = getattr(scenario.get_tool(name), "args", None) or {}
+    if "k" in schema:
+        return {"query": query, "k": limit}
+    if "limit" in schema:
+        return {"query": query, "limit": limit}
+    return {"query": query}
+
+
 # ---------------------------------------------------------------- 参数插值
 #
 # 节点之间靠 state 传值。让 spec 里能写 "{input}" / "{scratch.user_id}"，就不用为
@@ -817,6 +833,101 @@ def llm_answer(
     except Exception as exc:  # noqa: BLE001
         return {"answer": "", "scratch": _merge_scratch(state, error=f"模型调用失败：{exc}")}
     return {"answer": _content(reply).strip(), "scratch": _merge_scratch(state, error=None)}
+
+
+@register_node(
+    "fallback_answer",
+    label="兜底检索回答",
+    desc="规则没命中时，把候选知识库都查一遍，再让模型判断并基于材料回答",
+    params=(
+        ParamSpec("tools", "tool_list", required=True, help="候选检索工具；按顺序各查一次"),
+        ParamSpec("limit", "int", default=4, minimum=1, maximum=20, help="每个库取几条"),
+        ParamSpec("prompt", "str", default="", help="回答指令；留空用默认兜底指令"),
+        ParamSpec("query_key", "str", default="input", help="从 state 的哪个键取问题"),
+    ),
+    inputs=(PortSpec("input", "text", required=True, help="用户问题"),),
+    outputs=(
+        PortSpec("answer", "text", required=True, help="最终回答"),
+        PortSpec("tool_result", "text", required=False, help="合并后的检索材料"),
+    ),
+)
+def fallback_answer(
+    state: dict[str, Any],
+    scenario: Any = None,
+    tools: tuple[str, ...] | list[str] = (),
+    limit: int = 4,
+    prompt: str = "",
+    query_key: str = "input",
+    **_,
+) -> dict[str, Any]:
+    """规则没命中时的兜底：查完所有候选库，再让模型判断该用哪份材料回答。
+
+    和 ``retrieve`` 的区别是"查哪个库"不再由 spec 提前决定：它按 ``tools``
+    依次查，把带库名的材料一起交给模型，由模型判断该信哪份。单个库失败只记
+    ``scratch.error``，不打断整张图；全都没有材料时明确拒答，不让模型编。
+    """
+    query = str(state.get(query_key) or "").strip()
+    if not query:
+        return {"answer": "", "scratch": _merge_scratch(state, error="兜底回答缺少问题")}
+    names = [str(name) for name in (tools or []) if str(name).strip()]
+    if not names:
+        return {"answer": "", "scratch": _merge_scratch(state, error="fallback_answer 没有配置 tools")}
+
+    blocks: list[str] = []
+    hits: dict[str, int] = {}
+    failed: list[str] = []
+    for name in names:
+        try:
+            text = _invoke_tool(scenario, name, _query_args(scenario, name, query, limit))
+        except Exception as exc:  # noqa: BLE001 - 一个库失败不该拖垮兜底
+            hits[name] = 0
+            failed.append(f"{name}: {exc}")
+            continue
+        hits[name] = 1 if text.strip() else 0
+        if hits[name]:
+            blocks.append(f"【{name}】\n{text.strip()}")
+
+    material = "\n\n".join(blocks)
+    base = {"fallback_sources": hits, "error": "; ".join(failed) or None}
+    if not material:
+        return {
+            "answer": FALLBACK_EMPTY,
+            "tool_result": "",
+            "scratch": _merge_scratch(
+                state,
+                fallback_sources=hits,
+                error="; ".join(failed) or "候选库都没有检索到内容",
+            ),
+        }
+
+    model = getattr(scenario, "model", None)
+    if model is None:
+        return {
+            "answer": "",
+            "tool_result": material,
+            "scratch": _merge_scratch(state, error="场景没有可用模型"),
+        }
+    instruction = prompt or (
+        "下面是多个知识库的检索材料。先判断问题属于哪个库，只用相关材料回答；"
+        "材料不足就明确说无法确定，不要编造；引用时用 [来源id] 标注。"
+    )
+    messages = [
+        ("system", getattr(scenario, "system_prompt", "") or "你是一个严谨的助手。"),
+        ("human", f"{instruction}\n\n问题：{query}\n\n材料：\n{material}"),
+    ]
+    try:
+        reply = model.invoke(messages)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "answer": "",
+            "tool_result": material,
+            "scratch": _merge_scratch(state, error=f"模型调用失败：{exc}"),
+        }
+    return {
+        "answer": _content(reply).strip(),
+        "tool_result": material,
+        "scratch": _merge_scratch(state, **base),
+    }
 
 
 @register_node(

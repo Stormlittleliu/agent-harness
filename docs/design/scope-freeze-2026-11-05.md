@@ -45,7 +45,15 @@
 
 ## 5. 冻结例外
 
-（暂无）
+### 例外 1：`fallback_answer` 块（2026-11-06）
+
+- **原因**：规则没命中 / 多领域都命中时，现有 spec 工作流只能拒答；需要一条"交回模型、由它判断信哪份材料"的路径，并且它要能在画布上加/换，用来演示"结构可编辑"。
+- **破了哪条**：第 4 节"不允许新块类型"。
+- **范围**：只加一个块（+ 5 条单测）；不改执行器、不加场景、不改 UI、不改 active spec。
+- **证据**：[`tests/test_fallback_node.py`](../../tests/test_fallback_node.py) 5 passed；块契约测试（`test_scenario_spec` / `test_spec_ports` / `test_node_docs`）全绿。
+- **回退**：删块 + 删测试；active spec 没动，回退成本为零。
+- **未做**：没有真实模型评测，没有 fallback 率的数字；多库全查的成本没有测量。
+- 设计见 [fallback-node](fallback-node.md)。
 
 ## 6. 叙事材料
 
